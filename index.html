@@ -1,0 +1,2591 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Utopian Land CRM</title>
+<link rel="icon" type="image/svg+xml" href="favicon.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/[email protected]/dist/tabler-icons.min.css">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script>window.CRM_CONFIG = null;</script>
+<script src="config.js" onerror="console.log('%cNo config.js — using localStorage. Copy config.example.js to config.js to enable Supabase sync.','color:#857F76')"></script>
+<style>
+:root{
+  --bg: #F8F5EF;
+  --surface: #FFFFFF;
+  --surface-2: #F1EDE3;
+  --ink: #1A1918;
+  --ink-2: #4A4642;
+  --ink-3: #857F76;
+  --border: #E5DFD1;
+  --border-strong: #C9C0AC;
+  --accent: #2E5D3A;
+  --accent-ink: #FAFBF8;
+  --accent-soft: #E4EEDF;
+  --gold: #C69B4F;
+  --danger: #B8422E;
+  --danger-soft: #FBE9E4;
+  --info-soft: #E4EBF3;
+  --info-ink: #1F3C5C;
+  --warn-soft: #F7ECD0;
+  --warn-ink: #6B4A0E;
+  --success-soft: #DEEDD8;
+  --success-ink: #285B18;
+  --purple-soft: #E7E4F1;
+  --purple-ink: #38315C;
+  --shadow-sm: 0 1px 2px rgba(20,17,10,.04);
+  --shadow-md: 0 4px 16px rgba(20,17,10,.06);
+  --shadow-lg: 0 12px 40px rgba(20,17,10,.12);
+  --r-sm: 6px;
+  --r-md: 10px;
+  --r-lg: 14px;
+  --r-xl: 20px;
+  --ease: cubic-bezier(.2,.7,.2,1);
+  --sans: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  --serif: 'Fraunces', Georgia, serif;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{
+  font-family:var(--sans);
+  font-size:14px;
+  color:var(--ink);
+  background:var(--bg);
+  -webkit-font-smoothing:antialiased;
+  line-height:1.5;
+}
+button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
+input,select,textarea{font:inherit;color:inherit}
+
+/* ============ LAYOUT ============ */
+.app{display:grid;grid-template-columns:220px 1fr;min-height:100vh}
+.sidebar{
+  background:var(--surface);
+  border-right:1px solid var(--border);
+  padding:20px 14px;
+  display:flex;flex-direction:column;gap:2px;
+  position:sticky;top:0;height:100vh;
+}
+.brand{
+  display:flex;align-items:center;gap:10px;
+  padding:6px 10px 20px;
+  font-family:var(--serif);
+  font-size:20px;font-weight:500;
+  letter-spacing:-.01em;
+}
+.brand-logo{
+  max-width:100%;
+  height:auto;
+  max-height:42px;
+  object-fit:contain;
+}
+.nav-item{
+  display:flex;align-items:center;gap:10px;
+  padding:9px 12px;border-radius:var(--r-md);
+  color:var(--ink-2);font-size:13.5px;font-weight:500;
+  cursor:pointer;transition:background .15s var(--ease),color .15s var(--ease);
+}
+.nav-item i{font-size:17px;flex-shrink:0}
+.nav-item:hover{background:var(--surface-2);color:var(--ink)}
+.nav-item.active{background:var(--ink);color:var(--surface)}
+.nav-item .count{
+  margin-left:auto;font-size:11px;
+  background:var(--surface-2);color:var(--ink-2);
+  padding:1px 7px;border-radius:20px;font-weight:600;
+}
+.nav-item.active .count{background:rgba(255,255,255,.15);color:var(--surface)}
+
+.sidebar-section{
+  font-size:10px;font-weight:600;color:var(--ink-3);
+  text-transform:uppercase;letter-spacing:.08em;
+  padding:16px 12px 6px;
+}
+
+.sidebar-footer{
+  margin-top:auto;
+  padding:12px 10px;
+  border-top:1px solid var(--border);
+  display:flex;align-items:center;gap:8px;
+}
+.who-select{
+  flex:1;font-size:12px;padding:6px 8px;
+  border:1px solid var(--border);border-radius:var(--r-sm);
+  background:var(--surface);
+}
+#backend-badge{
+  display:flex;align-items:center;gap:6px;
+  margin:0 4px 6px;padding:6px 10px;
+  border-radius:var(--r-sm);
+  background:var(--surface-2);
+  font-size:11px;font-weight:600;
+  color:var(--ink-2);
+  text-transform:uppercase;letter-spacing:.06em;
+}
+#backend-badge .dot{
+  width:6px;height:6px;border-radius:50%;
+  background:var(--ink-3);
+}
+#backend-badge.supabase .dot{background:var(--accent);box-shadow:0 0 6px var(--accent)}
+#backend-badge.supabase{color:var(--accent)}
+#sync-status{font-size:12px;opacity:0;transition:opacity .2s var(--ease)}
+#sync-status[data-syncing="1"]{opacity:.8}
+#sync-status i{animation:spin 1s linear infinite;display:inline-block}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* ============ MAIN ============ */
+.main{padding:28px 36px;overflow-x:hidden}
+.page-header{
+  display:flex;align-items:flex-end;justify-content:space-between;gap:16px;
+  padding-bottom:20px;border-bottom:1px solid var(--border);margin-bottom:24px;
+  animation:fadeUp .4s var(--ease);
+}
+.page-eyebrow{
+  font-size:11px;font-weight:600;
+  color:var(--ink-3);text-transform:uppercase;letter-spacing:.1em;
+  margin-bottom:6px;
+}
+.page-title{
+  font-family:var(--serif);
+  font-size:34px;font-weight:500;
+  letter-spacing:-.02em;line-height:1;
+}
+.page-sub{color:var(--ink-3);margin-top:6px;font-size:13.5px}
+
+@keyframes fadeUp{
+  from{opacity:0;transform:translateY(8px)}
+  to{opacity:1;transform:translateY(0)}
+}
+@keyframes fadeIn{
+  from{opacity:0}to{opacity:1}
+}
+@keyframes scaleIn{
+  from{opacity:0;transform:scale(.96)}
+  to{opacity:1;transform:scale(1)}
+}
+@keyframes slideRight{
+  from{opacity:0;transform:translateX(-6px)}
+  to{opacity:1;transform:translateX(0)}
+}
+.view-enter{animation:fadeUp .35s var(--ease)}
+
+/* ============ BUTTONS ============ */
+.btn{
+  display:inline-flex;align-items:center;gap:6px;
+  padding:8px 14px;border-radius:var(--r-md);
+  font-size:13px;font-weight:500;
+  border:1px solid var(--border);background:var(--surface);
+  transition:all .15s var(--ease);
+  color:var(--ink);
+}
+.btn:hover{background:var(--surface-2);border-color:var(--border-strong)}
+.btn i{font-size:15px}
+.btn-primary{
+  background:var(--accent);color:var(--accent-ink);
+  border-color:var(--accent);
+}
+.btn-primary:hover{background:#254A2E;border-color:#254A2E}
+.btn-ghost{background:transparent;border-color:transparent}
+.btn-ghost:hover{background:var(--surface-2);border-color:transparent}
+.btn-danger{color:var(--danger)}
+.btn-danger:hover{background:var(--danger-soft);border-color:var(--danger-soft)}
+.btn-sm{padding:5px 10px;font-size:12px}
+
+.icon-btn{
+  width:30px;height:30px;
+  display:flex;align-items:center;justify-content:center;
+  border-radius:var(--r-sm);color:var(--ink-3);
+  transition:all .12s var(--ease);
+}
+.icon-btn:hover{background:var(--surface-2);color:var(--ink)}
+.icon-btn i{font-size:16px}
+
+/* ============ TOOLBAR ============ */
+.toolbar{
+  display:flex;gap:8px;margin-bottom:18px;flex-wrap:wrap;align-items:center;
+}
+.search-wrap{position:relative;flex:1;min-width:180px;max-width:340px}
+.search-wrap i{
+  position:absolute;left:10px;top:50%;transform:translateY(-50%);
+  color:var(--ink-3);font-size:15px;pointer-events:none;
+}
+.search-input{
+  width:100%;padding:8px 12px 8px 32px;
+  border:1px solid var(--border);border-radius:var(--r-md);
+  background:var(--surface);font-size:13px;
+  transition:border-color .15s var(--ease);
+}
+.search-input:focus{outline:none;border-color:var(--accent)}
+.filter-select{
+  padding:8px 30px 8px 12px;
+  border:1px solid var(--border);border-radius:var(--r-md);
+  background:var(--surface) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20' fill='%23857F76'%3E%3Cpath d='M10 12L5 7h10l-5 5z'/%3E%3C/svg%3E") no-repeat right 8px center/16px;
+  font-size:13px;appearance:none;-webkit-appearance:none;
+  cursor:pointer;
+}
+
+/* ============ CARDS ============ */
+.grid{display:grid;gap:12px}
+.grid-4{grid-template-columns:repeat(4,minmax(0,1fr))}
+.grid-3{grid-template-columns:repeat(3,minmax(0,1fr))}
+.grid-2{grid-template-columns:repeat(2,minmax(0,1fr))}
+
+.stat-card{
+  background:var(--surface);
+  border:1px solid var(--border);
+  border-radius:var(--r-lg);
+  padding:18px 20px;
+  transition:transform .2s var(--ease),box-shadow .2s var(--ease);
+  animation:fadeUp .4s var(--ease) both;
+}
+.stat-card:nth-child(2){animation-delay:.05s}
+.stat-card:nth-child(3){animation-delay:.1s}
+.stat-card:nth-child(4){animation-delay:.15s}
+.stat-card:hover{box-shadow:var(--shadow-md);transform:translateY(-1px)}
+.stat-label{
+  font-size:11px;font-weight:600;color:var(--ink-3);
+  text-transform:uppercase;letter-spacing:.08em;
+  display:flex;align-items:center;gap:6px;
+}
+.stat-value{
+  font-family:var(--serif);font-size:34px;font-weight:500;
+  letter-spacing:-.02em;line-height:1.1;margin-top:8px;
+}
+.stat-delta{font-size:12px;color:var(--ink-3);margin-top:4px}
+.stat-delta.up{color:var(--success-ink)}
+.stat-delta.down{color:var(--danger)}
+
+.card{
+  background:var(--surface);
+  border:1px solid var(--border);
+  border-radius:var(--r-lg);
+  padding:16px;
+  transition:all .18s var(--ease);
+  animation:fadeUp .3s var(--ease) both;
+}
+.card:hover{border-color:var(--border-strong);box-shadow:var(--shadow-sm)}
+.card-header{
+  display:flex;align-items:center;justify-content:space-between;
+  margin-bottom:14px;
+}
+.card-title{
+  font-family:var(--serif);font-size:18px;font-weight:500;
+  letter-spacing:-.01em;
+}
+.card-sub{font-size:12.5px;color:var(--ink-3)}
+
+/* ============ LEAD / PROPERTY / TASK ITEMS ============ */
+.item-list{display:flex;flex-direction:column;gap:8px}
+.item-row{
+  background:var(--surface);
+  border:1px solid var(--border);
+  border-radius:var(--r-md);
+  padding:14px 16px;
+  display:flex;align-items:center;gap:14px;
+  transition:all .18s var(--ease);
+  animation:slideRight .3s var(--ease) both;
+}
+.item-row:hover{border-color:var(--border-strong);box-shadow:var(--shadow-sm)}
+.item-row.overdue{border-left:3px solid var(--danger)}
+.item-main{flex:1;min-width:0}
+.item-title{font-weight:600;font-size:13.5px;color:var(--ink)}
+.item-meta{font-size:12px;color:var(--ink-3);margin-top:3px;display:flex;flex-wrap:wrap;gap:4px 10px}
+.item-actions{display:flex;gap:2px;flex-shrink:0}
+
+.avatar{
+  display:inline-flex;align-items:center;justify-content:center;
+  width:28px;height:28px;border-radius:50%;
+  font-size:11px;font-weight:600;flex-shrink:0;
+  border:1.5px solid var(--surface);
+}
+.avatar-lg{width:38px;height:38px;font-size:13px}
+.avatar-sm{width:22px;height:22px;font-size:9.5px}
+.avatar-stack{display:flex}
+.avatar-stack .avatar{margin-left:-8px}
+.avatar-stack .avatar:first-child{margin-left:0}
+
+.badge{
+  display:inline-flex;align-items:center;gap:4px;
+  padding:2px 9px;border-radius:20px;
+  font-size:10.5px;font-weight:600;
+  text-transform:uppercase;letter-spacing:.04em;
+  white-space:nowrap;
+}
+.badge-dot{width:5px;height:5px;border-radius:50%}
+.b-new{background:var(--info-soft);color:var(--info-ink)}
+.b-contacted{background:var(--warn-soft);color:var(--warn-ink)}
+.b-negotiating{background:var(--purple-soft);color:var(--purple-ink)}
+.b-under-contract{background:var(--success-soft);color:var(--success-ink)}
+.b-closed{background:var(--accent-soft);color:var(--accent)}
+.b-dead{background:var(--surface-2);color:var(--ink-3)}
+.b-pre-deal{background:var(--info-soft);color:var(--info-ink)}
+.b-due-diligence{background:var(--warn-soft);color:var(--warn-ink)}
+.b-title-clearing{background:var(--purple-soft);color:var(--purple-ink)}
+.b-closing{background:var(--success-soft);color:var(--success-ink)}
+.b-renegotiation{background:var(--danger-soft);color:var(--danger)}
+.b-disposition{background:var(--accent-soft);color:var(--accent)}
+.b-high{background:var(--danger-soft);color:var(--danger)}
+.b-medium{background:var(--warn-soft);color:var(--warn-ink)}
+.b-low{background:var(--surface-2);color:var(--ink-3)}
+.b-todo{background:var(--info-soft);color:var(--info-ink)}
+.b-in-progress{background:var(--warn-soft);color:var(--warn-ink)}
+.b-done{background:var(--success-soft);color:var(--success-ink)}
+.b-blocked{background:var(--danger-soft);color:var(--danger)}
+
+.price-row{display:flex;gap:16px;margin-top:8px;font-size:12.5px;flex-wrap:wrap}
+.price-item{display:flex;flex-direction:column}
+.price-label{color:var(--ink-3);font-size:10.5px;text-transform:uppercase;letter-spacing:.05em;font-weight:500}
+.price-value{font-weight:600;color:var(--ink);font-variant-numeric:tabular-nums}
+.margin-pill{
+  align-self:flex-end;padding:2px 10px;border-radius:20px;
+  background:var(--accent-soft);color:var(--accent);
+  font-size:11px;font-weight:700;font-variant-numeric:tabular-nums;
+}
+
+/* ============ TASK CHECK ============ */
+.task-check{
+  appearance:none;-webkit-appearance:none;
+  width:18px;height:18px;
+  border:1.5px solid var(--border-strong);
+  border-radius:6px;
+  background:var(--surface);
+  cursor:pointer;position:relative;flex-shrink:0;
+  transition:all .15s var(--ease);
+}
+.task-check:hover{border-color:var(--accent)}
+.task-check:checked{background:var(--accent);border-color:var(--accent)}
+.task-check:checked::after{
+  content:'';position:absolute;
+  left:5px;top:1px;width:5px;height:10px;
+  border:solid var(--accent-ink);
+  border-width:0 2px 2px 0;
+  transform:rotate(45deg);
+}
+
+/* ============ PIPELINE ============ */
+.pipeline{
+  display:grid;grid-template-columns:repeat(6,1fr);gap:8px;
+  margin-bottom:24px;
+}
+.pipe-col{
+  background:var(--surface);
+  border:1px solid var(--border);
+  border-radius:var(--r-md);
+  padding:12px;min-height:180px;
+  transition:border-color .15s var(--ease);
+}
+.pipe-col:hover{border-color:var(--border-strong)}
+.pipe-head{
+  display:flex;align-items:center;justify-content:space-between;
+  padding-bottom:8px;margin-bottom:8px;
+  border-bottom:1px solid var(--border);
+}
+.pipe-head h3{
+  font-size:11px;font-weight:600;color:var(--ink-2);
+  text-transform:uppercase;letter-spacing:.06em;
+}
+.pipe-count{
+  font-size:11px;font-weight:600;color:var(--ink-3);
+  background:var(--surface-2);padding:1px 7px;border-radius:20px;
+}
+.pipe-card{
+  background:var(--bg);
+  border:1px solid var(--border);
+  border-radius:var(--r-sm);
+  padding:8px 10px;margin-bottom:6px;
+  cursor:pointer;font-size:12px;
+  transition:all .15s var(--ease);
+}
+.pipe-card:hover{background:var(--surface);border-color:var(--border-strong);transform:translateY(-1px)}
+.pipe-card-title{font-weight:600;color:var(--ink)}
+.pipe-card-sub{color:var(--ink-3);font-size:11px;margin-top:2px;font-variant-numeric:tabular-nums}
+.pipe-total{
+  font-size:11px;color:var(--ink-3);margin-top:6px;
+  padding-top:6px;border-top:1px solid var(--border);
+  text-align:right;font-variant-numeric:tabular-nums;
+}
+
+/* ============ MODAL ============ */
+.modal-bg{
+  position:fixed;inset:0;
+  background:rgba(20,17,10,.5);backdrop-filter:blur(4px);
+  display:flex;align-items:center;justify-content:center;
+  z-index:100;padding:20px;
+  animation:fadeIn .18s var(--ease);
+}
+.modal{
+  background:var(--surface);
+  border-radius:var(--r-xl);
+  padding:28px;
+  width:min(540px,100%);
+  max-height:88vh;overflow-y:auto;
+  box-shadow:var(--shadow-lg);
+  animation:scaleIn .2s var(--ease);
+}
+.modal-header{
+  display:flex;align-items:center;justify-content:space-between;
+  margin-bottom:18px;
+}
+.modal-title{
+  font-family:var(--serif);
+  font-size:22px;font-weight:500;letter-spacing:-.01em;
+}
+.form-group{margin-bottom:14px}
+.form-label{
+  display:block;font-size:11.5px;font-weight:600;
+  color:var(--ink-2);margin-bottom:5px;
+  text-transform:uppercase;letter-spacing:.05em;
+}
+.form-input,.form-select,.form-textarea{
+  width:100%;padding:9px 12px;
+  border:1px solid var(--border);border-radius:var(--r-md);
+  background:var(--surface);font-size:13.5px;
+  transition:border-color .15s var(--ease),box-shadow .15s var(--ease);
+}
+.form-input:focus,.form-select:focus,.form-textarea:focus{
+  outline:none;border-color:var(--accent);
+  box-shadow:0 0 0 3px rgba(46,93,58,.1);
+}
+.form-textarea{resize:vertical;min-height:70px;font-family:inherit}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.form-row-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+.modal-actions{
+  display:flex;gap:8px;justify-content:flex-end;
+  margin-top:22px;padding-top:18px;
+  border-top:1px solid var(--border);
+}
+
+/* ============ CHIP PICKER ============ */
+.chip-picker{
+  display:flex;flex-wrap:wrap;gap:6px;
+  padding:8px;
+  border:1px solid var(--border);border-radius:var(--r-md);
+  min-height:44px;background:var(--bg);
+}
+.chip{
+  display:inline-flex;align-items:center;gap:6px;
+  padding:4px 10px 4px 4px;border-radius:20px;
+  font-size:12px;font-weight:500;
+  border:1px solid var(--border);
+  background:var(--surface);color:var(--ink-2);
+  cursor:pointer;transition:all .12s var(--ease);
+  user-select:none;
+}
+.chip:hover{border-color:var(--border-strong)}
+.chip.selected{border-color:transparent}
+.chip-x{opacity:.5;font-size:14px;line-height:1}
+
+.color-picker{display:flex;gap:8px;flex-wrap:wrap}
+.color-swatch{
+  width:26px;height:26px;border-radius:50%;
+  cursor:pointer;border:2px solid transparent;
+  transition:transform .12s var(--ease);
+}
+.color-swatch:hover{transform:scale(1.1)}
+.color-swatch.selected{border-color:var(--ink)}
+
+/* ============ EMPTY STATE ============ */
+.empty{
+  text-align:center;padding:48px 20px;
+  color:var(--ink-3);
+  border:1px dashed var(--border);border-radius:var(--r-lg);
+  background:var(--surface);
+}
+.empty i{font-size:32px;margin-bottom:10px;display:block;color:var(--border-strong)}
+.empty h3{font-family:var(--serif);font-size:20px;font-weight:500;color:var(--ink-2);margin-bottom:6px}
+.empty p{font-size:13px;margin-bottom:14px}
+
+/* ============ TEAM CARDS ============ */
+.member-card{
+  background:var(--surface);
+  border:1px solid var(--border);
+  border-radius:var(--r-lg);
+  padding:18px;
+  transition:all .18s var(--ease);
+  animation:fadeUp .3s var(--ease) both;
+}
+.member-card:hover{border-color:var(--border-strong);box-shadow:var(--shadow-sm)}
+.member-head{display:flex;align-items:center;gap:12px;margin-bottom:14px}
+.member-name{font-family:var(--serif);font-size:18px;font-weight:500;letter-spacing:-.01em}
+.member-role{font-size:12px;color:var(--ink-3)}
+.member-stats{
+  display:grid;grid-template-columns:repeat(3,1fr);gap:6px;
+  margin-bottom:12px;
+}
+.member-stat{
+  background:var(--bg);border-radius:var(--r-sm);
+  padding:10px;text-align:center;
+}
+.member-stat-val{font-family:var(--serif);font-size:22px;font-weight:500;line-height:1}
+.member-stat-lbl{font-size:10px;color:var(--ink-3);margin-top:4px;text-transform:uppercase;letter-spacing:.05em}
+.member-task-preview{
+  border-top:1px solid var(--border);padding-top:10px;
+  font-size:12px;
+}
+.member-task-item{
+  display:flex;align-items:center;gap:6px;
+  padding:4px 0;color:var(--ink-2);
+}
+.member-stats-4{grid-template-columns:repeat(4,1fr)}
+
+/* ============ CALENDAR ============ */
+.cal-weekdays{
+  display:grid;grid-template-columns:repeat(7,1fr);
+  font-size:10px;font-weight:600;color:var(--ink-3);
+  text-transform:uppercase;letter-spacing:.05em;
+  text-align:center;margin-bottom:6px;
+}
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:6px}
+.cal-cell{
+  min-height:78px;border:1px solid var(--border);border-radius:8px;
+  padding:5px 6px;background:var(--surface);
+  display:flex;flex-direction:column;gap:2px;overflow:hidden;
+}
+.cal-cell.cal-empty{border-color:transparent;background:transparent}
+.cal-cell.cal-today{border-color:var(--accent);box-shadow:inset 0 0 0 1px var(--accent)}
+.cal-daynum{font-size:11px;font-weight:600;color:var(--ink-2)}
+.cal-today .cal-daynum{color:var(--accent)}
+.cal-task{
+  font-size:10px;padding:1px 5px;border-radius:4px;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+  cursor:pointer;background:var(--surface-2);color:var(--ink-2);
+  border-left:2px solid var(--ink-3);
+}
+.cal-task.pri-high{border-left-color:var(--danger);background:var(--danger-soft);color:var(--danger)}
+.cal-task.pri-medium{border-left-color:var(--gold);background:var(--warn-soft);color:var(--warn-ink)}
+.cal-task.pri-low{border-left-color:var(--border-strong);background:var(--surface-2);color:var(--ink-3)}
+.cal-task.cal-task-project{border-left-color:var(--accent);background:var(--accent-soft);color:var(--accent)}
+.cal-more{font-size:9.5px;color:var(--ink-3);padding-left:3px}
+
+/* ============ RANKED PERFORMANCE ============ */
+.rank-list{display:flex;flex-direction:column;gap:12px}
+.rank-row{display:flex;align-items:center;gap:10px}
+.rank-pos{width:18px;font-size:12px;font-weight:700;color:var(--ink-3);text-align:center;flex-shrink:0}
+.rank-main{flex:1;min-width:0}
+.rank-name{font-size:12.5px;font-weight:600;margin-bottom:5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rank-bar-track{height:6px;border-radius:4px;background:var(--surface-2);overflow:hidden}
+.rank-bar-fill{height:100%;border-radius:4px;transition:width .3s var(--ease)}
+.rank-figs{text-align:right;min-width:60px;flex-shrink:0}
+.rank-completed{font-size:14px;font-weight:700;font-variant-numeric:tabular-nums;line-height:1.1}
+.rank-sub{font-size:10px;color:var(--ink-3);margin-top:2px}
+
+/* ============ ON-TIME PIE CHART ============ */
+.pie-chart{
+  width:104px;height:104px;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+  flex-shrink:0;
+}
+.pie-chart-hole{
+  width:68px;height:68px;border-radius:50%;
+  background:var(--surface);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+}
+.pie-chart-pct{font-family:var(--serif);font-size:19px;font-weight:500;line-height:1;color:var(--ink)}
+.pie-chart-pct-lbl{font-size:8.5px;color:var(--ink-3);text-transform:uppercase;letter-spacing:.04em;margin-top:2px}
+.pie-legend{display:flex;flex-direction:column;gap:11px;flex:1}
+.pie-legend-item{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--ink-2)}
+.pie-legend-item b{margin-left:auto;font-variant-numeric:tabular-nums;color:var(--ink)}
+.pie-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+
+/* ============ PROJECTS ============ */
+.proj-board{
+  display:grid;grid-template-columns:repeat(4,1fr);gap:12px;
+}
+.proj-col{
+  background:var(--surface-2);
+  border-radius:var(--r-lg);
+  padding:12px;min-height:200px;
+}
+.proj-col-head{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:0 4px 10px;
+  border-bottom:1px solid var(--border);margin-bottom:10px;
+}
+.proj-col-head h3{
+  font-size:11px;font-weight:600;color:var(--ink-2);
+  text-transform:uppercase;letter-spacing:.06em;
+}
+.proj-card{
+  background:var(--surface);
+  border:1px solid var(--border);
+  border-radius:var(--r-md);
+  padding:12px;margin-bottom:8px;
+  cursor:pointer;
+  transition:all .15s var(--ease);
+  animation:fadeUp .25s var(--ease) both;
+}
+.proj-card:hover{border-color:var(--border-strong);box-shadow:var(--shadow-sm);transform:translateY(-1px)}
+.proj-card-title{font-weight:600;font-size:13px;margin-bottom:6px}
+.proj-card-cat{font-size:10.5px;color:var(--ink-3);text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px}
+.proj-card-meta{display:flex;align-items:center;justify-content:space-between;margin-top:8px}
+
+/* ============ SETTINGS ============ */
+.settings-section{
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:var(--r-lg);padding:20px;margin-bottom:14px;
+}
+.settings-section h3{
+  font-family:var(--serif);font-size:16px;font-weight:500;
+  margin-bottom:6px;letter-spacing:-.01em;
+}
+.settings-section p{color:var(--ink-3);font-size:13px;margin-bottom:14px}
+
+/* ============ TOAST ============ */
+.toast{
+  position:fixed;bottom:24px;left:50%;transform:translateX(-50%);
+  background:var(--ink);color:var(--surface);
+  padding:10px 18px;border-radius:var(--r-md);
+  font-size:13px;font-weight:500;z-index:200;
+  box-shadow:var(--shadow-lg);
+  animation:fadeUp .25s var(--ease);
+  display:flex;align-items:center;gap:8px;
+}
+.toast.err{background:var(--danger)}
+
+/* ============ AGENDA ALERT ============ */
+.alert-banner{
+  display:flex;align-items:center;gap:12px;
+  background:var(--danger-soft);
+  border:1px solid #EAC5BC;
+  color:var(--danger);
+  border-radius:var(--r-lg);
+  padding:12px 16px;margin-bottom:16px;
+  font-size:13px;
+  animation:fadeUp .35s var(--ease);
+}
+.alert-banner i{font-size:20px;flex-shrink:0}
+.alert-banner .btn{background:var(--surface);border-color:#EAC5BC;color:var(--danger);flex-shrink:0}
+.alert-banner .btn:hover{background:#fff}
+
+/* ============ CLICKABLE CALENDAR CELLS ============ */
+.cal-cell:not(.cal-empty){cursor:pointer;transition:all .15s var(--ease)}
+.cal-cell:not(.cal-empty):hover{border-color:var(--border-strong);box-shadow:var(--shadow-sm);transform:translateY(-1px)}
+
+/* ============ DRAG & DROP ============ */
+.pipe-card[draggable="true"],.proj-card[draggable="true"]{cursor:grab}
+.pipe-card[draggable="true"]:active,.proj-card[draggable="true"]:active{cursor:grabbing}
+.dragging{opacity:.4;transform:scale(.97)}
+.pipe-col.drag-over,.proj-col.drag-over{
+  background:var(--accent-soft);
+  box-shadow:inset 0 0 0 2px var(--accent);
+  border-radius:var(--r-md);
+}
+
+/* ============ RESPONSIVE ============ */
+@media (max-width: 900px){
+  .app{grid-template-columns:1fr}
+  .sidebar{position:relative;height:auto;flex-direction:row;overflow-x:auto;padding:10px;gap:2px}
+  .brand{padding:4px 10px;flex-shrink:0}
+  .sidebar-section,.sidebar-footer{display:none}
+  .nav-item{flex-shrink:0}
+  .main{padding:20px}
+  .grid-4{grid-template-columns:repeat(2,1fr)}
+  .grid-3,.grid-2{grid-template-columns:1fr}
+  .pipeline,.proj-board{grid-template-columns:1fr 1fr;overflow-x:auto}
+  .page-title{font-size:26px}
+  .form-row,.form-row-3{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+
+<div class="app">
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="brand">
+      <img src="logo.png" alt="Utopian Land Buyers" class="brand-logo">
+    </div>
+    <div class="nav-item active" data-view="dashboard"><i class="ti ti-layout-dashboard"></i> Dashboard</div>
+    <div class="nav-item" data-view="leads"><i class="ti ti-users"></i> Leads <span class="count" id="count-leads">0</span></div>
+    <div class="nav-item" data-view="properties"><i class="ti ti-home"></i> Properties <span class="count" id="count-props">0</span></div>
+    <div class="nav-item" data-view="tasks"><i class="ti ti-checkbox"></i> Tasks <span class="count" id="count-tasks">0</span></div>
+    <div class="nav-item" data-view="projects"><i class="ti ti-bulb"></i> Projects <span class="count" id="count-projs">0</span></div>
+
+    <div class="sidebar-section">Workspace</div>
+    <div class="nav-item" data-view="team"><i class="ti ti-building-community"></i> Team</div>
+    <div class="nav-item" data-view="settings"><i class="ti ti-settings"></i> Settings</div>
+
+    <div id="backend-badge" title="Data backend">
+      <span class="dot"></span>
+      <span id="backend-label">Local</span>
+      <span id="sync-status" style="margin-left:auto"><i class="ti ti-refresh"></i></span>
+    </div>
+    <div class="sidebar-footer">
+      <i class="ti ti-user-circle" style="font-size:18px;color:var(--ink-3)"></i>
+      <select class="who-select" id="active-user-select" onchange="app.switchUser(this.value)">
+        <option value="">Choose user…</option>
+      </select>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <main class="main" id="main"></main>
+</div>
+
+<div id="modal-root"></div>
+<div id="submodal-root"></div>
+<div id="toast-root"></div>
+
+<script>
+/* =========================================================
+   DATA LAYER — dual backend (localStorage + Supabase)
+   Backend is chosen automatically at boot based on CRM_CONFIG.
+   ========================================================= */
+const StorageAdapter = {
+  backend: 'local',      // 'local' | 'supabase'
+  supabase: null,
+  syncing: false,
+
+  localKeys: {
+    users:'ulc_users', leads:'ulc_leads', props:'ulc_props',
+    tasks:'ulc_tasks', projects:'ulc_projects', active:'ulc_activeUser'
+  },
+  tables: {
+    users:'users', leads:'leads', props:'properties',
+    tasks:'tasks', projects:'projects'
+  },
+
+  // ---- camelCase (app) <-> snake_case (Postgres) mappers ----
+  toDb: {
+    users: u => ({id:u.id, name:u.name, role:u.role||null, color_idx:u.colorIdx||0}),
+    leads: l => ({id:l.id, name:l.name, phone:l.phone||null, email:l.email||null,
+      source:l.source||null, status:l.status||'new', county:l.county||null,
+      state:l.state||null, notes:l.notes||null, assigned_to:l.assignedTo||null}),
+    props: p => ({id:p.id, lead_id:p.leadId||null, address:p.address,
+      county:p.county||null, state:p.state||null,
+      acres:p.acres!==''&&p.acres!=null?parseFloat(p.acres):null,
+      buy_price:p.buyPrice!==''&&p.buyPrice!=null?parseFloat(p.buyPrice):null,
+      sell_price:p.sellPrice!==''&&p.sellPrice!=null?parseFloat(p.sellPrice):null,
+      status:p.status||'pre-deal', notes:p.notes||null, assigned_to:p.assignedTo||null}),
+    tasks: t => ({id:t.id, title:t.title, linked_id:t.linkedId||null,
+      linked_type:t.linkedType||null, due_date:t.dueDate||null,
+      priority:t.priority||'medium', status:t.status||'todo',
+      notes:t.notes||null, assignees:t.assignees||[], completed_at:t.completedAt||null}),
+    projects: p => ({id:p.id, title:p.title, category:p.category||'Other',
+      status:p.status||'ideas', priority:p.priority||'medium',
+      description:p.description||null, due_date:p.dueDate||null,
+      assignees:p.assignees||[]})
+  },
+  fromDb: {
+    users: u => ({id:u.id, name:u.name, role:u.role||'', colorIdx:u.color_idx||0}),
+    leads: l => ({id:l.id, name:l.name, phone:l.phone||'', email:l.email||'',
+      source:l.source||'Other', status:l.status||'new', county:l.county||'',
+      state:l.state||'TX', notes:l.notes||'', assignedTo:l.assigned_to||'',
+      created:l.created_at?l.created_at.split('T')[0]:''}),
+    props: p => ({id:p.id, leadId:p.lead_id||'', address:p.address,
+      county:p.county||'', state:p.state||'TX',
+      acres:p.acres!=null?String(p.acres):'',
+      buyPrice:p.buy_price!=null?String(p.buy_price):'',
+      sellPrice:p.sell_price!=null?String(p.sell_price):'',
+      status:p.status||'pre-deal', notes:p.notes||'', assignedTo:p.assigned_to||'',
+      created:p.created_at?p.created_at.split('T')[0]:''}),
+    tasks: t => ({id:t.id, title:t.title, linkedId:t.linked_id||'',
+      linkedType:t.linked_type||'', dueDate:t.due_date||'',
+      priority:t.priority||'medium', status:t.status||'todo',
+      notes:t.notes||'', assignees:t.assignees||[],
+      completedAt:t.completed_at?String(t.completed_at).split('T')[0]:'',
+      created:t.created_at?t.created_at.split('T')[0]:''}),
+    projects: p => ({id:p.id, title:p.title, category:p.category||'Other',
+      status:p.status||'ideas', priority:p.priority||'medium',
+      description:p.description||'', dueDate:p.due_date||'',
+      assignees:p.assignees||[],
+      created:p.created_at?p.created_at.split('T')[0]:''})
+  },
+
+  async init(){
+    const cfg = window.CRM_CONFIG;
+    if(cfg?.supabaseUrl && cfg?.supabaseKey && window.supabase){
+      try{
+        this.supabase = window.supabase.createClient(cfg.supabaseUrl, cfg.supabaseKey);
+        const { error } = await this.supabase.from('users').select('id').limit(1);
+        if(!error){
+          this.backend = 'supabase';
+          console.log('%c✓ Connected to Supabase','color:#2E5D3A;font-weight:600');
+          return {ok:true, backend:'supabase'};
+        }
+        console.warn('Supabase configured but query failed:', error.message);
+        console.warn('Check your schema — did you run schema.sql?');
+      }catch(e){
+        console.warn('Supabase init error:', e);
+      }
+    }
+    console.log('%c⚡ Using localStorage backend','color:#857F76');
+    return {ok:true, backend:'local'};
+  },
+
+  async loadAll(){
+    if(this.backend === 'supabase'){
+      const [u, l, p, t, pr] = await Promise.all([
+        this.supabase.from('users').select('*').order('created_at'),
+        this.supabase.from('leads').select('*').order('created_at',{ascending:false}),
+        this.supabase.from('properties').select('*').order('created_at',{ascending:false}),
+        this.supabase.from('tasks').select('*').order('created_at',{ascending:false}),
+        this.supabase.from('projects').select('*').order('created_at',{ascending:false}),
+      ]);
+      return {
+        users: (u.data||[]).map(this.fromDb.users),
+        leads: (l.data||[]).map(this.fromDb.leads),
+        props: (p.data||[]).map(this.fromDb.props),
+        tasks: (t.data||[]).map(this.fromDb.tasks),
+        projects: (pr.data||[]).map(this.fromDb.projects),
+        activeUserId: localStorage.getItem(this.localKeys.active) || ''
+      };
+    }
+    return {
+      users: JSON.parse(localStorage.getItem(this.localKeys.users) || '[]'),
+      leads: JSON.parse(localStorage.getItem(this.localKeys.leads) || '[]'),
+      props: JSON.parse(localStorage.getItem(this.localKeys.props) || '[]'),
+      tasks: JSON.parse(localStorage.getItem(this.localKeys.tasks) || '[]'),
+      projects: JSON.parse(localStorage.getItem(this.localKeys.projects) || '[]'),
+      activeUserId: localStorage.getItem(this.localKeys.active) || ''
+    };
+  },
+
+  async saveEntity(collection, entity){
+    this.setSyncing(true);
+    try{
+      if(this.backend === 'supabase'){
+        const row = this.toDb[collection](entity);
+        const {error} = await this.supabase.from(this.tables[collection]).upsert(row);
+        if(error) throw error;
+      }else{
+        const arr = JSON.parse(localStorage.getItem(this.localKeys[collection]) || '[]');
+        const idx = arr.findIndex(x => x.id === entity.id);
+        if(idx >= 0) arr[idx] = entity; else arr.unshift(entity);
+        localStorage.setItem(this.localKeys[collection], JSON.stringify(arr));
+      }
+    }catch(e){
+      console.error(`Save ${collection} failed:`, e);
+      toast('Save failed: '+ (e.message||'unknown error'),'err');
+    }finally{
+      this.setSyncing(false);
+    }
+  },
+
+  async deleteEntity(collection, id){
+    this.setSyncing(true);
+    try{
+      if(this.backend === 'supabase'){
+        const {error} = await this.supabase.from(this.tables[collection]).delete().eq('id', id);
+        if(error) throw error;
+      }else{
+        const arr = JSON.parse(localStorage.getItem(this.localKeys[collection]) || '[]');
+        localStorage.setItem(this.localKeys[collection], JSON.stringify(arr.filter(x => x.id !== id)));
+      }
+    }catch(e){
+      console.error(`Delete ${collection} failed:`, e);
+      toast('Delete failed: '+(e.message||'unknown error'),'err');
+    }finally{
+      this.setSyncing(false);
+    }
+  },
+
+  async saveActiveUser(id){
+    if(id) localStorage.setItem(this.localKeys.active, id);
+    else localStorage.removeItem(this.localKeys.active);
+  },
+
+  // Bulk save — used by seed, import
+  async saveBulk(data){
+    this.setSyncing(true);
+    try{
+      if(this.backend === 'supabase'){
+        // Order matters: users first (foreign key references)
+        const order = ['users','leads','props','tasks','projects'];
+        for(const col of order){
+          if(data[col]?.length){
+            const rows = data[col].map(this.toDb[col]);
+            const {error} = await this.supabase.from(this.tables[col]).upsert(rows);
+            if(error) throw error;
+          }
+        }
+      }else{
+        for(const col of Object.keys(this.localKeys)){
+          if(col === 'active') continue;
+          if(data[col] !== undefined){
+            localStorage.setItem(this.localKeys[col], JSON.stringify(data[col]||[]));
+          }
+        }
+      }
+    }catch(e){
+      console.error('Bulk save failed:', e);
+      toast('Sync failed: '+(e.message||'unknown error'),'err');
+    }finally{
+      this.setSyncing(false);
+    }
+  },
+
+  async wipeAll(){
+    if(this.backend === 'supabase'){
+      // Delete in reverse dep order
+      const order = ['tasks','projects','props','leads','users'];
+      for(const col of order){
+        await this.supabase.from(this.tables[col]).delete().neq('id','00000000-0000-0000-0000-000000000000');
+      }
+    }
+    Object.values(this.localKeys).forEach(k => localStorage.removeItem(k));
+  },
+
+  setSyncing(v){
+    this.syncing = v;
+    const el = document.getElementById('sync-status');
+    if(el) el.dataset.syncing = v ? '1' : '';
+  }
+};
+
+/* =========================================================
+   STATE & CONSTANTS
+   ========================================================= */
+const COLORS = [
+  {bg:'#E4EBF3',fg:'#1F3C5C'},
+  {bg:'#E7E4F1',fg:'#38315C'},
+  {bg:'#DEEDD8',fg:'#285B18'},
+  {bg:'#F7ECD0',fg:'#6B4A0E'},
+  {bg:'#F4E1DA',fg:'#712B13'},
+  {bg:'#F1DDE6',fg:'#72243E'},
+  {bg:'#E4EEDF',fg:'#2E5D3A'},
+  {bg:'#FBE9E4',fg:'#B8422E'},
+];
+
+// Inline SVG for edit/delete icons — these don't depend on the Tabler icon
+// webfont loading, so edit/delete stays visible even if that CDN is blocked.
+const ICON_EDIT = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4Z"/></svg>';
+const ICON_DELETE = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>';
+
+const LEAD_STATUSES = ['new','contacted','negotiating','under-contract','closed','dead'];
+// Deal/property pipeline: everything before a deal is made collapses into "pre-deal".
+// Everything after is the actual acquisition-to-exit workflow.
+const DEAL_STAGES = ['pre-deal','due-diligence','title-clearing','closing','renegotiation','disposition'];
+const TASK_STATUSES = ['todo','in-progress','done','blocked'];
+const PROJECT_CATEGORIES = ['Marketing','SOPs & Processes','Tools & Software','Team & Hiring','Finance','Other'];
+const PROJECT_STATUSES = ['ideas','planned','in-progress','done'];
+const LEAD_SOURCES = ['Direct Mail','Cold Call','Referral','PPC','Facebook','Driving for Dollars','Other'];
+
+const state = {
+  users:[], leads:[], props:[], tasks:[], projects:[],
+  activeUserId:'', activeView:'dashboard',
+  filters:{}
+};
+
+/* =========================================================
+   UTILITIES
+   ========================================================= */
+const $ = sel => document.querySelector(sel);
+const uid = () => (crypto.randomUUID ? crypto.randomUUID() : 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g,c=>{const r=Math.random()*16|0;return (c==='x'?r:(r&0x3|0x8)).toString(16)}));
+const today = () => new Date().toISOString().split('T')[0];
+const isOverdue = d => d && d < today();
+const initials = n => (n||'').trim().split(/\s+/).map(w=>w[0]||'').join('').toUpperCase().slice(0,2)||'?';
+const fmt = d => {if(!d)return'';const x=new Date(d);return x.toLocaleDateString('en-US',{month:'short',day:'numeric'})};
+const fmtLong = d => {if(!d)return'';const x=new Date(d);return x.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})};
+const money = n => '$'+Number(n||0).toLocaleString();
+const escape = s => (s||'').toString().replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+function userColor(id){
+  const u = state.users.find(x=>x.id===id);
+  return u ? COLORS[u.colorIdx % COLORS.length] : {bg:'#F1EDE3',fg:'#857F76'};
+}
+function userName(id){
+  const u = state.users.find(x=>x.id===id);
+  return u ? u.name : 'Unassigned';
+}
+// Equity created on a deal = sell price - buy price. Null until a sell price is entered.
+function equityOf(p){
+  if(p.sellPrice===''||p.sellPrice==null) return null;
+  return (parseFloat(p.sellPrice)||0) - (parseFloat(p.buyPrice)||0);
+}
+function avatarHTML(userId, size){
+  const c = userColor(userId);
+  const u = state.users.find(x=>x.id===userId);
+  const cls = size==='lg' ? 'avatar avatar-lg' : size==='sm' ? 'avatar avatar-sm' : 'avatar';
+  return `<span class="${cls}" style="background:${c.bg};color:${c.fg}" title="${escape(u?u.name:'')}">${u?initials(u.name):'?'}</span>`;
+}
+function assigneeStack(ids, size){
+  if(!ids || !ids.length) return '<span style="font-size:11px;color:var(--ink-3)">Unassigned</span>';
+  return `<span class="avatar-stack">${ids.slice(0,4).map(id=>avatarHTML(id,size)).join('')}${ids.length>4?`<span class="avatar avatar-sm" style="background:var(--surface-2);color:var(--ink-3)">+${ids.length-4}</span>`:''}</span>`;
+}
+
+// Per-user task effectiveness: completed count, on-time %, avg days to complete, currently assigned.
+// mf = {year, month} (month is 0-indexed) to scope completed-task stats to a single month; omit for all-time.
+function inMonth(dateStr, mf){
+  if(!dateStr) return false;
+  const d = new Date(dateStr+'T00:00:00');
+  return d.getFullYear()===mf.year && d.getMonth()===mf.month;
+}
+function userTaskStats(userId, mf){
+  const assigned = state.tasks.filter(t=>(t.assignees||[]).includes(userId));
+  const completedAll = assigned.filter(t=>t.status==='done');
+  const completed = mf ? completedAll.filter(t=>inMonth(t.completedAt, mf)) : completedAll;
+  const withCompletedAt = completed.filter(t=>t.completedAt);
+  const withDueDate = withCompletedAt.filter(t=>t.dueDate);
+  const onTime = withDueDate.filter(t=>t.completedAt <= t.dueDate);
+  const onTimePct = withDueDate.length ? Math.round((onTime.length/withDueDate.length)*100) : null;
+  const avgDays = withCompletedAt.length
+    ? Math.round((withCompletedAt.reduce((sum,t)=>{
+        const start = new Date(t.created||t.completedAt);
+        const end = new Date(t.completedAt);
+        return sum + Math.max(0, (end-start)/86400000);
+      },0) / withCompletedAt.length) * 10) / 10
+    : null;
+  // "Currently assigned" is always a real-time snapshot, not scoped to the selected month.
+  const current = assigned.filter(t=>t.status!=='done').length;
+  return { completed: completed.length, onTimePct, avgDays, current };
+}
+
+function toast(msg, type){
+  const root = $('#toast-root');
+  root.innerHTML = `<div class="toast ${type==='err'?'err':''}"><i class="ti ti-${type==='err'?'alert-circle':'check'}"></i>${escape(msg)}</div>`;
+  setTimeout(()=>{root.innerHTML=''}, 2200);
+}
+
+function updateBackendBadge(){
+  const el = document.getElementById('backend-badge');
+  const label = document.getElementById('backend-label');
+  if(!el||!label) return;
+  if(StorageAdapter.backend === 'supabase'){
+    el.classList.add('supabase');
+    label.textContent = 'Supabase';
+    el.title = 'Synced to Supabase — data is shared across devices and users';
+  }else{
+    el.classList.remove('supabase');
+    label.textContent = 'Local';
+    el.title = 'Local browser storage only — data lives on this device';
+  }
+}
+
+/* =========================================================
+   PERSISTENCE — thin wrappers over StorageAdapter
+   ========================================================= */
+async function loadAll(){
+  const data = await StorageAdapter.loadAll();
+  state.users = data.users;
+  state.leads = data.leads;
+  state.props = data.props;
+  state.tasks = data.tasks;
+  state.projects = data.projects;
+  state.activeUserId = data.activeUserId;
+  if(!state.users.length) await seed();
+}
+
+// Save one entity to whichever backend is active
+async function saveOne(collection, entity){
+  await StorageAdapter.saveEntity(collection, entity);
+}
+async function deleteOne(collection, id){
+  await StorageAdapter.deleteEntity(collection, id);
+}
+
+async function seed(){
+  const u1=uid(), u2=uid(), u3=uid();
+  const l1=uid(), l2=uid(), l3=uid();
+  const p1=uid(), p2=uid();
+
+  state.users = [
+    {id:u1, name:'Nishrav Bhatia', role:'Owner', colorIdx:6},
+    {id:u2, name:'Jordan Lee', role:'Acquisitions', colorIdx:1},
+    {id:u3, name:'Casey Nguyen', role:'Dispositions', colorIdx:2},
+  ];
+  state.leads = [
+    {id:l1, name:'John Hargrove', phone:'(713) 555-0192', email:'j.hargrove@email.com', source:'Direct Mail', status:'negotiating', county:'Brazoria', state:'TX', notes:'Motivated seller, inherited land', assignedTo:u2, created:today()},
+    {id:l2, name:'Sandra Mills', phone:'(281) 555-0347', email:'smills@gmail.com', source:'Cold Call', status:'contacted', county:'Fort Bend', state:'TX', notes:'Wants quick close', assignedTo:u2, created:today()},
+    {id:l3, name:'Ray Dupont', phone:'(409) 555-0581', email:'', source:'Referral', status:'new', county:'Galveston', state:'TX', notes:'', assignedTo:'', created:today()},
+  ];
+  state.props = [
+    {id:p1, leadId:l1, address:'1423 CR 45', county:'Brazoria', state:'TX', acres:'12.5', buyPrice:'31000', sellPrice:'', status:'pre-deal', notes:'Wooded lot, no utilities', assignedTo:u3, created:today()},
+    {id:p2, leadId:l2, address:'Lot 7 Hwy 36', county:'Fort Bend', state:'TX', acres:'5.0', buyPrice:'14500', sellPrice:'', status:'due-diligence', notes:'Near new development', assignedTo:u3, created:today()},
+  ];
+  state.tasks = [
+    {id:uid(), title:'Send offer letter to John Hargrove', linkedId:l1, linkedType:'lead', dueDate:today(), priority:'high', status:'todo', notes:'', assignees:[u2], created:today()},
+    {id:uid(), title:'Order title search for Lot 7 Hwy 36', linkedId:p2, linkedType:'property', dueDate:'2026-07-10', priority:'medium', status:'in-progress', notes:'Use Texas Title Co', assignees:[u1,u3], created:today()},
+    {id:uid(), title:'Follow up with Sandra re: closing date', linkedId:l2, linkedType:'lead', dueDate:'2026-07-15', priority:'medium', status:'todo', notes:'', assignees:[u2], created:today()},
+    {id:uid(), title:'Post CR 45 listing on Lands of Texas', linkedId:p1, linkedType:'property', dueDate:'2026-07-01', priority:'low', status:'done', notes:'', assignees:[u3], created:today()},
+  ];
+  state.projects = [
+    {id:uid(), title:'Automate direct mail sequencing', category:'Marketing', status:'in-progress', priority:'high', description:'Build out a 4-touch mail cadence in REI Print Mail. Track response rates by county.', assignees:[u1,u2], dueDate:'2026-08-01', created:today()},
+    {id:uid(), title:'Standardize acquisition SOP', category:'SOPs & Processes', status:'planned', priority:'medium', description:'Document the full seller call → offer → contract workflow. Add to Notion.', assignees:[u2], dueDate:'2026-07-30', created:today()},
+    {id:uid(), title:'Evaluate PropStream vs DataTree', category:'Tools & Software', status:'ideas', priority:'low', description:'Compare pricing and county coverage for TX + NC.', assignees:[u1], dueDate:'', created:today()},
+    {id:uid(), title:'Q2 marketing budget review', category:'Finance', status:'done', priority:'medium', description:'Completed. Reallocated 30% of PPC spend to direct mail.', assignees:[u1], dueDate:'', created:today()},
+  ];
+  state.activeUserId = u1;
+  await StorageAdapter.saveActiveUser(u1);
+  await StorageAdapter.saveBulk({
+    users:state.users, leads:state.leads, props:state.props,
+    tasks:state.tasks, projects:state.projects
+  });
+}
+
+/* =========================================================
+   APP CONTROLLER
+   ========================================================= */
+const app = {
+  async init(){
+    await StorageAdapter.init();
+    await loadAll();
+    this.bindNav();
+    this.buildUserSelect();
+    this.render();
+    updateBackendBadge();
+  },
+
+  bindNav(){
+    document.querySelectorAll('.nav-item[data-view]').forEach(el=>{
+      el.addEventListener('click', ()=>{
+        state.activeView = el.dataset.view;
+        state.filters = {};
+        this.render();
+      });
+    });
+  },
+
+  buildUserSelect(){
+    const sel = $('#active-user-select');
+    sel.innerHTML = `<option value="">Choose user…</option>` +
+      state.users.map(u => `<option value="${u.id}" ${u.id===state.activeUserId?'selected':''}>${escape(u.name)}</option>`).join('');
+  },
+
+  switchUser(id){
+    state.activeUserId = id;
+    StorageAdapter.saveActiveUser(id);
+    this.render();
+  },
+
+  render(){
+    // Sidebar counts
+    $('#count-leads').textContent = state.leads.length;
+    $('#count-props').textContent = state.props.length;
+    $('#count-tasks').textContent = state.tasks.filter(t=>t.status!=='done').length;
+    $('#count-projs').textContent = state.projects.filter(p=>p.status!=='done').length;
+
+    document.querySelectorAll('.nav-item[data-view]').forEach(el=>{
+      el.classList.toggle('active', el.dataset.view === state.activeView);
+    });
+
+    this.buildUserSelect();
+
+    const main = $('#main');
+    main.className = 'main view-enter';
+    // trigger reflow to restart animation
+    void main.offsetWidth;
+    main.className = 'main view-enter';
+
+    const renderers = {
+      dashboard: renderDashboard,
+      leads: renderLeads,
+      properties: renderProperties,
+      tasks: renderTasks,
+      projects: renderProjects,
+      team: renderTeam,
+      settings: renderSettings,
+    };
+    main.innerHTML = (renderers[state.activeView] || renderDashboard)();
+    bindViewEvents();
+  },
+};
+
+/* =========================================================
+   RENDERERS
+   ========================================================= */
+function pageHeader(eyebrow, title, sub, actions){
+  return `<div class="page-header">
+    <div>
+      <div class="page-eyebrow">${escape(eyebrow)}</div>
+      <h1 class="page-title">${escape(title)}</h1>
+      ${sub?`<div class="page-sub">${escape(sub)}</div>`:''}
+    </div>
+    <div style="display:flex;gap:8px">${actions||''}</div>
+  </div>`;
+}
+
+function renderDashboard(){
+  const activeUser = state.users.find(u=>u.id===state.activeUserId);
+  const openTasks = state.tasks.filter(t=>t.status!=='done');
+  const overdueTasks = openTasks.filter(t=>isOverdue(t.dueDate)).sort((a,b)=>(a.dueDate||'').localeCompare(b.dueDate||''));
+  const overdue = overdueTasks.length;
+  const todayStr = today();
+  const dueTodayTasks = openTasks.filter(t=>t.dueDate===todayStr);
+  const agendaTasks = [...overdueTasks, ...dueTodayTasks];
+  const projsToday = state.projects.filter(p=>p.status!=='done'&&p.dueDate===todayStr);
+  const dayLabel = new Date().toLocaleDateString('en-US',{weekday:'long', month:'long', day:'numeric'});
+
+  // Task filter defaults to the signed-in user (like before), but can be
+  // changed to any teammate or "Everyone" via the dropdown below.
+  const taskFilterId = state.filters.dashTaskAssign !== undefined
+    ? state.filters.dashTaskAssign
+    : (state.activeUserId || '');
+  const visibleTasks = taskFilterId
+    ? openTasks.filter(t=>(t.assignees||[]).includes(taskFilterId))
+    : openTasks;
+  const sortedTasks = visibleTasks.slice().sort((a,b)=>(a.dueDate||'').localeCompare(b.dueDate||''));
+  const filterName = taskFilterId ? userName(taskFilterId) : 'the team';
+
+  // Pipeline equity value: sum of (sell - buy) across every deal that has a sell price set.
+  const activeDeals = state.props.filter(p=>p.status!=='disposition');
+  const pipeEquity = state.props.reduce((s,p)=>s+(equityOf(p)||0),0);
+  const disposedEquity = state.props.filter(p=>p.status==='disposition').reduce((s,p)=>s+(equityOf(p)||0),0);
+  const inClosing = state.props.filter(p=>p.status==='closing').length;
+  const activeProj = state.projects.filter(p=>p.status==='in-progress').length;
+
+  // Shared "current month" for the calendar, team performance, and on-time chart.
+  const calBase = new Date();
+  calBase.setDate(1);
+  calBase.setMonth(calBase.getMonth() + (state.calendarOffset||0));
+  const monthFilter = {year: calBase.getFullYear(), month: calBase.getMonth()};
+  const monthLabel = calBase.toLocaleDateString('en-US', {month:'long', year:'numeric'});
+
+  return pageHeader(
+    activeUser ? `Signed in as ${activeUser.name}` : 'Overview',
+    'Dashboard',
+    'Here\'s what the team needs to get done today.',
+    ''
+  ) + `
+  <div class="grid grid-4" style="margin-bottom:24px">
+    <div class="stat-card">
+      <div class="stat-label"><i class="ti ti-checkbox" style="font-size:14px"></i> Open tasks</div>
+      <div class="stat-value" style="${overdue?'color:var(--danger)':''}">${openTasks.length}</div>
+      <div class="stat-delta ${overdue?'down':''}">${overdue?overdue+' overdue':'On track'}</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label"><i class="ti ti-home" style="font-size:14px"></i> Active deals</div>
+      <div class="stat-value">${activeDeals.length}</div>
+      <div class="stat-delta">${inClosing} in closing</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label"><i class="ti ti-cash" style="font-size:14px"></i> Pipeline equity value</div>
+      <div class="stat-value">${money(pipeEquity)}</div>
+      <div class="stat-delta up">Realized: ${money(disposedEquity)}</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label"><i class="ti ti-users" style="font-size:14px"></i> Total leads</div>
+      <div class="stat-value">${state.leads.length}</div>
+      <div class="stat-delta">${state.leads.filter(l=>l.status==='new').length} new this cycle</div>
+    </div>
+  </div>
+
+  ${overdue?`
+  <div class="alert-banner">
+    <i class="ti ti-alert-triangle"></i>
+    <div style="flex:1">
+      <strong>${overdue} overdue task${overdue>1?'s':''}</strong> moved to today's agenda — reschedule ${overdue>1?'them':'it'} or knock ${overdue>1?'them':'it'} out.
+    </div>
+    <button class="btn btn-sm" onclick="rescheduleAllOverdue()"><i class="ti ti-calendar-plus"></i> Move all to today</button>
+  </div>`:''}
+
+  <div class="card" style="margin-bottom:24px">
+    <div class="card-header">
+      <div>
+        <div class="page-eyebrow" style="margin-bottom:2px">Today's agenda</div>
+        <div class="card-title">${dayLabel}</div>
+      </div>
+    </div>
+    <div class="item-list">
+      ${agendaTasks.map(t=>{
+        const od = isOverdue(t.dueDate);
+        return `<div class="item-row ${od?'overdue':''}">
+          <input type="checkbox" class="task-check" data-action="toggle-task" data-id="${t.id}">
+          <div class="item-main">
+            <div class="item-title">${escape(t.title)}</div>
+            <div class="item-meta">
+              <span class="badge b-${t.priority}">${t.priority}</span>
+              ${od?`<span style="color:var(--danger);font-weight:600">was due ${fmtLong(t.dueDate)}</span>`:`<span>due today</span>`}
+              ${t.linkedId?`<span>· ${escape(getLinkedName(t.linkedId,t.linkedType))}</span>`:''}
+            </div>
+          </div>
+          ${assigneeStack(t.assignees,'sm')}
+          <div class="item-actions">
+            ${od?`<button class="btn btn-sm" onclick="rescheduleToToday('${t.id}')" title="Move to today"><i class="ti ti-calendar-plus"></i> Today</button>`:''}
+            <button class="icon-btn" data-action="edit-task" data-id="${t.id}" title="Reschedule / edit">${ICON_EDIT}</button>
+          </div>
+        </div>`;
+      }).join('') || `<div style="text-align:center;padding:22px;color:var(--ink-3);font-size:13px"><i class="ti ti-sun" style="font-size:22px;display:block;margin-bottom:6px;color:var(--gold)"></i>Nothing due today — clear runway.</div>`}
+      ${projsToday.map(p=>`
+        <div class="item-row" style="cursor:pointer" onclick="openProjectForm('${p.id}')">
+          <div style="width:28px;height:28px;border-radius:8px;background:var(--accent-soft);color:var(--accent);display:flex;align-items:center;justify-content:center;flex-shrink:0"><i class="ti ti-bulb"></i></div>
+          <div class="item-main">
+            <div class="item-title">${escape(p.title)}</div>
+            <div class="item-meta"><span>Project target date is today</span><span>· ${escape(p.category)}</span></div>
+          </div>
+          ${assigneeStack(p.assignees,'sm')}
+        </div>`).join('')}
+    </div>
+  </div>
+
+  <div class="card" style="margin-bottom:24px">
+    <div class="card-header">
+      <div>
+        <div class="card-title">Team tasks</div>
+        <div class="card-sub">${sortedTasks.length} open · showing ${filterName}</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px">
+        <select class="filter-select" data-filter="dashTaskAssign" style="min-width:160px">
+          <option value="">Everyone</option>
+          ${state.users.map(u=>`<option value="${u.id}" ${u.id===taskFilterId?'selected':''}>${escape(u.name)}</option>`).join('')}
+        </select>
+        <button class="btn btn-sm" data-action="new-task"><i class="ti ti-plus"></i> New</button>
+      </div>
+    </div>
+    <div class="item-list">
+      ${sortedTasks.map(t=>renderTaskRow(t,false)).join('')
+        || `<div class="empty" style="padding:24px"><i class="ti ti-checks"></i><h3>All caught up</h3><p>No open tasks for ${escape(filterName)}.</p></div>`}
+    </div>
+  </div>
+
+  ${renderMonthCalendar()}
+
+  <h2 style="font-family:var(--serif);font-size:20px;font-weight:500;margin-bottom:12px;letter-spacing:-.01em">Deal pipeline <span style="font-size:12px;font-family:var(--sans);color:var(--ink-3);font-weight:400;margin-left:8px">drag deals between stages</span></h2>
+  <div class="pipeline">
+    ${DEAL_STAGES.map(s=>{
+      const items = state.props.filter(p=>p.status===s);
+      const total = items.reduce((a,b)=>a+(parseFloat(b.buyPrice)||0),0);
+      return `<div class="pipe-col" ondragover="dragOverCol(event)" ondragleave="dragLeaveCol(event)" ondrop="dropProp(event,'${s}')">
+        <div class="pipe-head">
+          <h3>${s.replace('-',' ')}</h3>
+          <span class="pipe-count">${items.length}</span>
+        </div>
+        ${items.slice(0,5).map(p=>`
+          <div class="pipe-card" draggable="true" ondragstart="dragStartCard(event,'${p.id}')" ondragend="dragEndCard(event)" onclick="openPropForm('${p.id}')">
+            <div class="pipe-card-title">${escape(p.address)}</div>
+            <div class="pipe-card-sub">${p.acres}ac · Buy ${money(p.buyPrice)}</div>
+          </div>
+        `).join('') || '<div style="font-size:11px;color:var(--ink-3);text-align:center;padding:12px 0">—</div>'}
+        ${total?`<div class="pipe-total">${money(total)}</div>`:''}
+      </div>`;
+    }).join('')}
+  </div>
+
+  <div class="grid grid-3" style="margin-top:24px">
+    ${renderTeamPerformanceCard(monthFilter, monthLabel)}
+    ${renderOnTimeChart(monthFilter, monthLabel)}
+    <div class="card">
+      <div class="card-header">
+        <div>
+          <div class="card-title">Active projects</div>
+          <div class="card-sub">${activeProj} in progress</div>
+        </div>
+        <button class="btn btn-sm" onclick="state.activeView='projects';app.render()">View all <i class="ti ti-arrow-right"></i></button>
+      </div>
+      <div class="item-list">
+        ${state.projects.filter(p=>p.status==='in-progress').slice(0,5).map(p=>`
+          <div class="item-row" style="cursor:pointer" onclick="openProjectForm('${p.id}')">
+            <div style="width:34px;height:34px;border-radius:8px;background:var(--accent-soft);color:var(--accent);display:flex;align-items:center;justify-content:center"><i class="ti ti-bulb"></i></div>
+            <div class="item-main">
+              <div class="item-title">${escape(p.title)}</div>
+              <div class="item-meta">
+                <span>${escape(p.category)}</span>
+                ${p.dueDate?`<span>· Due ${fmtLong(p.dueDate)}</span>`:''}
+              </div>
+            </div>
+            ${assigneeStack(p.assignees,'sm')}
+          </div>
+        `).join('') || `<div class="empty" style="padding:24px"><i class="ti ti-bulb"></i><h3>No active projects</h3><p>Ideas for improvements go on the Projects board.</p></div>`}
+      </div>
+    </div>
+  </div>`;
+}
+
+function renderMonthCalendar(){
+  const offset = state.calendarOffset || 0;
+  const base = new Date();
+  base.setDate(1);
+  base.setMonth(base.getMonth()+offset);
+  const year = base.getFullYear();
+  const month = base.getMonth();
+  const startWeekday = new Date(year, month, 1).getDay();
+  const daysInMonth = new Date(year, month+1, 0).getDate();
+  const monthLabel = base.toLocaleDateString('en-US', {month:'long', year:'numeric'});
+
+  const byDate = {};
+  state.tasks.forEach(t=>{
+    if(!t.dueDate) return;
+    (byDate[t.dueDate] = byDate[t.dueDate] || []).push({...t, _kind:'task'});
+  });
+  state.projects.forEach(p=>{
+    if(!p.dueDate) return;
+    (byDate[p.dueDate] = byDate[p.dueDate] || []).push({...p, _kind:'project'});
+  });
+
+  const todayStr = today();
+  let cells = '';
+  for(let i=0;i<startWeekday;i++) cells += `<div class="cal-cell cal-empty"></div>`;
+  for(let d=1; d<=daysInMonth; d++){
+    const dateStr = `${year}-${String(month+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    const dayItems = (byDate[dateStr]||[]).slice().sort((a,b)=>(a.status==='done')-(b.status==='done'));
+    const isToday = dateStr === todayStr;
+    cells += `<div class="cal-cell ${isToday?'cal-today':''}" onclick="openDayModal('${dateStr}')" title="View all for this day">
+      <div class="cal-daynum">${d}</div>
+      ${dayItems.slice(0,2).map(item=>{
+        const isProject = item._kind==='project';
+        const done = item.status==='done';
+        const cls = isProject ? 'cal-task cal-task-project' : `cal-task pri-${item.priority}`;
+        const clickFn = isProject ? `openProjectForm('${item.id}')` : `openTaskForm('${item.id}')`;
+        return `<div class="${cls}" title="${escape(item.title)}${isProject?' (project)':''}" onclick="event.stopPropagation();${clickFn}" style="${done?'text-decoration:line-through;opacity:.55':''}">${isProject?'◆ ':''}${escape(item.title)}</div>`;
+      }).join('')}
+      ${dayItems.length>2?`<div class="cal-more">+${dayItems.length-2} more</div>`:''}
+    </div>`;
+  }
+
+  return `<div class="card" style="margin-bottom:24px">
+    <div class="card-header">
+      <div>
+        <div class="card-title">Calendar</div>
+        <div class="card-sub">${monthLabel} · click any day for its full slate</div>
+      </div>
+      <div style="display:flex;gap:4px">
+        <button class="icon-btn" onclick="shiftCalendar(-1)" title="Previous month"><i class="ti ti-chevron-left"></i></button>
+        <button class="icon-btn" onclick="shiftCalendar(0)" title="Jump to today"><i class="ti ti-calendar-event"></i></button>
+        <button class="icon-btn" onclick="shiftCalendar(1)" title="Next month"><i class="ti ti-chevron-right"></i></button>
+      </div>
+    </div>
+    <div class="cal-weekdays"><div>Sun</div><div>Mon</div><div>Tue</div><div>Wed</div><div>Thu</div><div>Fri</div><div>Sat</div></div>
+    <div class="cal-grid">${cells}</div>
+  </div>`;
+}
+function shiftCalendar(delta){
+  state.calendarOffset = delta===0 ? 0 : (state.calendarOffset||0)+delta;
+  app.render();
+}
+
+function renderTeamPerformanceCard(mf, monthLabel){
+  const rows = state.users.map(u=>({u, stats:userTaskStats(u.id, mf)}))
+    .sort((a,b)=>b.stats.completed - a.stats.completed);
+  const max = Math.max(1, ...rows.map(r=>r.stats.completed));
+  return `<div class="card">
+    <div class="card-header">
+      <div>
+        <div class="card-title">Team performance</div>
+        <div class="card-sub">Completed in ${monthLabel}</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:4px">
+        <button class="icon-btn" onclick="shiftCalendar(-1)" title="Previous month"><i class="ti ti-chevron-left"></i></button>
+        <button class="icon-btn" onclick="shiftCalendar(1)" title="Next month"><i class="ti ti-chevron-right"></i></button>
+      </div>
+    </div>
+    <div class="rank-list">
+      ${rows.map((r,i)=>{
+        const c = userColor(r.u.id);
+        return `<div class="rank-row">
+          <div class="rank-pos">#${i+1}</div>
+          <span class="avatar avatar-sm" style="background:${c.bg};color:${c.fg}">${initials(r.u.name)}</span>
+          <div class="rank-main">
+            <div class="rank-name">${escape(r.u.name)}</div>
+            <div class="rank-bar-track"><div class="rank-bar-fill" style="width:${Math.round(r.stats.completed/max*100)}%;background:${c.fg}"></div></div>
+          </div>
+          <div class="rank-figs">
+            <div class="rank-completed">${r.stats.completed}</div>
+            <div class="rank-sub">${r.stats.onTimePct!==null?r.stats.onTimePct+'% on time':'no data yet'}</div>
+          </div>
+        </div>`;
+      }).join('') || `<div class="empty" style="padding:24px"><i class="ti ti-users"></i><h3>No team members yet</h3></div>`}
+    </div>
+  </div>`;
+}
+
+function renderOnTimeChart(mf, monthLabel){
+  const measurable = state.tasks.filter(t=>t.status==='done' && t.completedAt && t.dueDate && inMonth(t.completedAt, mf));
+  const onTime = measurable.filter(t=>t.completedAt <= t.dueDate).length;
+  const late = measurable.length - onTime;
+  const total = measurable.length;
+  const onTimePct = total ? Math.round((onTime/total)*100) : 0;
+  const deg = total ? Math.round((onTime/total)*360) : 0;
+
+  return `<div class="card">
+    <div class="card-header">
+      <div>
+        <div class="card-title">On-time delivery</div>
+        <div class="card-sub">${total} completed in ${monthLabel}</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:4px">
+        <button class="icon-btn" onclick="shiftCalendar(-1)" title="Previous month"><i class="ti ti-chevron-left"></i></button>
+        <button class="icon-btn" onclick="shiftCalendar(1)" title="Next month"><i class="ti ti-chevron-right"></i></button>
+      </div>
+    </div>
+    ${total ? `
+      <div style="display:flex;align-items:center;gap:20px;padding:6px 4px">
+        <div class="pie-chart" style="background:conic-gradient(var(--success-ink) 0deg ${deg}deg, var(--danger) ${deg}deg 360deg)">
+          <div class="pie-chart-hole">
+            <div class="pie-chart-pct">${onTimePct}%</div>
+            <div class="pie-chart-pct-lbl">on time</div>
+          </div>
+        </div>
+        <div class="pie-legend">
+          <div class="pie-legend-item"><span class="pie-dot" style="background:var(--success-ink)"></span> On time <b>${onTime}</b></div>
+          <div class="pie-legend-item"><span class="pie-dot" style="background:var(--danger)"></span> Late <b>${late}</b></div>
+        </div>
+      </div>
+    ` : `<div class="empty" style="padding:24px"><i class="ti ti-chart-pie"></i><h3>No data for ${monthLabel}</h3><p>No completed tasks with due dates in this month yet.</p></div>`}
+  </div>`;
+}
+
+function renderTaskRow(t, compact){
+  const overdue = t.status !== 'done' && isOverdue(t.dueDate);
+  return `<div class="item-row ${overdue?'overdue':''}">
+    <input type="checkbox" class="task-check" ${t.status==='done'?'checked':''} data-action="toggle-task" data-id="${t.id}">
+    <div class="item-main">
+      <div class="item-title" style="${t.status==='done'?'text-decoration:line-through;color:var(--ink-3)':''}">${escape(t.title)}</div>
+      <div class="item-meta">
+        <span class="badge b-${t.priority}"><span class="badge-dot" style="background:currentColor"></span>${t.priority}</span>
+        <span style="color:${overdue?'var(--danger)':'var(--ink-3)'}">${t.dueDate?fmtLong(t.dueDate)+(overdue?' · overdue':''):'No due date'}</span>
+        ${t.linkedId?`<span>· ${escape(getLinkedName(t.linkedId,t.linkedType))}</span>`:''}
+      </div>
+    </div>
+    ${assigneeStack(t.assignees,'sm')}
+    <div class="item-actions">
+      <button class="icon-btn" data-action="edit-task" data-id="${t.id}" title="Edit">${ICON_EDIT}</button>
+      ${!compact?`<button class="icon-btn" data-action="delete-task" data-id="${t.id}" title="Delete">${ICON_DELETE}</button>`:''}
+    </div>
+  </div>`;
+}
+
+function renderLeads(){
+  const q = (state.filters.leadSearch||'').toLowerCase();
+  const status = state.filters.leadStatus||'';
+  const assign = state.filters.leadAssign||'';
+  const filtered = state.leads.filter(l=>{
+    if(status && l.status!==status) return false;
+    if(assign && l.assignedTo!==assign) return false;
+    if(q && !JSON.stringify(l).toLowerCase().includes(q)) return false;
+    return true;
+  });
+
+  return pageHeader('People', 'Leads', 'Sellers, buyers, and everyone in between.',
+    `<button class="btn btn-primary" data-action="new-lead"><i class="ti ti-plus"></i> Add lead</button>`) + `
+    <div class="toolbar">
+      <div class="search-wrap">
+        <i class="ti ti-search"></i>
+        <input class="search-input" placeholder="Search by name, county, phone…" data-filter="leadSearch" value="${escape(q)}">
+      </div>
+      <select class="filter-select" data-filter="leadStatus">
+        <option value="">All statuses</option>
+        ${LEAD_STATUSES.map(s=>`<option ${s===status?'selected':''}>${s}</option>`).join('')}
+      </select>
+      <select class="filter-select" data-filter="leadAssign">
+        <option value="">All assignees</option>
+        ${state.users.map(u=>`<option value="${u.id}" ${u.id===assign?'selected':''}>${escape(u.name)}</option>`).join('')}
+      </select>
+    </div>
+    <div class="item-list">
+    ${filtered.map(l=>{
+      const c = userColor(l.assignedTo);
+      return `<div class="item-row">
+        <span class="avatar avatar-lg" style="background:${c.bg};color:${c.fg}">${initials(l.name)}</span>
+        <div class="item-main">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:2px">
+            <span class="item-title">${escape(l.name)}</span>
+            <span class="badge b-${l.status}">${l.status}</span>
+          </div>
+          <div class="item-meta">
+            ${l.phone?`<span><i class="ti ti-phone" style="font-size:12px"></i> ${escape(l.phone)}</span>`:''}
+            ${l.email?`<span><i class="ti ti-mail" style="font-size:12px"></i> ${escape(l.email)}</span>`:''}
+            <span><i class="ti ti-map-pin" style="font-size:12px"></i> ${escape(l.county)}, ${escape(l.state)}</span>
+            <span><i class="ti ti-radar" style="font-size:12px"></i> ${escape(l.source)}</span>
+          </div>
+          ${l.notes?`<div class="item-meta" style="margin-top:4px;font-style:italic">${escape(l.notes)}</div>`:''}
+        </div>
+        <div style="display:flex;align-items:center;gap:8px">
+          ${l.assignedTo?avatarHTML(l.assignedTo,'sm'):'<span style="font-size:11px;color:var(--ink-3)">Unassigned</span>'}
+        </div>
+        <div class="item-actions">
+          <button class="icon-btn" data-action="edit-lead" data-id="${l.id}" title="Edit">${ICON_EDIT}</button>
+          <button class="icon-btn" data-action="delete-lead" data-id="${l.id}" title="Delete">${ICON_DELETE}</button>
+        </div>
+      </div>`;
+    }).join('') || `<div class="empty"><i class="ti ti-users"></i><h3>No leads yet</h3><p>${q||status||assign?'Try clearing filters.':'Add your first seller or buyer to get started.'}</p><button class="btn btn-primary" data-action="new-lead"><i class="ti ti-plus"></i> Add lead</button></div>`}
+    </div>`;
+}
+
+function renderProperties(){
+  const q = (state.filters.propSearch||'').toLowerCase();
+  const status = state.filters.propStatus||'';
+  const assign = state.filters.propAssign||'';
+  const filtered = state.props.filter(p=>{
+    if(status && p.status!==status) return false;
+    if(assign && p.assignedTo!==assign) return false;
+    if(q && !JSON.stringify(p).toLowerCase().includes(q)) return false;
+    return true;
+  });
+
+  return pageHeader('Deals', 'Properties', 'Every parcel, offer, and ARV.',
+    `<button class="btn btn-primary" data-action="new-prop"><i class="ti ti-plus"></i> Add property</button>`) + `
+    <div class="toolbar">
+      <div class="search-wrap">
+        <i class="ti ti-search"></i>
+        <input class="search-input" placeholder="Search address, county, notes…" data-filter="propSearch" value="${escape(q)}">
+      </div>
+      <select class="filter-select" data-filter="propStatus">
+        <option value="">All stages</option>
+        ${DEAL_STAGES.map(s=>`<option ${s===status?'selected':''}>${s}</option>`).join('')}
+      </select>
+      <select class="filter-select" data-filter="propAssign">
+        <option value="">All assignees</option>
+        ${state.users.map(u=>`<option value="${u.id}" ${u.id===assign?'selected':''}>${escape(u.name)}</option>`).join('')}
+      </select>
+    </div>
+    <div class="item-list">
+    ${filtered.map(p=>{
+      const lead = state.leads.find(l=>l.id===p.leadId);
+      const equity = equityOf(p);
+      const equityPct = (equity!==null && parseFloat(p.buyPrice)) ? Math.round((equity/parseFloat(p.buyPrice))*100) : null;
+      return `<div class="item-row">
+        <div style="width:38px;height:38px;border-radius:10px;background:var(--accent-soft);color:var(--accent);display:flex;align-items:center;justify-content:center;flex-shrink:0"><i class="ti ti-map-2" style="font-size:20px"></i></div>
+        <div class="item-main">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:2px;flex-wrap:wrap">
+            <span class="item-title">${escape(p.address)}</span>
+            <span class="badge b-${p.status}">${p.status}</span>
+          </div>
+          <div class="item-meta">
+            <span>${escape(p.county)}, ${escape(p.state)}</span>
+            <span>· ${p.acres} acres</span>
+            ${lead?`<span>· ${escape(lead.name)}</span>`:''}
+          </div>
+          <div class="price-row">
+            <div class="price-item"><span class="price-label">Buy</span><span class="price-value">${money(p.buyPrice)}</span></div>
+            <div class="price-item"><span class="price-label">Sell</span><span class="price-value">${p.sellPrice?money(p.sellPrice):'—'}</span></div>
+            ${equity!==null?`<span class="margin-pill" style="${equity<0?'background:var(--danger-soft);color:var(--danger)':''}">${equity>=0?'+':''}${money(equity)} equity${equityPct!==null?` (${equityPct>=0?'+':''}${equityPct}%)`:''}</span>`:''}
+          </div>
+        </div>
+        <div>${p.assignedTo?avatarHTML(p.assignedTo,'sm'):'<span style="font-size:11px;color:var(--ink-3)">—</span>'}</div>
+        <div class="item-actions">
+          <button class="icon-btn" data-action="edit-prop" data-id="${p.id}" title="Edit">${ICON_EDIT}</button>
+          <button class="icon-btn" data-action="delete-prop" data-id="${p.id}" title="Delete">${ICON_DELETE}</button>
+        </div>
+      </div>`;
+    }).join('') || `<div class="empty"><i class="ti ti-home"></i><h3>No properties yet</h3><p>${q||status||assign?'Try clearing filters.':'Track your first deal.'}</p><button class="btn btn-primary" data-action="new-prop"><i class="ti ti-plus"></i> Add property</button></div>`}
+    </div>`;
+}
+
+function renderTasks(){
+  const q = (state.filters.taskSearch||'').toLowerCase();
+  const pri = state.filters.taskPri||'';
+  const assign = state.filters.taskAssign||'';
+  const mine = state.filters.taskMine||false;
+
+  const filter = (list) => list.filter(t=>{
+    if(pri && t.priority!==pri) return false;
+    if(assign && !(t.assignees||[]).includes(assign)) return false;
+    if(mine && state.activeUserId && !(t.assignees||[]).includes(state.activeUserId)) return false;
+    if(q && !JSON.stringify(t).toLowerCase().includes(q)) return false;
+    return true;
+  });
+
+  const open = filter(state.tasks.filter(t=>t.status!=='done'))
+    .sort((a,b)=>(a.dueDate||'').localeCompare(b.dueDate||''));
+  const done = filter(state.tasks.filter(t=>t.status==='done'));
+
+  return pageHeader('Work', 'Tasks', 'What\'s in flight across the team.',
+    `<button class="btn btn-primary" data-action="new-task"><i class="ti ti-plus"></i> Add task</button>`) + `
+    <div class="toolbar">
+      <div class="search-wrap">
+        <i class="ti ti-search"></i>
+        <input class="search-input" placeholder="Search tasks…" data-filter="taskSearch" value="${escape(q)}">
+      </div>
+      <select class="filter-select" data-filter="taskPri">
+        <option value="">All priorities</option>
+        <option value="high" ${pri==='high'?'selected':''}>High</option>
+        <option value="medium" ${pri==='medium'?'selected':''}>Medium</option>
+        <option value="low" ${pri==='low'?'selected':''}>Low</option>
+      </select>
+      <select class="filter-select" data-filter="taskAssign">
+        <option value="">All assignees</option>
+        ${state.users.map(u=>`<option value="${u.id}" ${u.id===assign?'selected':''}>${escape(u.name)}</option>`).join('')}
+      </select>
+      ${state.activeUserId?`<label style="display:flex;align-items:center;gap:6px;font-size:13px;color:var(--ink-2);cursor:pointer;padding:0 8px"><input type="checkbox" ${mine?'checked':''} data-filter="taskMine" style="accent-color:var(--accent)"> My tasks only</label>`:''}
+    </div>
+
+    <div style="font-size:11px;font-weight:600;color:var(--ink-3);text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px">Open (${open.length})</div>
+    <div class="item-list" style="margin-bottom:24px">
+      ${open.map(t=>renderTaskRow(t,false)).join('') || `<div class="empty"><i class="ti ti-checks"></i><h3>Nothing on the docket</h3><p>All tasks complete for this filter.</p></div>`}
+    </div>
+    ${done.length?`
+      <div style="font-size:11px;font-weight:600;color:var(--ink-3);text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px">Completed (${done.length})</div>
+      <div class="item-list" style="opacity:.7">${done.slice(0,15).map(t=>renderTaskRow(t,false)).join('')}</div>
+    `:''}`;
+}
+
+function renderProjects(){
+  const q = (state.filters.projSearch||'').toLowerCase();
+  const cat = state.filters.projCat||'';
+  const filtered = state.projects.filter(p=>{
+    if(cat && p.category!==cat) return false;
+    if(q && !JSON.stringify(p).toLowerCase().includes(q)) return false;
+    return true;
+  });
+
+  return pageHeader('Roadmap', 'Projects & improvements', 'Drag cards between stages as work moves forward.',
+    `<button class="btn btn-primary" data-action="new-project"><i class="ti ti-plus"></i> New project</button>`) + `
+    <div class="toolbar">
+      <div class="search-wrap">
+        <i class="ti ti-search"></i>
+        <input class="search-input" placeholder="Search projects…" data-filter="projSearch" value="${escape(q)}">
+      </div>
+      <select class="filter-select" data-filter="projCat">
+        <option value="">All categories</option>
+        ${PROJECT_CATEGORIES.map(c=>`<option ${c===cat?'selected':''}>${c}</option>`).join('')}
+      </select>
+    </div>
+
+    <div class="proj-board">
+      ${PROJECT_STATUSES.map(s=>{
+        const items = filtered.filter(p=>p.status===s);
+        return `<div class="proj-col" ondragover="dragOverCol(event)" ondragleave="dragLeaveCol(event)" ondrop="dropProject(event,'${s}')">
+          <div class="proj-col-head">
+            <h3>${s.replace('-',' ')}</h3>
+            <span class="pipe-count">${items.length}</span>
+          </div>
+          ${items.map(p=>`
+            <div class="proj-card" draggable="true" ondragstart="dragStartCard(event,'${p.id}')" ondragend="dragEndCard(event)" data-action="edit-project" data-id="${p.id}">
+              <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:6px">
+                <div class="proj-card-cat">${escape(p.category)}</div>
+                <div class="item-actions" style="flex-shrink:0">
+                  <button class="icon-btn" data-action="edit-project" data-id="${p.id}" title="Edit" style="width:22px;height:22px">${ICON_EDIT}</button>
+                  <button class="icon-btn" data-action="delete-project" data-id="${p.id}" title="Delete" style="width:22px;height:22px">${ICON_DELETE}</button>
+                </div>
+              </div>
+              <div class="proj-card-title">${escape(p.title)}</div>
+              ${p.description?`<div style="font-size:12px;color:var(--ink-3);margin-top:4px">${escape(p.description.slice(0,80))}${p.description.length>80?'…':''}</div>`:''}
+              <div class="proj-card-meta">
+                <span class="badge b-${p.priority}">${p.priority}</span>
+                ${assigneeStack(p.assignees,'sm')}
+              </div>
+              ${p.dueDate?`<div style="font-size:11px;color:var(--ink-3);margin-top:6px"><i class="ti ti-calendar" style="font-size:12px"></i> ${fmtLong(p.dueDate)}</div>`:''}
+            </div>
+          `).join('') || '<div style="font-size:12px;color:var(--ink-3);text-align:center;padding:16px 0">—</div>'}
+        </div>`;
+      }).join('')}
+    </div>`;
+}
+
+function renderTeam(){
+  return pageHeader('Workspace', 'Team', 'Everyone with access to this workspace.',
+    `<button class="btn btn-primary" data-action="new-user"><i class="ti ti-user-plus"></i> Add member</button>`) + `
+    <div class="grid grid-2">
+    ${state.users.map(u=>{
+      const c = userColor(u.id);
+      const myTasks = state.tasks.filter(t=>t.status!=='done'&&(t.assignees||[]).includes(u.id));
+      const myLeads = state.leads.filter(l=>l.assignedTo===u.id);
+      const myProps = state.props.filter(p=>p.assignedTo===u.id);
+      const stats = userTaskStats(u.id);
+      return `<div class="member-card">
+        <div class="member-head">
+          <span class="avatar avatar-lg" style="background:${c.bg};color:${c.fg}">${initials(u.name)}</span>
+          <div style="flex:1">
+            <div class="member-name">${escape(u.name)}</div>
+            <div class="member-role">${escape(u.role||'—')} <span style="color:var(--border-strong)">·</span> ${myLeads.length} leads <span style="color:var(--border-strong)">·</span> ${myProps.length} deals</div>
+          </div>
+          <div class="item-actions">
+            <button class="icon-btn" data-action="edit-user" data-id="${u.id}" title="Edit">${ICON_EDIT}</button>
+            <button class="icon-btn" data-action="delete-user" data-id="${u.id}" title="Delete">${ICON_DELETE}</button>
+          </div>
+        </div>
+        <div class="member-stats member-stats-4">
+          <div class="member-stat"><div class="member-stat-val">${stats.completed}</div><div class="member-stat-lbl">Completed</div></div>
+          <div class="member-stat"><div class="member-stat-val">${stats.onTimePct!==null?stats.onTimePct+'%':'—'}</div><div class="member-stat-lbl">On time</div></div>
+          <div class="member-stat"><div class="member-stat-val">${stats.avgDays!==null?stats.avgDays+'d':'—'}</div><div class="member-stat-lbl">Avg time</div></div>
+          <div class="member-stat"><div class="member-stat-val">${stats.current}</div><div class="member-stat-lbl">Assigned now</div></div>
+        </div>
+        ${myTasks.length?`<div class="member-task-preview">
+          ${myTasks.slice(0,3).map(t=>`<div class="member-task-item"><span class="badge b-${t.priority}">${t.priority}</span><span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escape(t.title)}</span></div>`).join('')}
+          ${myTasks.length>3?`<div style="font-size:11px;color:var(--ink-3);padding-top:4px">+${myTasks.length-3} more</div>`:''}
+        </div>`:''}
+      </div>`;
+    }).join('')}
+    </div>`;
+}
+
+function renderSettings(){
+  const cfg = window.CRM_CONFIG;
+  const on = StorageAdapter.backend === 'supabase';
+  return pageHeader('Configure', 'Settings', 'Backend, backups, and data hygiene.', '') + `
+  <div class="settings-section">
+    <h3>Data backend</h3>
+    <p>
+      ${on
+        ? `Connected to <strong style="color:var(--accent)">Supabase</strong>. All changes sync in real time and are shared across devices and users.`
+        : `Using <strong>localStorage</strong> — data lives in this browser only. Add a <code>config.js</code> and run <code>schema.sql</code> in Supabase to enable multi-device sync.`}
+    </p>
+    ${on ? `
+      <div style="background:var(--accent-soft);border-radius:var(--r-md);padding:12px 14px;font-size:12.5px;color:var(--accent);display:flex;align-items:center;gap:8px">
+        <i class="ti ti-check" style="font-size:18px"></i>
+        <div>
+          <div style="font-weight:600">Live sync active</div>
+          <div style="opacity:.8;margin-top:2px">Project: ${escape(cfg?.supabaseUrl||'')}</div>
+        </div>
+      </div>
+    ` : `
+      <div style="background:var(--surface-2);border-radius:var(--r-md);padding:14px;font-size:13px">
+        <div style="font-weight:600;margin-bottom:6px">Enable Supabase in three steps:</div>
+        <ol style="margin-left:18px;line-height:1.7">
+          <li>Create a new project at <a href="https://supabase.com" target="_blank" style="color:var(--accent)">supabase.com</a></li>
+          <li>Copy the contents of <code>schema.sql</code> into the SQL Editor and run it</li>
+          <li>Copy <code>config.example.js</code> to <code>config.js</code>, paste your project URL + anon key, then refresh</li>
+        </ol>
+      </div>
+    `}
+  </div>
+
+  <div class="settings-section">
+    <h3>Backup & restore</h3>
+    <p>Download a JSON snapshot of everything, restore from a snapshot, or nuke it all and start over.</p>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <button class="btn" data-action="export-data"><i class="ti ti-download"></i> Export JSON</button>
+      <button class="btn" data-action="import-data"><i class="ti ti-upload"></i> Import JSON</button>
+      <button class="btn btn-danger" data-action="reset-data"><i class="ti ti-trash"></i> Reset all data</button>
+    </div>
+  </div>
+
+  <div class="settings-section">
+    <h3>Schema reference</h3>
+    <p>Tables in Postgres (see <code>schema.sql</code> in your repo for the full DDL):</p>
+    <pre style="background:var(--bg);padding:14px;border-radius:var(--r-md);font-size:12px;overflow-x:auto;font-family:ui-monospace,SFMono-Regular,monospace;line-height:1.6">users       (id uuid, name, role, color_idx, created_at)
+leads       (id uuid, name, phone, email, source, status, county,
+             state, notes, assigned_to → users.id, created_at)
+properties  (id uuid, lead_id → leads.id, address, county, state,
+             acres, buy_price, sell_price, status,
+             notes, assigned_to → users.id, created_at)
+tasks       (id uuid, title, linked_id, linked_type, due_date,
+             priority, status, notes, assignees uuid[], completed_at, created_at)
+projects    (id uuid, title, category, status, priority,
+             description, due_date, assignees uuid[], created_at)</pre>
+  </div>`;
+}
+
+/* =========================================================
+   EVENT BINDING
+   ========================================================= */
+function bindViewEvents(){
+  // Filters
+  document.querySelectorAll('[data-filter]').forEach(el=>{
+    const key = el.dataset.filter;
+    if(el.type === 'checkbox'){
+      el.addEventListener('change', ()=>{state.filters[key] = el.checked; app.render();});
+    }else{
+      el.addEventListener('input', debounce(()=>{state.filters[key] = el.value; app.render();}, el.tagName==='SELECT'?0:180));
+    }
+  });
+
+  // Actions
+  document.querySelectorAll('[data-action]').forEach(el=>{
+    el.addEventListener('click', (e)=>{
+      e.stopPropagation();
+      const a = el.dataset.action, id = el.dataset.id;
+      switch(a){
+        case 'new-lead': openLeadForm(); break;
+        case 'edit-lead': openLeadForm(id); break;
+        case 'delete-lead': confirmDelete('lead',id); break;
+        case 'new-prop': openPropForm(); break;
+        case 'edit-prop': openPropForm(id); break;
+        case 'delete-prop': confirmDelete('prop',id); break;
+        case 'new-task': openTaskForm(); break;
+        case 'edit-task': openTaskForm(id); break;
+        case 'delete-task': confirmDelete('task',id); break;
+        case 'toggle-task': toggleTask(id, el.checked); break;
+        case 'new-project': openProjectForm(); break;
+        case 'edit-project': openProjectForm(id); break;
+        case 'delete-project': confirmDelete('project',id); break;
+        case 'new-user': openUserForm(); break;
+        case 'edit-user': openUserForm(id); break;
+        case 'delete-user': confirmDelete('user',id); break;
+        case 'export-data': exportData(); break;
+        case 'import-data': importData(); break;
+        case 'reset-data': resetData(); break;
+      }
+    });
+  });
+}
+
+let debounceT;
+function debounce(fn, ms){
+  return (...args)=>{
+    clearTimeout(debounceT);
+    debounceT = setTimeout(()=>fn(...args), ms);
+  };
+}
+
+function getLinkedName(id, type){
+  if(type==='lead'){ const l=state.leads.find(x=>x.id===id); return l?'↳ '+l.name:''; }
+  if(type==='property'){ const p=state.props.find(x=>x.id===id); return p?'↳ '+p.address:''; }
+  return '';
+}
+
+async function toggleTask(id, checked){
+  const t = state.tasks.find(x=>x.id===id);
+  if(!t) return;
+  t.status = checked ? 'done' : 'todo';
+  t.completedAt = checked ? today() : '';
+  await saveOne('tasks', t);
+  app.render();
+}
+
+/* ===== RESCHEDULING ===== */
+async function rescheduleToToday(id){
+  const t = state.tasks.find(x=>x.id===id);
+  if(!t) return;
+  t.dueDate = today();
+  await saveOne('tasks', t);
+  toast('Rescheduled to today');
+  app.render();
+}
+async function rescheduleAllOverdue(){
+  const list = state.tasks.filter(t=>t.status!=='done'&&isOverdue(t.dueDate));
+  for(const t of list){ t.dueDate = today(); await saveOne('tasks', t); }
+  toast(`${list.length} task${list.length>1?'s':''} moved to today`);
+  app.render();
+}
+
+/* ===== DRAG & DROP ===== */
+function dragStartCard(e, id){
+  e.dataTransfer.setData('text/plain', id);
+  e.dataTransfer.effectAllowed = 'move';
+  e.currentTarget.classList.add('dragging');
+}
+function dragEndCard(e){
+  e.currentTarget.classList.remove('dragging');
+}
+function dragOverCol(e){
+  e.preventDefault();
+  e.dataTransfer.dropEffect = 'move';
+  e.currentTarget.classList.add('drag-over');
+}
+function dragLeaveCol(e){
+  e.currentTarget.classList.remove('drag-over');
+}
+async function dropProp(e, status){
+  e.preventDefault();
+  e.currentTarget.classList.remove('drag-over');
+  const id = e.dataTransfer.getData('text/plain');
+  const p = state.props.find(x=>x.id===id);
+  if(!p || p.status===status) return;
+  p.status = status;
+  await saveOne('props', p);
+  toast(`${p.address} → ${status.replace('-',' ')}`);
+  app.render();
+}
+async function dropProject(e, status){
+  e.preventDefault();
+  e.currentTarget.classList.remove('drag-over');
+  const id = e.dataTransfer.getData('text/plain');
+  const p = state.projects.find(x=>x.id===id);
+  if(!p || p.status===status) return;
+  p.status = status;
+  await saveOne('projects', p);
+  toast(`${p.title} → ${status.replace('-',' ')}`);
+  app.render();
+}
+
+/* ===== CALENDAR DAY VIEW ===== */
+function openDayModal(dateStr){
+  const dayTasks = state.tasks.filter(t=>t.dueDate===dateStr);
+  const dayProjs = state.projects.filter(p=>p.dueDate===dateStr);
+  const dt = new Date(dateStr+'T00:00:00');
+  const label = dt.toLocaleDateString('en-US',{weekday:'long', month:'long', day:'numeric', year:'numeric'});
+  showModal(`<div class="modal">
+    <div class="modal-header">
+      <div>
+        <div class="page-eyebrow" style="margin-bottom:2px">Day view</div>
+        <h2 class="modal-title">${label}</h2>
+      </div>
+      <button class="icon-btn" onclick="closeModal()"><i class="ti ti-x"></i></button>
+    </div>
+
+    <div class="form-label" style="margin-bottom:8px">Tasks (${dayTasks.length})</div>
+    <div class="item-list" style="margin-bottom:18px">
+      ${dayTasks.map(t=>`
+        <div class="item-row" style="animation:none">
+          <input type="checkbox" class="task-check" ${t.status==='done'?'checked':''} onchange="toggleTaskInDay('${t.id}','${dateStr}')">
+          <div class="item-main">
+            <div class="item-title" style="${t.status==='done'?'text-decoration:line-through;color:var(--ink-3)':''}">${escape(t.title)}</div>
+            <div class="item-meta">
+              <span class="badge b-${t.priority}">${t.priority}</span>
+              <span class="badge b-${t.status}">${t.status.replace('-',' ')}</span>
+              ${t.linkedId?`<span>· ${escape(getLinkedName(t.linkedId,t.linkedType))}</span>`:''}
+            </div>
+          </div>
+          ${assigneeStack(t.assignees,'sm')}
+          <button class="icon-btn" onclick="closeModal();openTaskForm('${t.id}')" title="Edit">${ICON_EDIT}</button>
+        </div>
+      `).join('') || '<div style="font-size:13px;color:var(--ink-3);padding:8px 0">No tasks due this day.</div>'}
+    </div>
+
+    <div class="form-label" style="margin-bottom:8px">Project target dates (${dayProjs.length})</div>
+    <div class="item-list">
+      ${dayProjs.map(p=>`
+        <div class="item-row" style="animation:none;cursor:pointer" onclick="closeModal();openProjectForm('${p.id}')">
+          <div style="width:28px;height:28px;border-radius:8px;background:var(--accent-soft);color:var(--accent);display:flex;align-items:center;justify-content:center;flex-shrink:0"><i class="ti ti-bulb"></i></div>
+          <div class="item-main">
+            <div class="item-title">${escape(p.title)}</div>
+            <div class="item-meta"><span class="badge b-${p.status==='done'?'done':p.status==='in-progress'?'in-progress':'todo'}">${p.status.replace('-',' ')}</span><span>· ${escape(p.category)}</span></div>
+          </div>
+          ${assigneeStack(p.assignees,'sm')}
+        </div>
+      `).join('') || '<div style="font-size:13px;color:var(--ink-3);padding:8px 0">No project milestones this day.</div>'}
+    </div>
+
+    <div class="modal-actions">
+      <button class="btn" onclick="closeModal()">Close</button>
+      <button class="btn btn-primary" onclick="closeModal();openTaskForm(null,'${dateStr}')"><i class="ti ti-plus"></i> Add task for this day</button>
+    </div>
+  </div>`);
+}
+function toggleTaskInDay(id, dateStr){
+  const t = state.tasks.find(x=>x.id===id);
+  if(!t) return;
+  const nowDone = t.status!=='done';
+  t.status = nowDone ? 'done' : 'todo';
+  t.completedAt = nowDone ? today() : '';
+  saveOne('tasks', t).then(()=>{
+    app.render();
+    openDayModal(dateStr);
+  });
+}
+
+async function confirmDelete(kind, id){
+  const labels = {lead:'lead', prop:'property', task:'task', project:'project', user:'team member'};
+  const map = {lead:'leads', prop:'props', task:'tasks', project:'projects', user:'users'};
+  let msg = `Delete this ${labels[kind]}? This cannot be undone.`;
+  if(kind==='user'){
+    const openTasks = state.tasks.filter(t=>t.status!=='done'&&(t.assignees||[]).includes(id)).length;
+    const leads = state.leads.filter(l=>l.assignedTo===id).length;
+    const props = state.props.filter(p=>p.assignedTo===id).length;
+    if(openTasks||leads||props){
+      msg = `This person has ${openTasks} open task(s), ${leads} lead(s), and ${props} deal(s) assigned. `
+          + `They'll be unassigned (not deleted) when you remove this team member. Continue?`;
+    }
+  }
+  if(!confirm(msg)) return;
+  state[map[kind]] = state[map[kind]].filter(x=>x.id!==id);
+  if(kind==='user' && state.activeUserId===id){
+    state.activeUserId='';
+    await StorageAdapter.saveActiveUser('');
+  }
+  await deleteOne(map[kind], id);
+  toast(`${labels[kind].charAt(0).toUpperCase()+labels[kind].slice(1)} deleted`);
+  app.render();
+}
+
+/* =========================================================
+   MODAL
+   ========================================================= */
+function showModal(html){
+  document.body.style.overflow = 'hidden';
+  $('#modal-root').innerHTML = `<div class="modal-bg" onclick="if(event.target===this)closeModal()">${html}</div>`;
+  // focus first input
+  requestAnimationFrame(()=>{
+    const first = $('#modal-root').querySelector('input,select,textarea');
+    if(first) first.focus();
+  });
+}
+function closeModal(){
+  document.body.style.overflow = '';
+  $('#modal-root').innerHTML = '';
+}
+// Sub-modal: stacks on top of an already-open modal (e.g. quick-add a lead
+// or property from inside the task form) without touching/losing it underneath.
+function showSubModal(html){
+  $('#submodal-root').innerHTML = `<div class="modal-bg" style="z-index:150" onclick="if(event.target===this)closeSubModal()">${html}</div>`;
+  requestAnimationFrame(()=>{
+    const first = $('#submodal-root').querySelector('input,select,textarea');
+    if(first) first.focus();
+  });
+}
+function closeSubModal(){
+  $('#submodal-root').innerHTML = '';
+}
+document.addEventListener('keydown', e=>{
+  if(e.key==='Escape'){
+    if($('#submodal-root').innerHTML) closeSubModal();
+    else closeModal();
+  }
+});
+
+function chipPickerHTML(selectedIds, fieldId){
+  return `<div class="chip-picker" id="${fieldId}">
+    ${state.users.map(u=>{
+      const c = userColor(u.id);
+      const sel = (selectedIds||[]).includes(u.id);
+      const style = sel?`background:${c.bg};color:${c.fg};border-color:${c.fg}`:'';
+      return `<span class="chip ${sel?'selected':''}" style="${style}" data-uid="${u.id}" onclick="toggleChip(this,'${fieldId}')">
+        <span class="avatar avatar-sm" style="background:${c.bg};color:${c.fg}">${initials(u.name)}</span>
+        ${escape(u.name)}
+        ${sel?`<span class="chip-x">×</span>`:''}
+      </span>`;
+    }).join('') || '<span style="font-size:12px;color:var(--ink-3);padding:6px">Add team members first</span>'}
+  </div>`;
+}
+function toggleChip(el, fieldId){
+  const uid = el.dataset.uid;
+  const c = userColor(uid);
+  const u = state.users.find(x=>x.id===uid);
+  const wasSelected = el.classList.toggle('selected');
+  if(wasSelected){
+    el.style.cssText = `background:${c.bg};color:${c.fg};border-color:${c.fg}`;
+    el.innerHTML = `<span class="avatar avatar-sm" style="background:${c.bg};color:${c.fg}">${initials(u.name)}</span>${escape(u.name)}<span class="chip-x">×</span>`;
+  }else{
+    el.style.cssText = '';
+    el.innerHTML = `<span class="avatar avatar-sm" style="background:${c.bg};color:${c.fg}">${initials(u.name)}</span>${escape(u.name)}`;
+  }
+}
+function getChipValues(fieldId){
+  return [...document.getElementById(fieldId).querySelectorAll('.chip.selected')].map(c=>c.dataset.uid);
+}
+
+/* ===== LEAD FORM ===== */
+function openLeadForm(id){
+  const l = id ? state.leads.find(x=>x.id===id) : {};
+  showModal(`<div class="modal">
+    <div class="modal-header">
+      <h2 class="modal-title">${id?'Edit lead':'New lead'}</h2>
+      <button class="icon-btn" onclick="closeModal()"><i class="ti ti-x"></i></button>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Full name</label><input class="form-input" id="fl-name" value="${escape(l.name||'')}" placeholder="John Smith"></div>
+      <div class="form-group"><label class="form-label">Status</label>
+        <select class="form-select" id="fl-status">${LEAD_STATUSES.map(s=>`<option ${(l.status||'new')===s?'selected':''}>${s}</option>`).join('')}</select>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Phone</label><input class="form-input" id="fl-phone" value="${escape(l.phone||'')}" placeholder="(555) 000-0000"></div>
+      <div class="form-group"><label class="form-label">Email</label><input class="form-input" id="fl-email" value="${escape(l.email||'')}" placeholder="email@example.com"></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">County</label><input class="form-input" id="fl-county" value="${escape(l.county||'')}"></div>
+      <div class="form-group"><label class="form-label">State</label><input class="form-input" id="fl-state" value="${escape(l.state||'TX')}"></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Source</label>
+        <select class="form-select" id="fl-source">${LEAD_SOURCES.map(s=>`<option ${(l.source||'')===s?'selected':''}>${s}</option>`).join('')}</select>
+      </div>
+      <div class="form-group"><label class="form-label">Assigned to</label>
+        <select class="form-select" id="fl-assign"><option value="">Unassigned</option>${state.users.map(u=>`<option value="${u.id}" ${l.assignedTo===u.id?'selected':''}>${escape(u.name)}</option>`).join('')}</select>
+      </div>
+    </div>
+    <div class="form-group"><label class="form-label">Notes</label><textarea class="form-textarea" id="fl-notes">${escape(l.notes||'')}</textarea></div>
+    <div class="modal-actions">
+      <button class="btn" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="saveLead('${id||''}')">${id?'Save changes':'Add lead'}</button>
+    </div>
+  </div>`);
+}
+async function saveLead(id){
+  const name = $('#fl-name').value.trim();
+  if(!name) return toast('Name is required','err');
+  const data = {
+    id: id||uid(), name,
+    status: $('#fl-status').value,
+    phone: $('#fl-phone').value,
+    email: $('#fl-email').value,
+    county: $('#fl-county').value,
+    state: $('#fl-state').value,
+    source: $('#fl-source').value,
+    assignedTo: $('#fl-assign').value,
+    notes: $('#fl-notes').value,
+    created: id ? state.leads.find(x=>x.id===id).created : today()
+  };
+  if(id){ const i=state.leads.findIndex(l=>l.id===id); state.leads[i]=data; }
+  else state.leads.unshift(data);
+  await saveOne('leads', data);
+  closeModal();
+  toast(id?'Lead updated':'Lead added');
+  app.render();
+}
+
+/* ===== PROPERTY FORM ===== */
+function openPropForm(id){
+  const p = id ? state.props.find(x=>x.id===id) : {};
+  showModal(`<div class="modal">
+    <div class="modal-header">
+      <h2 class="modal-title">${id?'Edit property':'New property'}</h2>
+      <button class="icon-btn" onclick="closeModal()"><i class="ti ti-x"></i></button>
+    </div>
+    <div class="form-group"><label class="form-label">Address or parcel</label><input class="form-input" id="fp-addr" value="${escape(p.address||'')}" placeholder="1234 CR 45 or Lot 7 Hwy 36"></div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">County</label><input class="form-input" id="fp-county" value="${escape(p.county||'')}"></div>
+      <div class="form-group"><label class="form-label">State</label><input class="form-input" id="fp-state" value="${escape(p.state||'TX')}"></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Acres</label><input class="form-input" id="fp-acres" type="number" step="0.1" value="${escape(p.acres||'')}"></div>
+      <div class="form-group"><label class="form-label">Stage</label>
+        <select class="form-select" id="fp-status">${DEAL_STAGES.map(s=>`<option ${(p.status||'pre-deal')===s?'selected':''}>${s}</option>`).join('')}</select>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Buy price</label><input class="form-input" id="fp-buy" type="number" value="${escape(p.buyPrice||'')}" oninput="updateEquityPreview()"></div>
+      <div class="form-group"><label class="form-label">Sell price</label><input class="form-input" id="fp-sell" type="number" value="${escape(p.sellPrice||'')}" oninput="updateEquityPreview()" placeholder="Once known"></div>
+    </div>
+    <div id="fp-equity-preview" style="font-size:12.5px;font-weight:600;margin:-8px 0 14px"></div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Linked lead</label>
+        <select class="form-select" id="fp-lead"><option value="">None</option>${state.leads.map(l=>`<option value="${l.id}" ${p.leadId===l.id?'selected':''}>${escape(l.name)}</option>`).join('')}</select>
+      </div>
+      <div class="form-group"><label class="form-label">Assigned to</label>
+        <select class="form-select" id="fp-assign"><option value="">Unassigned</option>${state.users.map(u=>`<option value="${u.id}" ${p.assignedTo===u.id?'selected':''}>${escape(u.name)}</option>`).join('')}</select>
+      </div>
+    </div>
+    <div class="form-group"><label class="form-label">Notes</label><textarea class="form-textarea" id="fp-notes">${escape(p.notes||'')}</textarea></div>
+    <div class="modal-actions">
+      <button class="btn" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="saveProp('${id||''}')">${id?'Save changes':'Add property'}</button>
+    </div>
+  </div>`);
+  requestAnimationFrame(updateEquityPreview);
+}
+function updateEquityPreview(){
+  const el = document.getElementById('fp-equity-preview');
+  if(!el) return;
+  const sellRaw = document.getElementById('fp-sell').value;
+  if(sellRaw===''){ el.textContent = ''; return; }
+  const buy = parseFloat(document.getElementById('fp-buy').value)||0;
+  const sell = parseFloat(sellRaw)||0;
+  const equity = sell - buy;
+  el.style.color = equity<0 ? 'var(--danger)' : 'var(--accent)';
+  el.textContent = `Equity created: ${equity>=0?'+':''}${money(equity)}`;
+}
+async function saveProp(id){
+  const address = $('#fp-addr').value.trim();
+  if(!address) return toast('Address is required','err');
+  const data = {
+    id: id||uid(), address,
+    county: $('#fp-county').value,
+    state: $('#fp-state').value,
+    acres: $('#fp-acres').value,
+    status: $('#fp-status').value,
+    buyPrice: $('#fp-buy').value,
+    sellPrice: $('#fp-sell').value,
+    leadId: $('#fp-lead').value,
+    assignedTo: $('#fp-assign').value,
+    notes: $('#fp-notes').value,
+    created: id ? state.props.find(x=>x.id===id).created : today()
+  };
+  if(id){ const i=state.props.findIndex(p=>p.id===id); state.props[i]=data; }
+  else state.props.unshift(data);
+  await saveOne('props', data);
+  closeModal();
+  toast(id?'Property updated':'Property added');
+  app.render();
+}
+
+/* ===== TASK FORM ===== */
+function openTaskForm(id, presetDate){
+  const t = id ? state.tasks.find(x=>x.id===id) : {};
+  const allLinked = [
+    ...state.leads.map(l=>({id:l.id,type:'lead',label:'Lead: '+l.name})),
+    ...state.props.map(p=>({id:p.id,type:'property',label:'Property: '+p.address}))
+  ];
+  const currentLink = (t.linkedId&&t.linkedType) ? `${t.linkedId}|${t.linkedType}` : '';
+  showModal(`<div class="modal">
+    <div class="modal-header">
+      <h2 class="modal-title">${id?'Edit task':'New task'}</h2>
+      <button class="icon-btn" onclick="closeModal()"><i class="ti ti-x"></i></button>
+    </div>
+    <div class="form-group"><label class="form-label">Title</label><input class="form-input" id="ft-title" value="${escape(t.title||'')}" placeholder="Follow up with seller"></div>
+    <div class="form-row-3">
+      <div class="form-group"><label class="form-label">Due date</label><input class="form-input" id="ft-due" type="date" value="${t.dueDate||presetDate||today()}"></div>
+      <div class="form-group"><label class="form-label">Priority</label>
+        <select class="form-select" id="ft-pri">
+          <option value="high" ${(t.priority||'medium')==='high'?'selected':''}>High</option>
+          <option value="medium" ${(t.priority||'medium')==='medium'?'selected':''}>Medium</option>
+          <option value="low" ${(t.priority||'medium')==='low'?'selected':''}>Low</option>
+        </select>
+      </div>
+      <div class="form-group"><label class="form-label">Status</label>
+        <select class="form-select" id="ft-status">${TASK_STATUSES.map(s=>`<option value="${s}" ${(t.status||'todo')===s?'selected':''}>${s.replace('-',' ')}</option>`).join('')}</select>
+      </div>
+    </div>
+    <div class="form-group"><label class="form-label">Assigned to</label>${chipPickerHTML(t.assignees||[], 'ft-assignees')}</div>
+    <div class="form-group">
+      <label class="form-label" style="display:flex;align-items:center;justify-content:space-between">
+        <span>Link to</span>
+        <span style="display:flex;gap:6px;text-transform:none;font-weight:500">
+          <button type="button" class="btn btn-sm" onclick="openQuickLeadForm()"><i class="ti ti-plus"></i> Lead</button>
+          <button type="button" class="btn btn-sm" onclick="openQuickPropForm()"><i class="ti ti-plus"></i> Property</button>
+        </span>
+      </label>
+      <select class="form-select" id="ft-linked">
+        <option value="">Nothing</option>
+        ${allLinked.map(x=>`<option value="${x.id}|${x.type}" ${currentLink===x.id+'|'+x.type?'selected':''}>${escape(x.label)}</option>`).join('')}
+      </select>
+    </div>
+    <div class="form-group"><label class="form-label">Notes</label><textarea class="form-textarea" id="ft-notes">${escape(t.notes||'')}</textarea></div>
+    <div class="modal-actions">
+      <button class="btn" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="saveTask('${id||''}')">${id?'Save changes':'Add task'}</button>
+    </div>
+  </div>`);
+}
+async function saveTask(id){
+  const title = $('#ft-title').value.trim();
+  if(!title) return toast('Title is required','err');
+  const linked = ($('#ft-linked').value||'').split('|');
+  const prev = id ? state.tasks.find(x=>x.id===id) : null;
+  const newStatus = $('#ft-status').value;
+  let completedAt = prev ? (prev.completedAt||'') : '';
+  if(newStatus==='done' && (!prev || prev.status!=='done')) completedAt = today();
+  else if(newStatus!=='done') completedAt = '';
+  const data = {
+    id: id||uid(), title,
+    dueDate: $('#ft-due').value,
+    priority: $('#ft-pri').value,
+    status: newStatus,
+    assignees: getChipValues('ft-assignees'),
+    linkedId: linked[0]||'',
+    linkedType: linked[1]||'',
+    notes: $('#ft-notes').value,
+    completedAt,
+    created: prev ? prev.created : today()
+  };
+  if(id){ const i=state.tasks.findIndex(t=>t.id===id); state.tasks[i]=data; }
+  else state.tasks.unshift(data);
+  await saveOne('tasks', data);
+  closeModal();
+  toast(id?'Task updated':'Task added');
+  app.render();
+}
+
+/* ===== QUICK-ADD LEAD/PROPERTY (from inside the task form) ===== */
+function openQuickLeadForm(){
+  showSubModal(`<div class="modal" style="width:min(420px,100%)">
+    <div class="modal-header">
+      <h2 class="modal-title">Quick add lead</h2>
+      <button class="icon-btn" onclick="closeSubModal()"><i class="ti ti-x"></i></button>
+    </div>
+    <div class="form-group"><label class="form-label">Name</label><input class="form-input" id="qft-lead-name" placeholder="Seller or contact name"></div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Phone</label><input class="form-input" id="qft-lead-phone"></div>
+      <div class="form-group"><label class="form-label">County</label><input class="form-input" id="qft-lead-county"></div>
+    </div>
+    <p style="font-size:12px;color:var(--ink-3);margin-top:-4px">You can fill in the rest — email, source, notes — later from the Leads page.</p>
+    <div class="modal-actions">
+      <button class="btn" onclick="closeSubModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="saveQuickLead()">Add lead</button>
+    </div>
+  </div>`);
+}
+async function saveQuickLead(){
+  const name = $('#qft-lead-name').value.trim();
+  if(!name) return toast('Name is required','err');
+  const data = {
+    id: uid(), name,
+    phone: $('#qft-lead-phone').value,
+    email: '', source: '', status: 'new',
+    county: $('#qft-lead-county').value, state: 'TX',
+    notes: '', assignedTo: '', created: today()
+  };
+  state.leads.unshift(data);
+  await saveOne('leads', data);
+  closeSubModal();
+  toast('Lead added');
+  linkNewEntity(data.id, 'lead', 'Lead: '+data.name);
+}
+
+function openQuickPropForm(){
+  showSubModal(`<div class="modal" style="width:min(420px,100%)">
+    <div class="modal-header">
+      <h2 class="modal-title">Quick add property</h2>
+      <button class="icon-btn" onclick="closeSubModal()"><i class="ti ti-x"></i></button>
+    </div>
+    <div class="form-group"><label class="form-label">Address or parcel</label><input class="form-input" id="qft-prop-addr" placeholder="1234 CR 45 or Lot 7 Hwy 36"></div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">County</label><input class="form-input" id="qft-prop-county"></div>
+      <div class="form-group"><label class="form-label">Acres</label><input class="form-input" id="qft-prop-acres" type="number" step="0.1"></div>
+    </div>
+    <p style="font-size:12px;color:var(--ink-3);margin-top:-4px">Pricing, ARV, and stage can be filled in later from the Properties page — starts at Pre-Deal.</p>
+    <div class="modal-actions">
+      <button class="btn" onclick="closeSubModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="saveQuickProp()">Add property</button>
+    </div>
+  </div>`);
+}
+async function saveQuickProp(){
+  const address = $('#qft-prop-addr').value.trim();
+  if(!address) return toast('Address is required','err');
+  const data = {
+    id: uid(), address,
+    county: $('#qft-prop-county').value, state: 'TX',
+    acres: $('#qft-prop-acres').value,
+    buyPrice: '', sellPrice: '',
+    status: 'pre-deal', notes: '', leadId: '', assignedTo: '',
+    created: today()
+  };
+  state.props.unshift(data);
+  await saveOne('props', data);
+  closeSubModal();
+  toast('Property added');
+  linkNewEntity(data.id, 'property', 'Property: '+data.address);
+}
+
+// Adds the newly created lead/property to the still-open task form's
+// "Link to" dropdown and selects it, then refreshes background counts.
+function linkNewEntity(id, type, label){
+  const sel = document.getElementById('ft-linked');
+  if(sel){
+    const opt = document.createElement('option');
+    opt.value = id + '|' + type;
+    opt.textContent = label;
+    sel.appendChild(opt);
+    sel.value = opt.value;
+  }
+  app.render();
+}
+function openProjectForm(id){
+  const p = id ? state.projects.find(x=>x.id===id) : {};
+  showModal(`<div class="modal">
+    <div class="modal-header">
+      <h2 class="modal-title">${id?'Edit project':'New project'}</h2>
+      <button class="icon-btn" onclick="closeModal()"><i class="ti ti-x"></i></button>
+    </div>
+    <div class="form-group"><label class="form-label">Title</label><input class="form-input" id="fpr-title" value="${escape(p.title||'')}" placeholder="Automate direct mail sequencing"></div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Category</label>
+        <select class="form-select" id="fpr-cat">${PROJECT_CATEGORIES.map(c=>`<option ${(p.category||'Marketing')===c?'selected':''}>${c}</option>`).join('')}</select>
+      </div>
+      <div class="form-group"><label class="form-label">Status</label>
+        <select class="form-select" id="fpr-status">${PROJECT_STATUSES.map(s=>`<option value="${s}" ${(p.status||'ideas')===s?'selected':''}>${s.replace('-',' ')}</option>`).join('')}</select>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Priority</label>
+        <select class="form-select" id="fpr-pri">
+          <option value="high" ${(p.priority||'medium')==='high'?'selected':''}>High</option>
+          <option value="medium" ${(p.priority||'medium')==='medium'?'selected':''}>Medium</option>
+          <option value="low" ${(p.priority||'medium')==='low'?'selected':''}>Low</option>
+        </select>
+      </div>
+      <div class="form-group"><label class="form-label">Target date</label><input class="form-input" id="fpr-due" type="date" value="${p.dueDate||''}"></div>
+    </div>
+    <div class="form-group"><label class="form-label">Owners</label>${chipPickerHTML(p.assignees||[], 'fpr-assignees')}</div>
+    <div class="form-group"><label class="form-label">Description</label><textarea class="form-textarea" id="fpr-desc" placeholder="What's the goal? What does 'done' look like?">${escape(p.description||'')}</textarea></div>
+    <div class="modal-actions">
+      ${id?`<button class="btn btn-danger" onclick="deleteProjectInline('${id}')"><i class="ti ti-trash"></i> Delete</button>`:''}
+      <div style="flex:1"></div>
+      <button class="btn" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="saveProject('${id||''}')">${id?'Save changes':'Add project'}</button>
+    </div>
+  </div>`);
+}
+async function saveProject(id){
+  const title = $('#fpr-title').value.trim();
+  if(!title) return toast('Title is required','err');
+  const data = {
+    id: id||uid(), title,
+    category: $('#fpr-cat').value,
+    status: $('#fpr-status').value,
+    priority: $('#fpr-pri').value,
+    dueDate: $('#fpr-due').value,
+    assignees: getChipValues('fpr-assignees'),
+    description: $('#fpr-desc').value,
+    created: id ? state.projects.find(x=>x.id===id).created : today()
+  };
+  if(id){ const i=state.projects.findIndex(p=>p.id===id); state.projects[i]=data; }
+  else state.projects.unshift(data);
+  await saveOne('projects', data);
+  closeModal();
+  toast(id?'Project updated':'Project added');
+  app.render();
+}
+
+async function deleteProjectInline(id){
+  if(!confirm('Delete this project?')) return;
+  state.projects = state.projects.filter(x=>x.id!==id);
+  await deleteOne('projects', id);
+  closeModal();
+  toast('Project deleted');
+  app.render();
+}
+
+/* ===== USER FORM ===== */
+function openUserForm(id){
+  const u = id ? state.users.find(x=>x.id===id) : {colorIdx:0};
+  const swatches = COLORS.map((c,i)=>`<div class="color-swatch ${u.colorIdx===i?'selected':''}" style="background:${c.bg}" data-idx="${i}" onclick="document.querySelectorAll('.color-swatch').forEach(x=>x.classList.remove('selected'));this.classList.add('selected')"></div>`).join('');
+  showModal(`<div class="modal">
+    <div class="modal-header">
+      <h2 class="modal-title">${id?'Edit member':'Add member'}</h2>
+      <button class="icon-btn" onclick="closeModal()"><i class="ti ti-x"></i></button>
+    </div>
+    <div class="form-group"><label class="form-label">Name</label><input class="form-input" id="fu-name" value="${escape(u.name||'')}" placeholder="Full name"></div>
+    <div class="form-group"><label class="form-label">Role</label><input class="form-input" id="fu-role" value="${escape(u.role||'')}" placeholder="Acquisitions, Owner, VA…"></div>
+    <div class="form-group"><label class="form-label">Avatar color</label><div class="color-picker">${swatches}</div></div>
+    <div class="modal-actions">
+      <button class="btn" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="saveUser('${id||''}')">${id?'Save changes':'Add member'}</button>
+    </div>
+  </div>`);
+}
+async function saveUser(id){
+  const name = $('#fu-name').value.trim();
+  if(!name) return toast('Name is required','err');
+  const selectedSwatch = document.querySelector('.color-swatch.selected');
+  const colorIdx = selectedSwatch ? parseInt(selectedSwatch.dataset.idx) : 0;
+  const data = {id: id||uid(), name, role: $('#fu-role').value, colorIdx};
+  if(id){ const i=state.users.findIndex(u=>u.id===id); state.users[i]=data; }
+  else state.users.push(data);
+  await saveOne('users', data);
+  closeModal();
+  toast(id?'Member updated':'Member added');
+  app.render();
+}
+
+/* =========================================================
+   DATA IMPORT / EXPORT
+   ========================================================= */
+function exportData(){
+  const payload = {
+    exportedAt: new Date().toISOString(),
+    version: 1,
+    users: state.users, leads: state.leads, props: state.props,
+    tasks: state.tasks, projects: state.projects
+  };
+  const blob = new Blob([JSON.stringify(payload,null,2)], {type:'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `utopian-crm-backup-${today()}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+  toast('Backup downloaded');
+}
+function importData(){
+  const inp = document.createElement('input');
+  inp.type = 'file';
+  inp.accept = 'application/json,.json';
+  inp.onchange = e => {
+    const file = e.target.files[0];
+    if(!file) return;
+    const r = new FileReader();
+    r.onload = async () => {
+      try{
+        const data = JSON.parse(r.result);
+        if(!confirm('Overwrite all current data with this import?')) return;
+        if(data.users) state.users = data.users;
+        if(data.leads) state.leads = data.leads;
+        if(data.props) state.props = data.props;
+        if(data.tasks) state.tasks = data.tasks;
+        if(data.projects) state.projects = data.projects;
+        await StorageAdapter.saveBulk({
+          users:state.users, leads:state.leads, props:state.props,
+          tasks:state.tasks, projects:state.projects
+        });
+        toast('Data imported');
+        app.render();
+      }catch(err){
+        toast('Invalid JSON file','err');
+      }
+    };
+    r.readAsText(file);
+  };
+  inp.click();
+}
+async function resetData(){
+  if(!confirm('This wipes everything. Sure?')) return;
+  if(!confirm('Really sure? All leads, properties, tasks, and projects will be gone.')) return;
+  state.users=[]; state.leads=[]; state.props=[]; state.tasks=[]; state.projects=[]; state.activeUserId='';
+  await StorageAdapter.wipeAll();
+  await seed();
+  toast('Data reset');
+  app.render();
+}
+
+/* =========================================================
+   BOOT
+   ========================================================= */
+window.addEventListener('DOMContentLoaded', ()=>app.init());
+</script>
+</body>
+</html>
