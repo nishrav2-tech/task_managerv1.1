@@ -1,4 +1,0 @@
-window.CRM_CONFIG = {
-  supabaseUrl: 'https://yahosblylysopbxgztvg.supabase.co',
-  supabaseKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlhaG9zYmx5bHlzb3BieGd6dHZnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODMzNjk5ODMsImV4cCI6MjA5ODk0NTk4M30.WsUJ470wCbKEVvM0xVIkfhnfRlMgerutl3HH2NeaY88'
-};
