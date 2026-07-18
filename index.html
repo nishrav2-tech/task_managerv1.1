@@ -54,6 +54,7 @@
   --serif: 'Fraunces', Georgia, serif;
 }
 *{box-sizing:border-box;margin:0;padding:0}
+img,svg{max-width:100%;display:block}
 html,body{height:100%}
 body{
   font-family:var(--sans);
@@ -705,12 +706,32 @@ input,select,textarea{font:inherit;color:inherit}
 }
 
 /* ============ RESPONSIVE ============ */
+.mobile-topbar{display:none}
+.sidebar-backdrop{display:none}
+
 @media (max-width: 900px){
   .app{grid-template-columns:1fr}
-  .sidebar{position:relative;height:auto;flex-direction:row;overflow-x:auto;padding:10px;gap:2px}
-  .brand{padding:4px 10px;flex-shrink:0}
-  .sidebar-section,.sidebar-footer{display:none}
-  .nav-item{flex-shrink:0}
+  .mobile-topbar{
+    display:flex;align-items:center;justify-content:space-between;
+    padding:10px 16px;background:var(--surface);border-bottom:1px solid var(--border);
+    position:sticky;top:0;z-index:60;
+  }
+  .mobile-menu-btn{
+    width:36px;height:36px;flex-shrink:0;display:flex;align-items:center;justify-content:center;
+    border-radius:var(--r-md);color:var(--ink-2);background:var(--surface-2);
+  }
+  .mobile-menu-btn i{font-size:20px}
+  .sidebar{
+    position:fixed;top:0;left:0;bottom:0;width:min(280px,80vw);height:100vh;
+    z-index:80;transform:translateX(-100%);transition:transform .25s var(--ease);
+    overflow-y:auto;box-shadow:var(--shadow-lg);
+  }
+  .sidebar.mobile-open{transform:translateX(0)}
+  .sidebar-backdrop{
+    display:block;position:fixed;inset:0;background:rgba(20,17,10,.4);
+    z-index:70;opacity:0;pointer-events:none;transition:opacity .2s var(--ease);
+  }
+  .sidebar-backdrop.show{opacity:1;pointer-events:auto}
   .main{padding:20px}
   .grid-4{grid-template-columns:repeat(2,1fr)}
   .grid-3,.grid-2{grid-template-columns:1fr}
@@ -723,6 +744,13 @@ input,select,textarea{font:inherit;color:inherit}
 <body>
 
 <div class="app">
+  <!-- MOBILE TOP BAR (hidden on desktop) -->
+  <div class="mobile-topbar">
+    <img src="logo.png" alt="Utopian Land Buyers" style="max-height:30px">
+    <button class="mobile-menu-btn" onclick="toggleMobileNav()"><i class="ti ti-menu-2"></i></button>
+  </div>
+  <div class="sidebar-backdrop" onclick="toggleMobileNav(false)"></div>
+
   <!-- SIDEBAR -->
   <aside class="sidebar">
     <div class="brand">
@@ -1020,6 +1048,14 @@ const state = {
    UTILITIES
    ========================================================= */
 const $ = sel => document.querySelector(sel);
+function toggleMobileNav(force){
+  const sidebar = document.querySelector('.sidebar');
+  const backdrop = document.querySelector('.sidebar-backdrop');
+  if(!sidebar || !backdrop) return;
+  const open = force !== undefined ? force : !sidebar.classList.contains('mobile-open');
+  sidebar.classList.toggle('mobile-open', open);
+  backdrop.classList.toggle('show', open);
+}
 const uid = () => (crypto.randomUUID ? crypto.randomUUID() : 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g,c=>{const r=Math.random()*16|0;return (c==='x'?r:(r&0x3|0x8)).toString(16)}));
 const today = () => new Date().toISOString().split('T')[0];
 const isOverdue = d => d && d < today();
@@ -1068,29 +1104,38 @@ async function toggleNotifications(){
     if(perm !== 'granted'){ toast('Notifications not enabled','err'); return app.render(); }
   }
   localStorage.setItem('notif_enabled','1');
-  // Baseline: don't blast every existing assignment the moment this is switched on —
-  // only genuinely new assignments from this point forward should notify.
+  // Baseline: don't blast every existing assignment/completion the moment this is
+  // switched on — only genuinely new ones from this point forward should notify.
   const uid = state.activeUserId;
   if(uid){
-    const baseline = state.tasks.filter(t=>(t.assignees||[]).includes(uid)).map(t=>t.id+':'+uid);
-    localStorage.setItem('notif_assign_seen', JSON.stringify(baseline));
+    const myTasks = state.tasks.filter(t=>(t.assignees||[]).includes(uid));
+    localStorage.setItem('notif_assign_seen', JSON.stringify(myTasks.map(t=>t.id+':'+uid)));
+    const myProjects = state.projects.filter(p=>(p.assignees||[]).includes(uid));
+    localStorage.setItem('notif_project_assign_seen', JSON.stringify(myProjects.map(p=>p.id+':'+uid)));
   }
+  localStorage.setItem('notif_task_done_seen', JSON.stringify(state.tasks.filter(t=>t.status==='done').map(t=>t.id)));
   toast('Reminders enabled');
   checkDueNotifications();
   app.render();
 }
 
 function notifyDevice(title, body, tag){
-  navigator.serviceWorker.controller.postMessage({
-    type:'SHOW_NOTIFICATION',
-    payload:{ title, body, tag, url:'./index.html' }
-  });
+  if(!('serviceWorker' in navigator)) return;
+  navigator.serviceWorker.ready.then(reg=>{
+    reg.showNotification(title, {
+      body: body || '',
+      tag: tag || undefined,
+      icon: './icon-192.png',
+      badge: './icon-192.png',
+      data: { url: './index.html' }
+    });
+  }).catch(err=>console.log('Notification failed:', err));
 }
 
 function checkDueNotifications(){
   if(!('Notification' in window) || Notification.permission!=='granted') return;
   if(localStorage.getItem('notif_enabled')!=='1') return;
-  if(!navigator.serviceWorker || !navigator.serviceWorker.controller) return;
+  if(!('serviceWorker' in navigator)) return;
   const uid = state.activeUserId;
   if(!uid) return;
 
@@ -1098,14 +1143,15 @@ function checkDueNotifications(){
   const tmrw = new Date(); tmrw.setDate(tmrw.getDate()+1);
   const tomorrowStr = tmrw.toISOString().slice(0,10);
 
-  const myTasks = state.tasks.filter(t=>t.status!=='done' && (t.assignees||[]).includes(uid));
+  const myTasks = state.tasks.filter(t=>(t.assignees||[]).includes(uid));
+  const myOpenTasks = myTasks.filter(t=>t.status!=='done');
 
   // --- Deadline reminders: exactly the day before, and the day of. Once each per task. ---
   const dueKey = 'notif_due_shown_'+todayStr;
   let dueShown;
   try{ dueShown = JSON.parse(localStorage.getItem(dueKey)||'[]'); }catch(e){ dueShown = []; }
   let dueChanged = false;
-  myTasks.forEach(t=>{
+  myOpenTasks.forEach(t=>{
     if(!t.dueDate || dueShown.includes(t.id)) return;
     if(t.dueDate === todayStr){
       notifyDevice('Task due today', t.title, 'task-due-'+t.id);
@@ -1120,9 +1166,8 @@ function checkDueNotifications(){
     if(k.startsWith('notif_due_shown_') && k!==dueKey) localStorage.removeItem(k);
   });
 
-  // --- Assignment reminders: once per task per person, the first time we see it. ---
-  let assignSeen;
-  try{ assignSeen = JSON.parse(localStorage.getItem('notif_assign_seen')||'[]'); }catch(e){ assignSeen = []; }
+  // --- Assignment reminders (tasks): once per task per person, the first time we see it. ---
+  let assignSeen = readSeenList('notif_assign_seen');
   let assignChanged = false;
   myTasks.forEach(t=>{
     const key = t.id+':'+uid;
@@ -1131,23 +1176,55 @@ function checkDueNotifications(){
     assignSeen.push(key); assignChanged = true;
   });
   if(assignChanged) localStorage.setItem('notif_assign_seen', JSON.stringify(assignSeen));
+
+  // --- Assignment reminders (projects): same idea, separate tracking list. ---
+  const myProjects = state.projects.filter(p=>(p.assignees||[]).includes(uid));
+  let projAssignSeen = readSeenList('notif_project_assign_seen');
+  let projAssignChanged = false;
+  myProjects.forEach(p=>{
+    const key = p.id+':'+uid;
+    if(projAssignSeen.includes(key)) return;
+    notifyDevice('New project assigned to you', p.title, 'project-assigned-'+p.id);
+    projAssignSeen.push(key); projAssignChanged = true;
+  });
+  if(projAssignChanged) localStorage.setItem('notif_project_assign_seen', JSON.stringify(projAssignSeen));
+
+  // --- Completion notices: ANY task marked done, by anyone. Once per task. The
+  // device that actually completed it already marked it seen via markSeen(), so
+  // it won't get a redundant notice about its own action. ---
+  let doneSeen = readSeenList('notif_task_done_seen');
+  let doneChanged = false;
+  state.tasks.filter(t=>t.status==='done').forEach(t=>{
+    if(doneSeen.includes(t.id)) return;
+    notifyDevice('Task completed', t.title, 'task-done-'+t.id);
+    doneSeen.push(t.id); doneChanged = true;
+  });
+  if(doneChanged) localStorage.setItem('notif_task_done_seen', JSON.stringify(doneSeen));
+}
+
+function readSeenList(key){
+  try{ return JSON.parse(localStorage.getItem(key)||'[]'); }catch(e){ return []; }
+}
+function markSeen(key, value){
+  const list = readSeenList(key);
+  if(!list.includes(value)){ list.push(value); localStorage.setItem(key, JSON.stringify(list)); }
 }
 
 // Immediate notification path: fires the moment a save happens on THIS device,
 // for whoever is signed in on THIS device, if they were just added as an assignee.
-function notifyIfNewlyAssigned(taskId, title, prevAssignees, newAssignees){
+function notifyIfNewlyAssigned(kind, itemId, title, prevAssignees, newAssignees){
   const uid = state.activeUserId;
   if(!uid || !newAssignees.includes(uid) || prevAssignees.includes(uid)) return;
   if(!('Notification' in window) || Notification.permission!=='granted') return;
   if(localStorage.getItem('notif_enabled')!=='1') return;
-  if(!navigator.serviceWorker || !navigator.serviceWorker.controller) return;
-  let seen;
-  try{ seen = JSON.parse(localStorage.getItem('notif_assign_seen')||'[]'); }catch(e){ seen = []; }
-  const key = taskId+':'+uid;
+  if(!('serviceWorker' in navigator)) return;
+  const seenKey = kind==='project' ? 'notif_project_assign_seen' : 'notif_assign_seen';
+  const seen = readSeenList(seenKey);
+  const key = itemId+':'+uid;
   if(seen.includes(key)) return;
-  notifyDevice('Assigned to you', title, 'task-assigned-'+taskId);
+  notifyDevice(kind==='project' ? 'New project assigned to you' : 'Assigned to you', title, kind+'-assigned-'+itemId);
   seen.push(key);
-  localStorage.setItem('notif_assign_seen', JSON.stringify(seen));
+  localStorage.setItem(seenKey, JSON.stringify(seen));
 }
 
 function avatarHTML(userId, size){
@@ -1300,6 +1377,7 @@ const app = {
         state.activeView = el.dataset.view;
         state.filters = {};
         this.render();
+        toggleMobileNav(false);
       });
     });
   },
@@ -2081,7 +2159,7 @@ function renderSettings(){
 
   <div class="settings-section">
     <h3>Notifications</h3>
-    <p>Get a browser notification the moment a task is assigned to whoever's signed in on this device, and reminders for their tasks 1 day before the deadline and on the day it's due. Checked every few minutes while the app is open — this needs the app open in a tab or installed, it won't wake up a fully closed browser.</p>
+    <p>Get a browser notification for whoever's signed in on this device: when a task or project is assigned to them, when one of their tasks is completed, and reminders 1 day before and on the day a task is due. Checked every few minutes while the app is open — this needs the app open in a tab or installed, it won't wake up a fully closed browser.</p>
     <div style="display:flex;align-items:center;gap:10px">
       <button class="btn ${notifOn?'btn-primary':''}" onclick="toggleNotifications()">
         <i class="ti ti-bell"></i> ${notifPerm==='denied'?'Blocked in browser settings':notifOn?'Notifications on':'Enable notifications'}
@@ -2181,6 +2259,8 @@ async function toggleTask(id, checked){
   t.completedAt = checked ? today() : '';
   await saveOne('tasks', t);
   app.render();
+  // If THIS device just marked it done, don't also notify "task completed" — that's redundant.
+  if(checked) markSeen('notif_task_done_seen', id);
 }
 
 /* ===== RESCHEDULING ===== */
@@ -2605,7 +2685,9 @@ async function saveTask(id){
   closeModal();
   toast(id?'Task updated':'Task added');
   app.render();
-  notifyIfNewlyAssigned(data.id, data.title, prev?(prev.assignees||[]):[], data.assignees);
+  notifyIfNewlyAssigned('task', data.id, data.title, prev?(prev.assignees||[]):[], data.assignees);
+  // If THIS device just marked it done, don't also notify "task completed" — that's redundant.
+  if(newStatus==='done' && (!prev || prev.status!=='done')) markSeen('notif_task_done_seen', data.id);
 }
 function openQuickLeadForm(){
   showSubModal(`<div class="modal" style="width:min(420px,100%)">
@@ -2730,6 +2812,7 @@ function openProjectForm(id){
 async function saveProject(id){
   const title = $('#fpr-title').value.trim();
   if(!title) return toast('Title is required','err');
+  const prev = id ? state.projects.find(x=>x.id===id) : null;
   const data = {
     id: id||uid(), title,
     category: $('#fpr-cat').value,
@@ -2738,7 +2821,7 @@ async function saveProject(id){
     dueDate: $('#fpr-due').value,
     assignees: getChipValues('fpr-assignees'),
     description: $('#fpr-desc').value,
-    created: id ? state.projects.find(x=>x.id===id).created : today()
+    created: prev ? prev.created : today()
   };
   if(id){ const i=state.projects.findIndex(p=>p.id===id); state.projects[i]=data; }
   else state.projects.unshift(data);
@@ -2746,6 +2829,7 @@ async function saveProject(id){
   closeModal();
   toast(id?'Project updated':'Project added');
   app.render();
+  notifyIfNewlyAssigned('project', data.id, data.title, prev?(prev.assignees||[]):[], data.assignees);
 }
 
 async function deleteProjectInline(id){
