@@ -5,6 +5,12 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Utopian Land CRM</title>
 <link rel="icon" type="image/svg+xml" href="favicon.svg">
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#2E5D3A">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Utopian CRM">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,700&display=swap" rel="stylesheet">
@@ -1036,6 +1042,114 @@ function equityOf(p){
   if(p.sellPrice===''||p.sellPrice==null) return null;
   return (parseFloat(p.sellPrice)||0) - (parseFloat(p.buyPrice)||0);
 }
+
+/* ===== LOCAL NOTIFICATIONS =====
+   Two triggers only:
+     1. A task is assigned to whoever is signed in on this device.
+     2. That task's deadline is tomorrow, or today.
+   Works only while this app is open in a tab or installed and running —
+   there's no server pushing to a fully closed browser here. Cross-device
+   assignment (someone else assigns you a task on their device) is caught
+   by the periodic background refresh, within its check interval. */
+async function toggleNotifications(){
+  if(!('Notification' in window)) return toast('Notifications are not supported in this browser','err');
+  if(Notification.permission === 'denied'){
+    toast("Blocked — re-enable notifications for this site in your browser's settings",'err');
+    return;
+  }
+  const currentlyOn = Notification.permission==='granted' && localStorage.getItem('notif_enabled')==='1';
+  if(currentlyOn){
+    localStorage.setItem('notif_enabled','0');
+    toast('Reminders paused');
+    return app.render();
+  }
+  if(Notification.permission !== 'granted'){
+    const perm = await Notification.requestPermission();
+    if(perm !== 'granted'){ toast('Notifications not enabled','err'); return app.render(); }
+  }
+  localStorage.setItem('notif_enabled','1');
+  // Baseline: don't blast every existing assignment the moment this is switched on —
+  // only genuinely new assignments from this point forward should notify.
+  const uid = state.activeUserId;
+  if(uid){
+    const baseline = state.tasks.filter(t=>(t.assignees||[]).includes(uid)).map(t=>t.id+':'+uid);
+    localStorage.setItem('notif_assign_seen', JSON.stringify(baseline));
+  }
+  toast('Reminders enabled');
+  checkDueNotifications();
+  app.render();
+}
+
+function notifyDevice(title, body, tag){
+  navigator.serviceWorker.controller.postMessage({
+    type:'SHOW_NOTIFICATION',
+    payload:{ title, body, tag, url:'./index.html' }
+  });
+}
+
+function checkDueNotifications(){
+  if(!('Notification' in window) || Notification.permission!=='granted') return;
+  if(localStorage.getItem('notif_enabled')!=='1') return;
+  if(!navigator.serviceWorker || !navigator.serviceWorker.controller) return;
+  const uid = state.activeUserId;
+  if(!uid) return;
+
+  const todayStr = today();
+  const tmrw = new Date(); tmrw.setDate(tmrw.getDate()+1);
+  const tomorrowStr = tmrw.toISOString().slice(0,10);
+
+  const myTasks = state.tasks.filter(t=>t.status!=='done' && (t.assignees||[]).includes(uid));
+
+  // --- Deadline reminders: exactly the day before, and the day of. Once each per task. ---
+  const dueKey = 'notif_due_shown_'+todayStr;
+  let dueShown;
+  try{ dueShown = JSON.parse(localStorage.getItem(dueKey)||'[]'); }catch(e){ dueShown = []; }
+  let dueChanged = false;
+  myTasks.forEach(t=>{
+    if(!t.dueDate || dueShown.includes(t.id)) return;
+    if(t.dueDate === todayStr){
+      notifyDevice('Task due today', t.title, 'task-due-'+t.id);
+      dueShown.push(t.id); dueChanged = true;
+    }else if(t.dueDate === tomorrowStr){
+      notifyDevice('Task due tomorrow', t.title, 'task-duetomorrow-'+t.id);
+      dueShown.push(t.id); dueChanged = true;
+    }
+  });
+  if(dueChanged) localStorage.setItem(dueKey, JSON.stringify(dueShown));
+  Object.keys(localStorage).forEach(k=>{
+    if(k.startsWith('notif_due_shown_') && k!==dueKey) localStorage.removeItem(k);
+  });
+
+  // --- Assignment reminders: once per task per person, the first time we see it. ---
+  let assignSeen;
+  try{ assignSeen = JSON.parse(localStorage.getItem('notif_assign_seen')||'[]'); }catch(e){ assignSeen = []; }
+  let assignChanged = false;
+  myTasks.forEach(t=>{
+    const key = t.id+':'+uid;
+    if(assignSeen.includes(key)) return;
+    notifyDevice('Assigned to you', t.title, 'task-assigned-'+t.id);
+    assignSeen.push(key); assignChanged = true;
+  });
+  if(assignChanged) localStorage.setItem('notif_assign_seen', JSON.stringify(assignSeen));
+}
+
+// Immediate notification path: fires the moment a save happens on THIS device,
+// for whoever is signed in on THIS device, if they were just added as an assignee.
+function notifyIfNewlyAssigned(taskId, title, prevAssignees, newAssignees){
+  const uid = state.activeUserId;
+  if(!uid || !newAssignees.includes(uid) || prevAssignees.includes(uid)) return;
+  if(!('Notification' in window) || Notification.permission!=='granted') return;
+  if(localStorage.getItem('notif_enabled')!=='1') return;
+  if(!navigator.serviceWorker || !navigator.serviceWorker.controller) return;
+  let seen;
+  try{ seen = JSON.parse(localStorage.getItem('notif_assign_seen')||'[]'); }catch(e){ seen = []; }
+  const key = taskId+':'+uid;
+  if(seen.includes(key)) return;
+  notifyDevice('Assigned to you', title, 'task-assigned-'+taskId);
+  seen.push(key);
+  localStorage.setItem('notif_assign_seen', JSON.stringify(seen));
+}
+
 function avatarHTML(userId, size){
   const c = userColor(userId);
   const u = state.users.find(x=>x.id===userId);
@@ -1169,6 +1283,15 @@ const app = {
     this.buildUserSelect();
     this.render();
     updateBackendBadge();
+    checkDueNotifications();
+    setInterval(async ()=>{
+      // Pull fresh data first so a task assigned to you from someone else's
+      // device shows up here too, not just ones saved on this browser.
+      if(StorageAdapter.backend==='supabase'){
+        try{ await loadAll(); }catch(e){ console.log('Background refresh failed:', e); }
+      }
+      checkDueNotifications();
+    }, 5*60*1000);
   },
 
   bindNav(){
@@ -1191,6 +1314,7 @@ const app = {
     state.activeUserId = id;
     StorageAdapter.saveActiveUser(id);
     this.render();
+    checkDueNotifications();
   },
 
   render(){
@@ -1278,6 +1402,21 @@ function renderDashboard(){
     'Here\'s what the team needs to get done today.',
     ''
   ) + `
+  <div class="card" style="margin-bottom:20px;background:var(--accent-soft);border-color:var(--accent)">
+    <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap">
+      <div style="width:38px;height:38px;border-radius:10px;background:var(--accent);color:var(--accent-ink);display:flex;align-items:center;justify-content:center;flex-shrink:0">
+        <i class="ti ti-user-circle" style="font-size:20px"></i>
+      </div>
+      <div style="flex:1;min-width:220px">
+        <div style="font-weight:600;font-size:14px;color:var(--accent)">Who's using this device?</div>
+        <div style="font-size:12px;color:var(--ink-2);margin-top:2px">Sets whose tasks show up here and who this browser sends notifications for.</div>
+      </div>
+      <select class="form-select" id="dash-user-select" style="max-width:220px" onchange="app.switchUser(this.value)">
+        <option value="">Choose user…</option>
+        ${state.users.map(u=>`<option value="${u.id}" ${u.id===state.activeUserId?'selected':''}>${escape(u.name)}</option>`).join('')}
+      </select>
+    </div>
+  </div>
   <div style="display:flex;gap:12px;margin-bottom:20px;flex-wrap:wrap">
     <div class="stat-card" style="flex:1;min-width:200px;max-width:260px">
       <div class="stat-label"><i class="ti ti-checkbox" style="font-size:14px"></i> Open tasks</div>
@@ -1910,6 +2049,8 @@ function renderTeam(){
 function renderSettings(){
   const cfg = window.CRM_CONFIG;
   const on = StorageAdapter.backend === 'supabase';
+  const notifPerm = ('Notification' in window) ? Notification.permission : 'unsupported';
+  const notifOn = notifPerm==='granted' && localStorage.getItem('notif_enabled')==='1';
   return pageHeader('Configure', 'Settings', 'Backend, backups, and data hygiene.', '') + `
   <div class="settings-section">
     <h3>Data backend</h3>
@@ -1936,6 +2077,17 @@ function renderSettings(){
         </ol>
       </div>
     `}
+  </div>
+
+  <div class="settings-section">
+    <h3>Notifications</h3>
+    <p>Get a browser notification the moment a task is assigned to whoever's signed in on this device, and reminders for their tasks 1 day before the deadline and on the day it's due. Checked every few minutes while the app is open — this needs the app open in a tab or installed, it won't wake up a fully closed browser.</p>
+    <div style="display:flex;align-items:center;gap:10px">
+      <button class="btn ${notifOn?'btn-primary':''}" onclick="toggleNotifications()">
+        <i class="ti ti-bell"></i> ${notifPerm==='denied'?'Blocked in browser settings':notifOn?'Notifications on':'Enable notifications'}
+      </button>
+      ${notifPerm==='denied'?`<span style="font-size:12px;color:var(--ink-3)">Blocked — re-enable via your browser's site settings for this page.</span>`:''}
+    </div>
   </div>
 
   <div class="settings-section">
@@ -2453,9 +2605,8 @@ async function saveTask(id){
   closeModal();
   toast(id?'Task updated':'Task added');
   app.render();
+  notifyIfNewlyAssigned(data.id, data.title, prev?(prev.assignees||[]):[], data.assignees);
 }
-
-/* ===== QUICK-ADD LEAD/PROPERTY (from inside the task form) ===== */
 function openQuickLeadForm(){
   showSubModal(`<div class="modal" style="width:min(420px,100%)">
     <div class="modal-header">
@@ -2702,6 +2853,12 @@ async function resetData(){
    BOOT
    ========================================================= */
 window.addEventListener('DOMContentLoaded', ()=>app.init());
+
+if('serviceWorker' in navigator){
+  window.addEventListener('load', ()=>{
+    navigator.serviceWorker.register('sw.js').catch(err=>console.log('SW registration failed:', err));
+  });
+}
 </script>
 </body>
 </html>
