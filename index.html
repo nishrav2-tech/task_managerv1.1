@@ -68,68 +68,67 @@ button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
 input,select,textarea{font:inherit;color:inherit}
 
 /* ============ LAYOUT ============ */
-.app{display:grid;grid-template-columns:220px 1fr;min-height:100vh}
-.sidebar{
+.app{display:flex;flex-direction:column;min-height:100vh}
+.topbar{
   background:var(--surface);
-  border-right:1px solid var(--border);
-  padding:20px 14px;
-  display:flex;flex-direction:column;gap:2px;
-  position:sticky;top:0;height:100vh;
+  border-bottom:1px solid var(--border);
+  padding:10px 20px;
+  display:flex;align-items:center;gap:20px;
+  position:sticky;top:0;z-index:60;
+  flex-wrap:wrap;
 }
 .brand{
   display:flex;align-items:center;gap:10px;
-  padding:6px 10px 20px;
   font-family:var(--serif);
   font-size:20px;font-weight:500;
   letter-spacing:-.01em;
+  flex-shrink:0;
 }
 .brand-logo{
   max-width:100%;
   height:auto;
-  max-height:42px;
+  max-height:34px;
   object-fit:contain;
 }
+.topnav{
+  display:flex;align-items:center;gap:2px;flex-wrap:wrap;
+  flex:1;
+}
 .nav-item{
-  display:flex;align-items:center;gap:10px;
-  padding:9px 12px;border-radius:var(--r-md);
+  display:flex;align-items:center;gap:8px;
+  padding:8px 12px;border-radius:var(--r-md);
   color:var(--ink-2);font-size:13.5px;font-weight:500;
   cursor:pointer;transition:background .15s var(--ease),color .15s var(--ease);
+  white-space:nowrap;
 }
-.nav-item i{font-size:17px;flex-shrink:0}
+.nav-item i{font-size:16px;flex-shrink:0}
 .nav-item:hover{background:var(--surface-2);color:var(--ink)}
 .nav-item.active{background:var(--ink);color:var(--surface)}
 .nav-item .count{
-  margin-left:auto;font-size:11px;
+  font-size:11px;
   background:var(--surface-2);color:var(--ink-2);
   padding:1px 7px;border-radius:20px;font-weight:600;
 }
 .nav-item.active .count{background:rgba(255,255,255,.15);color:var(--surface)}
 
-.sidebar-section{
-  font-size:10px;font-weight:600;color:var(--ink-3);
-  text-transform:uppercase;letter-spacing:.08em;
-  padding:16px 12px 6px;
-}
-
-.sidebar-footer{
-  margin-top:auto;
-  padding:12px 10px;
-  border-top:1px solid var(--border);
-  display:flex;align-items:center;gap:8px;
+.topbar-right{
+  display:flex;align-items:center;gap:8px;flex-shrink:0;
+  margin-left:auto;
 }
 .who-select{
-  flex:1;font-size:12px;padding:6px 8px;
+  font-size:12px;padding:6px 8px;
   border:1px solid var(--border);border-radius:var(--r-sm);
-  background:var(--surface);
+  background:var(--surface);max-width:160px;
 }
 #backend-badge{
   display:flex;align-items:center;gap:6px;
-  margin:0 4px 6px;padding:6px 10px;
+  padding:6px 10px;
   border-radius:var(--r-sm);
   background:var(--surface-2);
   font-size:11px;font-weight:600;
   color:var(--ink-2);
   text-transform:uppercase;letter-spacing:.06em;
+  white-space:nowrap;
 }
 #backend-badge .dot{
   width:6px;height:6px;border-radius:50%;
@@ -706,32 +705,18 @@ input,select,textarea{font:inherit;color:inherit}
 }
 
 /* ============ RESPONSIVE ============ */
-.mobile-topbar{display:none}
-.sidebar-backdrop{display:none}
-
 @media (max-width: 900px){
-  .app{grid-template-columns:1fr}
-  .mobile-topbar{
-    display:flex;align-items:center;justify-content:space-between;
-    padding:10px 16px;background:var(--surface);border-bottom:1px solid var(--border);
-    position:sticky;top:0;z-index:60;
+  .topbar{flex-wrap:wrap;padding:10px 14px;gap:10px;}
+  .topnav{
+    flex:1 1 100%;order:3;
+    overflow-x:auto;flex-wrap:nowrap;
+    -webkit-overflow-scrolling:touch;
+    padding-bottom:2px;
   }
-  .mobile-menu-btn{
-    width:36px;height:36px;flex-shrink:0;display:flex;align-items:center;justify-content:center;
-    border-radius:var(--r-md);color:var(--ink-2);background:var(--surface-2);
-  }
-  .mobile-menu-btn i{font-size:20px}
-  .sidebar{
-    position:fixed;top:0;left:0;bottom:0;width:min(280px,80vw);height:100vh;
-    z-index:80;transform:translateX(-100%);transition:transform .25s var(--ease);
-    overflow-y:auto;box-shadow:var(--shadow-lg);
-  }
-  .sidebar.mobile-open{transform:translateX(0)}
-  .sidebar-backdrop{
-    display:block;position:fixed;inset:0;background:rgba(20,17,10,.4);
-    z-index:70;opacity:0;pointer-events:none;transition:opacity .2s var(--ease);
-  }
-  .sidebar-backdrop.show{opacity:1;pointer-events:auto}
+  .topnav::-webkit-scrollbar{display:none}
+  .nav-item{flex-shrink:0}
+  .topbar-right{flex:1 1 auto;justify-content:flex-end;margin-left:auto;}
+  .who-select{max-width:140px}
   .main{padding:20px}
   .grid-4{grid-template-columns:repeat(2,1fr)}
   .grid-3,.grid-2{grid-template-columns:1fr}
@@ -744,40 +729,31 @@ input,select,textarea{font:inherit;color:inherit}
 <body>
 
 <div class="app">
-  <!-- MOBILE TOP BAR (hidden on desktop) -->
-  <div class="mobile-topbar">
-    <img src="logo.png" alt="Utopian Land Buyers" style="max-height:30px">
-    <button class="mobile-menu-btn" onclick="toggleMobileNav()"><i class="ti ti-menu-2"></i></button>
-  </div>
-  <div class="sidebar-backdrop" onclick="toggleMobileNav(false)"></div>
-
-  <!-- SIDEBAR -->
-  <aside class="sidebar">
+  <!-- TOP NAVBAR -->
+  <header class="topbar">
     <div class="brand">
       <img src="logo.png" alt="Utopian Land Buyers" class="brand-logo">
     </div>
-    <div class="nav-item active" data-view="dashboard"><i class="ti ti-layout-dashboard"></i> Dashboard</div>
-    <div class="nav-item" data-view="leads"><i class="ti ti-users"></i> Leads <span class="count" id="count-leads">0</span></div>
-    <div class="nav-item" data-view="properties"><i class="ti ti-home"></i> Properties <span class="count" id="count-props">0</span></div>
-    <div class="nav-item" data-view="tasks"><i class="ti ti-checkbox"></i> Tasks <span class="count" id="count-tasks">0</span></div>
-    <div class="nav-item" data-view="projects"><i class="ti ti-bulb"></i> Projects <span class="count" id="count-projs">0</span></div>
-
-    <div class="sidebar-section">Workspace</div>
-    <div class="nav-item" data-view="team"><i class="ti ti-building-community"></i> Team</div>
-    <div class="nav-item" data-view="settings"><i class="ti ti-settings"></i> Settings</div>
-
-    <div id="backend-badge" title="Data backend">
-      <span class="dot"></span>
-      <span id="backend-label">Local</span>
-      <span id="sync-status" style="margin-left:auto"><i class="ti ti-refresh"></i></span>
-    </div>
-    <div class="sidebar-footer">
-      <i class="ti ti-user-circle" style="font-size:18px;color:var(--ink-3)"></i>
+    <nav class="topnav">
+      <div class="nav-item active" data-view="dashboard"><i class="ti ti-layout-dashboard"></i> Dashboard</div>
+      <div class="nav-item" data-view="leads"><i class="ti ti-users"></i> Leads <span class="count" id="count-leads">0</span></div>
+      <div class="nav-item" data-view="properties"><i class="ti ti-home"></i> Properties <span class="count" id="count-props">0</span></div>
+      <div class="nav-item" data-view="tasks"><i class="ti ti-checkbox"></i> Tasks <span class="count" id="count-tasks">0</span></div>
+      <div class="nav-item" data-view="projects"><i class="ti ti-bulb"></i> Projects <span class="count" id="count-projs">0</span></div>
+      <div class="nav-item" data-view="team"><i class="ti ti-building-community"></i> Team</div>
+      <div class="nav-item" data-view="settings"><i class="ti ti-settings"></i> Settings</div>
+    </nav>
+    <div class="topbar-right">
+      <div id="backend-badge" title="Data backend">
+        <span class="dot"></span>
+        <span id="backend-label">Local</span>
+        <span id="sync-status"><i class="ti ti-refresh"></i></span>
+      </div>
       <select class="who-select" id="active-user-select" onchange="app.switchUser(this.value)">
         <option value="">Choose user…</option>
       </select>
     </div>
-  </aside>
+  </header>
 
   <!-- MAIN -->
   <main class="main" id="main"></main>
@@ -1048,14 +1024,6 @@ const state = {
    UTILITIES
    ========================================================= */
 const $ = sel => document.querySelector(sel);
-function toggleMobileNav(force){
-  const sidebar = document.querySelector('.sidebar');
-  const backdrop = document.querySelector('.sidebar-backdrop');
-  if(!sidebar || !backdrop) return;
-  const open = force !== undefined ? force : !sidebar.classList.contains('mobile-open');
-  sidebar.classList.toggle('mobile-open', open);
-  backdrop.classList.toggle('show', open);
-}
 const uid = () => (crypto.randomUUID ? crypto.randomUUID() : 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g,c=>{const r=Math.random()*16|0;return (c==='x'?r:(r&0x3|0x8)).toString(16)}));
 const today = () => new Date().toISOString().split('T')[0];
 const isOverdue = d => d && d < today();
@@ -1377,7 +1345,6 @@ const app = {
         state.activeView = el.dataset.view;
         state.filters = {};
         this.render();
-        toggleMobileNav(false);
       });
     });
   },
