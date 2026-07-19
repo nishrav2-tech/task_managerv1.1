@@ -728,6 +728,7 @@ input,select,textarea{font:inherit;color:inherit}
   .pipeline,.proj-board{grid-template-columns:1fr 1fr;overflow-x:auto}
   .page-title{font-size:26px}
   .form-row,.form-row-3{grid-template-columns:1fr}
+  .member-stats-4{grid-template-columns:repeat(2,1fr)}
 }
 </style>
 </head>
@@ -1377,6 +1378,12 @@ const app = {
     document.querySelectorAll('.nav-item[data-view]').forEach(el=>{
       el.classList.toggle('active', el.dataset.view === state.activeView);
     });
+
+    // Backend badge + "who's using this device" selector only need to live in the
+    // top bar on the Dashboard — it's already got its own prominent selector there,
+    // so keeping it in the global bar everywhere else was just clutter/duplication.
+    const topRight = document.querySelector('.topbar-right');
+    if(topRight) topRight.style.display = state.activeView === 'dashboard' ? 'flex' : 'none';
 
     this.buildUserSelect();
 
