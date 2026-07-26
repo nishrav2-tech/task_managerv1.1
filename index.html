@@ -742,10 +742,11 @@ input,select,textarea{font:inherit;color:inherit}
     </div>
     <nav class="topnav">
       <div class="nav-item active" data-view="dashboard"><i class="ti ti-layout-dashboard"></i> Dashboard</div>
-      <div class="nav-item" data-view="leads"><i class="ti ti-users"></i> Leads <span class="count" id="count-leads">0</span></div>
-      <div class="nav-item" data-view="properties"><i class="ti ti-home"></i> Properties <span class="count" id="count-props">0</span></div>
+      <div class="nav-item" data-view="activity"><i class="ti ti-clipboard-list"></i> Activity Log</div>
       <div class="nav-item" data-view="tasks"><i class="ti ti-checkbox"></i> Tasks <span class="count" id="count-tasks">0</span></div>
       <div class="nav-item" data-view="projects"><i class="ti ti-bulb"></i> Projects <span class="count" id="count-projs">0</span></div>
+      <div class="nav-item" data-view="leads"><i class="ti ti-users"></i> Leads <span class="count" id="count-leads">0</span></div>
+      <div class="nav-item" data-view="properties"><i class="ti ti-home"></i> Properties <span class="count" id="count-props">0</span></div>
       <div class="nav-item" data-view="team"><i class="ti ti-building-community"></i> Team</div>
       <div class="nav-item" data-view="settings"><i class="ti ti-settings"></i> Settings</div>
     </nav>
@@ -782,11 +783,13 @@ const StorageAdapter = {
   localKeys: {
     users:'ulc_users', leads:'ulc_leads', props:'ulc_props',
     tasks:'ulc_tasks', projects:'ulc_projects', kpis:'ulc_kpis',
-    kpiMeta:'ulc_kpiMeta', active:'ulc_activeUser'
+    kpiMeta:'ulc_kpiMeta', callLogs:'ulc_callLogs', campaignLogs:'ulc_campaignLogs',
+    active:'ulc_activeUser'
   },
   tables: {
     users:'users', leads:'leads', props:'properties',
-    tasks:'tasks', projects:'projects', kpis:'kpi_metrics', kpiMeta:'kpi_meta'
+    tasks:'tasks', projects:'projects', kpis:'kpi_metrics', kpiMeta:'kpi_meta',
+    callLogs:'call_logs', campaignLogs:'campaign_logs'
   },
 
   // ---- camelCase (app) <-> snake_case (Postgres) mappers ----
@@ -812,7 +815,19 @@ const StorageAdapter = {
     kpis: k => ({id:k.id, metric_key:k.metricKey,
       trailing_7_value:Number(k.trailing7Value)||0,
       trailing_30_value:Number(k.trailing30Value)||0}),
-    kpiMeta: m => ({id:m.id, updated_at:m.updatedAt || new Date().toISOString()})
+    kpiMeta: m => ({id:m.id, updated_at:m.updatedAt || new Date().toISOString()}),
+    callLogs: c => ({id:c.id, log_date:c.date,
+      calls_made:Number(c.callsMade)||0,
+      conversations_held:Number(c.conversationsHeld)||0,
+      offers_made:Number(c.offersMade)||0,
+      offers_accepted:Number(c.offersAccepted)||0,
+      not_interested:Number(c.notInterested)||0,
+      notes:c.notes||null}),
+    campaignLogs: c => ({id:c.id, log_date:c.date, campaign_name:c.campaignName,
+      channel:c.channel||null,
+      counties_hit:c.countiesHit||null,
+      leads_generated:c.leadsGenerated!==''&&c.leadsGenerated!=null?parseInt(c.leadsGenerated):null,
+      notes:c.notes||null})
   },
   fromDb: {
     users: u => ({id:u.id, name:u.name, role:u.role||'', colorIdx:u.color_idx||0}),
@@ -841,7 +856,15 @@ const StorageAdapter = {
     kpis: k => ({id:k.id, metricKey:k.metric_key,
       trailing7Value:k.trailing_7_value||0,
       trailing30Value:k.trailing_30_value||0}),
-    kpiMeta: m => ({id:m.id, updatedAt:m.updated_at||''})
+    kpiMeta: m => ({id:m.id, updatedAt:m.updated_at||''}),
+    callLogs: c => ({id:c.id, date:c.log_date,
+      callsMade:c.calls_made||0, conversationsHeld:c.conversations_held||0,
+      offersMade:c.offers_made||0, offersAccepted:c.offers_accepted||0,
+      notInterested:c.not_interested||0, notes:c.notes||''}),
+    campaignLogs: c => ({id:c.id, date:c.log_date, campaignName:c.campaign_name,
+      channel:c.channel||'', countiesHit:c.counties_hit||'',
+      leadsGenerated:c.leads_generated!=null?String(c.leads_generated):'',
+      notes:c.notes||''})
   },
 
   async init(){
@@ -867,7 +890,7 @@ const StorageAdapter = {
 
   async loadAll(){
     if(this.backend === 'supabase'){
-      const [u, l, p, t, pr, k, km] = await Promise.all([
+      const [u, l, p, t, pr, k, km, cl, cal] = await Promise.all([
         this.supabase.from('users').select('*').order('created_at'),
         this.supabase.from('leads').select('*').order('created_at',{ascending:false}),
         this.supabase.from('properties').select('*').order('created_at',{ascending:false}),
@@ -875,8 +898,12 @@ const StorageAdapter = {
         this.supabase.from('projects').select('*').order('created_at',{ascending:false}),
         this.supabase.from('kpi_metrics').select('*').order('metric_key'),
         this.supabase.from('kpi_meta').select('*').order('updated_at',{ascending:false}).limit(1),
+        this.supabase.from('call_logs').select('*').order('log_date',{ascending:false}),
+        this.supabase.from('campaign_logs').select('*').order('log_date',{ascending:false}),
       ]);
       if(k.error) console.warn('kpi_metrics table not found yet — run the updated schema.sql to enable KPIs.', k.error.message);
+      if(cl.error) console.warn('call_logs table not found yet — run the updated schema.sql to enable the Activity Log.', cl.error.message);
+      if(cal.error) console.warn('campaign_logs table not found yet — run the updated schema.sql to enable the Activity Log.', cal.error.message);
       return {
         users: (u.data||[]).map(this.fromDb.users),
         leads: (l.data||[]).map(this.fromDb.leads),
@@ -885,6 +912,8 @@ const StorageAdapter = {
         projects: (pr.data||[]).map(this.fromDb.projects),
         kpis: (k.data||[]).map(this.fromDb.kpis),
         kpiMeta: (km.data||[]).map(this.fromDb.kpiMeta),
+        callLogs: (cl.data||[]).map(this.fromDb.callLogs),
+        campaignLogs: (cal.data||[]).map(this.fromDb.campaignLogs),
         activeUserId: localStorage.getItem(this.localKeys.active) || ''
       };
     }
@@ -896,6 +925,8 @@ const StorageAdapter = {
       projects: JSON.parse(localStorage.getItem(this.localKeys.projects) || '[]'),
       kpis: JSON.parse(localStorage.getItem(this.localKeys.kpis) || '[]'),
       kpiMeta: JSON.parse(localStorage.getItem(this.localKeys.kpiMeta) || '[]'),
+      callLogs: JSON.parse(localStorage.getItem(this.localKeys.callLogs) || '[]'),
+      campaignLogs: JSON.parse(localStorage.getItem(this.localKeys.campaignLogs) || '[]'),
       activeUserId: localStorage.getItem(this.localKeys.active) || ''
     };
   },
@@ -950,7 +981,7 @@ const StorageAdapter = {
     try{
       if(this.backend === 'supabase'){
         // Order matters: users first (foreign key references)
-        const order = ['users','leads','props','tasks','projects','kpis','kpiMeta'];
+        const order = ['users','leads','props','tasks','projects','kpis','kpiMeta','callLogs','campaignLogs'];
         for(const col of order){
           if(data[col]?.length){
             const rows = data[col].map(this.toDb[col]);
@@ -977,7 +1008,7 @@ const StorageAdapter = {
   async wipeAll(){
     if(this.backend === 'supabase'){
       // Delete in reverse dep order
-      const order = ['tasks','projects','props','leads','users','kpis','kpiMeta'];
+      const order = ['tasks','projects','props','leads','users','kpis','kpiMeta','callLogs','campaignLogs'];
       for(const col of order){
         await this.supabase.from(this.tables[col]).delete().neq('id','00000000-0000-0000-0000-000000000000');
       }
@@ -1019,9 +1050,11 @@ const TASK_STATUSES = ['todo','in-progress','done','blocked'];
 const PROJECT_CATEGORIES = ['Marketing','SOPs & Processes','Tools & Software','Team & Hiring','Finance','Other'];
 const PROJECT_STATUSES = ['ideas','planned','in-progress','done'];
 const LEAD_SOURCES = ['Direct Mail','Cold Call','Referral','PPC','Facebook','Driving for Dollars','Other'];
+const CAMPAIGN_CHANNELS = ['Direct Mail','Cold Call','SMS','PPC','Facebook','Email','Referral','Other'];
 
 const state = {
   users:[], leads:[], props:[], tasks:[], projects:[], kpis:[], kpiMeta:[],
+  callLogs:[], campaignLogs:[],
   activeUserId:'', activeView:'dashboard',
   filters:{}
 };
@@ -1060,9 +1093,42 @@ function equityOf(p){
    Works only while this app is open in a tab or installed and running —
    there's no server pushing to a fully closed browser here. Cross-device
    assignment (someone else assigns you a task on their device) is caught
-   by the periodic background refresh, within its check interval. */
+   by the periodic background refresh, within its check interval.
+
+   Mobile notes:
+   - iOS Safari only exposes the Notification API inside an installed
+     "Add to Home Screen" app (iOS 16.4+) — a regular Safari tab can't
+     ask for permission at all. toggleNotifications() below detects this
+     and tells the user to install it first instead of silently failing.
+   - Notifications (and service workers generally) require a secure
+     context (https:// or localhost). Loaded over plain http://, the
+     APIs don't exist and nothing will work.
+   - There's no push server here, so a fully closed browser/app will
+     never wake up to notify — checks only run while the page is open.
+     To make "reopening the app" catch up immediately instead of waiting
+     for the next 5-minute interval, a visibilitychange listener (see
+     app.init) re-checks the moment the tab/app comes back to the
+     foreground. */
+function isIOS(){
+  return /iPad|iPhone|iPod/.test(navigator.userAgent || '') && !window.MSStream;
+}
+function isStandalonePWA(){
+  return (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches)
+    || window.navigator.standalone === true;
+}
 async function toggleNotifications(){
-  if(!('Notification' in window)) return toast('Notifications are not supported in this browser','err');
+  if(!window.isSecureContext){
+    toast('Notifications need a secure (https) connection to work','err');
+    return;
+  }
+  if(!('Notification' in window)){
+    if(isIOS() && !isStandalonePWA()){
+      toast('On iPhone/iPad: tap Share → Add to Home Screen, then open the app from there','err');
+    }else{
+      toast('Notifications are not supported in this browser','err');
+    }
+    return;
+  }
   if(Notification.permission === 'denied'){
     toast("Blocked — re-enable notifications for this site in your browser's settings",'err');
     return;
@@ -1272,6 +1338,8 @@ async function loadAll(){
   state.projects = data.projects;
   state.kpis = data.kpis || [];
   state.kpiMeta = data.kpiMeta || [];
+  state.callLogs = data.callLogs || [];
+  state.campaignLogs = data.campaignLogs || [];
   state.activeUserId = data.activeUserId;
   if(!state.users.length) await seed();
 }
@@ -1335,14 +1403,23 @@ const app = {
     this.render();
     updateBackendBadge();
     checkDueNotifications();
-    setInterval(async ()=>{
+    const refreshAndCheck = async ()=>{
       // Pull fresh data first so a task assigned to you from someone else's
       // device shows up here too, not just ones saved on this browser.
       if(StorageAdapter.backend==='supabase'){
         try{ await loadAll(); }catch(e){ console.log('Background refresh failed:', e); }
       }
       checkDueNotifications();
-    }, 5*60*1000);
+    };
+    setInterval(refreshAndCheck, 5*60*1000);
+    // Mobile browsers pause timers for backgrounded tabs, so the interval
+    // above can't be relied on to fire while the phone is locked or the
+    // app is switched away from. Catch up the instant the user comes back
+    // instead of waiting for the next scheduled tick.
+    document.addEventListener('visibilitychange', ()=>{
+      if(document.visibilityState === 'visible') refreshAndCheck();
+    });
+    window.addEventListener('focus', refreshAndCheck);
   },
 
   bindNav(){
@@ -1399,6 +1476,7 @@ const app = {
       properties: renderProperties,
       tasks: renderTasks,
       projects: renderProjects,
+      activity: renderActivity,
       team: renderTeam,
       settings: renderSettings,
     };
@@ -2066,6 +2144,326 @@ function renderProjects(){
     </div>`;
 }
 
+/* =========================================================
+   ACTIVITY LOG — daily call logging + campaign logging,
+   surfaced on a month calendar. One call-log entry per day
+   (aggregate team counts); any number of campaign entries
+   per day (one per campaign touch).
+   ========================================================= */
+function getCallLog(dateStr){
+  return state.callLogs.find(c => c.date === dateStr)
+    || {id:null, date:dateStr, callsMade:0, conversationsHeld:0, offersMade:0, offersAccepted:0, notInterested:0, notes:''};
+}
+function campaignEntriesForDay(dateStr){
+  return state.campaignLogs.filter(c => c.date === dateStr);
+}
+function activityMonthBase(){
+  const base = new Date();
+  base.setDate(1);
+  base.setMonth(base.getMonth() + (state.activityCalendarOffset||0));
+  return base;
+}
+// Time range for the Activity Log stat totals — independent of which month
+// the calendar below happens to be showing.
+const ACTIVITY_RANGES = {
+  today:  {label:'Today'},
+  week:   {label:'This week'},
+  month:  {label:'This month'},
+  last7:  {label:'Last 7 days'},
+  last30: {label:'Last 30 days'},
+  all:    {label:'All time'},
+  custom: {label:'Custom range'}
+};
+function isoDaysAgo(n){
+  const d = new Date();
+  d.setDate(d.getDate()-n);
+  return d.toISOString().slice(0,10);
+}
+function getActivityRange(){
+  const range = state.filters.activityRange || 'month';
+  const todayStr = today();
+  let start, end;
+  if(range === 'today'){ start = todayStr; end = todayStr; }
+  else if(range === 'week'){
+    const d = new Date(); d.setDate(d.getDate()-d.getDay());
+    start = d.toISOString().slice(0,10); end = todayStr;
+  }
+  else if(range === 'last7'){ start = isoDaysAgo(6); end = todayStr; }
+  else if(range === 'last30'){ start = isoDaysAgo(29); end = todayStr; }
+  else if(range === 'month'){
+    const d = new Date(); d.setDate(1);
+    start = d.toISOString().slice(0,10);
+    const e = new Date(d); e.setMonth(e.getMonth()+1); e.setDate(0);
+    end = e.toISOString().slice(0,10);
+  }
+  else if(range === 'all'){ start = '0000-01-01'; end = '9999-12-31'; }
+  else { // custom
+    start = state.filters.activityRangeStart || todayStr;
+    end = state.filters.activityRangeEnd || todayStr;
+    if(start > end){ [start, end] = [end, start]; }
+  }
+  const label = range === 'custom' ? `${fmtLong(start)} – ${fmtLong(end)}` : ACTIVITY_RANGES[range].label;
+  return {range, start, end, label};
+}
+function renderActivity(){
+  const {range, start, end, label} = getActivityRange();
+  const inRange = dateStr => !!dateStr && dateStr >= start && dateStr <= end;
+  const rangeCallLogs = state.callLogs.filter(c=>inRange(c.date));
+  const rangeCampaigns = state.campaignLogs.filter(c=>inRange(c.date));
+  const totals = rangeCallLogs.reduce((s,c)=>{
+    s.calls += Number(c.callsMade)||0;
+    s.conv += Number(c.conversationsHeld)||0;
+    s.offersMade += Number(c.offersMade)||0;
+    s.offersAccepted += Number(c.offersAccepted)||0;
+    s.dropped += Number(c.notInterested)||0;
+    return s;
+  }, {calls:0, conv:0, offersMade:0, offersAccepted:0, dropped:0});
+  const campLeads = rangeCampaigns.reduce((s,c)=>s+(parseInt(c.leadsGenerated)||0),0);
+  const countySet = new Set();
+  rangeCampaigns.forEach(c=>(c.countiesHit||'').split(',').map(x=>x.trim()).filter(Boolean).forEach(x=>countySet.add(x)));
+
+  return pageHeader('Team activity', 'Activity Log', 'Daily call logging and campaign logging, at a glance.', '') + `
+  <div class="toolbar" style="margin-bottom:16px">
+    <select class="filter-select" data-filter="activityRange">
+      ${Object.entries(ACTIVITY_RANGES).map(([k,v])=>`<option value="${k}" ${k===range?'selected':''}>${v.label}</option>`).join('')}
+    </select>
+    ${range==='custom' ? `
+      <input type="date" class="filter-select" data-filter="activityRangeStart" value="${start}">
+      <span style="color:var(--ink-3);font-size:13px">to</span>
+      <input type="date" class="filter-select" data-filter="activityRangeEnd" value="${end}">
+    ` : ''}
+  </div>
+  <div style="font-size:11px;font-weight:600;color:var(--ink-3);text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px">Call stats</div>
+  <div style="display:flex;gap:12px;margin-bottom:20px;flex-wrap:wrap">
+    <div class="stat-card" style="flex:1;min-width:150px">
+      <div class="stat-label"><i class="ti ti-phone" style="font-size:14px"></i> Calls made</div>
+      <div class="stat-value">${totals.calls}</div>
+      <div class="stat-delta">${label}</div>
+    </div>
+    <div class="stat-card" style="flex:1;min-width:150px">
+      <div class="stat-label"><i class="ti ti-messages" style="font-size:14px"></i> Conversations held</div>
+      <div class="stat-value">${totals.conv}</div>
+      <div class="stat-delta">${label}</div>
+    </div>
+    <div class="stat-card" style="flex:1;min-width:150px">
+      <div class="stat-label"><i class="ti ti-file-check" style="font-size:14px"></i> Offers accepted</div>
+      <div class="stat-value">${totals.offersAccepted}</div>
+      <div class="stat-delta">of ${totals.offersMade} made</div>
+    </div>
+    <div class="stat-card" style="flex:1;min-width:150px">
+      <div class="stat-label"><i class="ti ti-mood-sad" style="font-size:14px"></i> Not interested / dropped</div>
+      <div class="stat-value">${totals.dropped}</div>
+      <div class="stat-delta">${label}</div>
+    </div>
+  </div>
+
+  <div style="font-size:11px;font-weight:600;color:var(--ink-3);text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px">Campaign stats</div>
+  <div style="display:flex;gap:12px;margin-bottom:20px;flex-wrap:wrap">
+    <div class="stat-card" style="flex:1;min-width:150px">
+      <div class="stat-label"><i class="ti ti-map-pin" style="font-size:14px"></i> Counties hit</div>
+      <div class="stat-value">${countySet.size}</div>
+      <div class="stat-delta">${rangeCampaigns.length} campaign entries</div>
+    </div>
+    <div class="stat-card" style="flex:1;min-width:150px">
+      <div class="stat-label"><i class="ti ti-speakerphone" style="font-size:14px"></i> Campaign leads</div>
+      <div class="stat-value">${campLeads}</div>
+      <div class="stat-delta">${label}</div>
+    </div>
+  </div>
+  ${renderActivityCalendar()}`;
+}
+
+function renderActivityCalendar(){
+  const base = activityMonthBase();
+  const year = base.getFullYear(), month = base.getMonth();
+  const startWeekday = new Date(year, month, 1).getDay();
+  const daysInMonth = new Date(year, month+1, 0).getDate();
+  const monthLabel = base.toLocaleDateString('en-US', {month:'long', year:'numeric'});
+  const todayStr = today();
+
+  let cells = '';
+  for(let i=0;i<startWeekday;i++) cells += `<div class="cal-cell cal-empty"></div>`;
+  for(let d=1; d<=daysInMonth; d++){
+    const dateStr = `${year}-${String(month+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    const callLog = state.callLogs.find(c=>c.date===dateStr);
+    const campCount = campaignEntriesForDay(dateStr).length;
+    const isToday = dateStr === todayStr;
+    // Flag any day that's already happened but has zero (or no) calls, and
+    // separately any day with no campaign entry at all — future days are
+    // left alone since there's nothing to log yet.
+    const isPast = dateStr <= todayStr;
+    const hasCalls = callLog && Number(callLog.callsMade) > 0;
+    const hasCampaign = campCount > 0;
+    const noCalls = isPast && !hasCalls;
+    const noCampaign = isPast && !hasCampaign;
+    cells += `<div class="cal-cell ${isToday?'cal-today':''}" onclick="openActivityDayModal('${dateStr}')" title="Log activity for this day">
+      <div class="cal-daynum">${d}</div>
+      ${hasCalls ? `<div class="cal-task" style="border-left-color:var(--info-ink);background:var(--info-soft);color:var(--info-ink)" title="${callLog.callsMade} calls · ${callLog.conversationsHeld} conversations"><i class="ti ti-phone" style="font-size:10px"></i> ${callLog.callsMade} calls</div>` : ''}
+      ${noCalls ? `<div class="cal-task" style="border-left-color:var(--danger);background:var(--danger-soft);color:var(--danger);font-weight:600"><i class="ti ti-phone-off" style="font-size:10px"></i> No calls</div>` : ''}
+      ${hasCampaign ? `<div class="cal-task" style="border-left-color:var(--purple-ink);background:var(--purple-soft);color:var(--purple-ink)"><i class="ti ti-speakerphone" style="font-size:10px"></i> ${campCount} campaign${campCount>1?'s':''}</div>` : ''}
+      ${noCampaign ? `<div class="cal-task" style="border-left-color:var(--danger);background:var(--danger-soft);color:var(--danger);font-weight:600"><i class="ti ti-alert-triangle" style="font-size:10px"></i> No campaign</div>` : ''}
+    </div>`;
+  }
+
+  return `<div class="card" style="margin-bottom:24px">
+    <div class="card-header">
+      <div>
+        <div class="card-title">Calendar</div>
+        <div class="card-sub">${monthLabel} · click any day to log calls or campaigns</div>
+      </div>
+      <div style="display:flex;gap:4px">
+        <button class="icon-btn" onclick="shiftActivityCalendar(-1)" title="Previous month"><i class="ti ti-chevron-left"></i></button>
+        <button class="icon-btn" onclick="shiftActivityCalendar(0)" title="Jump to today"><i class="ti ti-calendar-event"></i></button>
+        <button class="icon-btn" onclick="shiftActivityCalendar(1)" title="Next month"><i class="ti ti-chevron-right"></i></button>
+      </div>
+    </div>
+    <div class="cal-weekdays"><div>Sun</div><div>Mon</div><div>Tue</div><div>Wed</div><div>Thu</div><div>Fri</div><div>Sat</div></div>
+    <div class="cal-grid">${cells}</div>
+    <div style="display:flex;align-items:center;gap:6px;margin-top:12px;font-size:11px;color:var(--danger)">
+      <span style="width:9px;height:9px;border-radius:2px;background:var(--danger-soft);border:1px solid var(--danger);display:inline-block"></span>
+      Red tag = no calls logged, or no campaign logged, for that day (shown separately)
+    </div>
+  </div>`;
+}
+function shiftActivityCalendar(delta){
+  state.activityCalendarOffset = delta===0 ? 0 : (state.activityCalendarOffset||0)+delta;
+  app.render();
+}
+
+function openActivityDayModal(dateStr){
+  const log = getCallLog(dateStr);
+  const entries = campaignEntriesForDay(dateStr);
+  const dt = new Date(dateStr+'T00:00:00');
+  const label = dt.toLocaleDateString('en-US',{weekday:'long', month:'long', day:'numeric', year:'numeric'});
+  showModal(`<div class="modal" style="max-width:560px">
+    <div class="modal-header">
+      <div>
+        <div class="page-eyebrow" style="margin-bottom:2px">Activity Log</div>
+        <h2 class="modal-title">${label}</h2>
+      </div>
+      <button class="icon-btn" onclick="closeModal()"><i class="ti ti-x"></i></button>
+    </div>
+
+    <div class="form-label" style="margin-bottom:8px">Call logging</div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(115px,1fr));gap:10px;margin-bottom:10px">
+      <div class="form-group" style="margin-bottom:0"><label class="form-label">Calls made</label><input class="form-input" id="al-calls" type="number" min="0" value="${log.callsMade||0}"></div>
+      <div class="form-group" style="margin-bottom:0"><label class="form-label">Conversations held</label><input class="form-input" id="al-conv" type="number" min="0" value="${log.conversationsHeld||0}"></div>
+      <div class="form-group" style="margin-bottom:0"><label class="form-label">Offers made</label><input class="form-input" id="al-offersmade" type="number" min="0" value="${log.offersMade||0}"></div>
+      <div class="form-group" style="margin-bottom:0"><label class="form-label">Offers accepted</label><input class="form-input" id="al-offersaccepted" type="number" min="0" value="${log.offersAccepted||0}"></div>
+      <div class="form-group" style="margin-bottom:0"><label class="form-label">Not interested / dropped</label><input class="form-input" id="al-dropped" type="number" min="0" value="${log.notInterested||0}"></div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Notes</label>
+      <textarea class="form-textarea" id="al-notes" rows="2" placeholder="Optional notes for the day">${escape(log.notes)}</textarea>
+    </div>
+    <div style="display:flex;justify-content:flex-end;margin-bottom:20px">
+      <button class="btn btn-primary" onclick="saveCallLogForDay('${dateStr}')"><i class="ti ti-device-floppy"></i> Save call log</button>
+    </div>
+
+    <div class="form-label" style="margin-bottom:8px">Campaign logging (${entries.length})</div>
+    <div class="item-list" style="margin-bottom:14px">
+      ${entries.map(c=>`
+        <div class="item-row" style="animation:none">
+          <div style="width:28px;height:28px;border-radius:8px;background:var(--purple-soft);color:var(--purple-ink);display:flex;align-items:center;justify-content:center;flex-shrink:0"><i class="ti ti-speakerphone"></i></div>
+          <div class="item-main">
+            <div class="item-title">${escape(c.campaignName)}</div>
+            <div class="item-meta">
+              ${c.channel?`<span class="badge">${escape(c.channel)}</span>`:''}
+              ${c.countiesHit?`<span>· ${escape(c.countiesHit)}</span>`:''}
+              ${c.leadsGenerated!==''&&c.leadsGenerated!=null?`<span>· ${escape(c.leadsGenerated)} leads</span>`:''}
+            </div>
+          </div>
+          <button class="icon-btn" onclick="openCampaignEntryForm('${dateStr}','${c.id}')" title="Edit">${ICON_EDIT}</button>
+          <button class="icon-btn" onclick="deleteCampaignEntry('${c.id}','${dateStr}')" title="Delete">${ICON_DELETE}</button>
+        </div>
+      `).join('') || '<div style="font-size:13px;color:var(--ink-3);padding:8px 0">No campaign activity logged this day.</div>'}
+    </div>
+
+    <div class="modal-actions">
+      <button class="btn" onclick="closeModal()">Close</button>
+      <button class="btn btn-primary" onclick="openCampaignEntryForm('${dateStr}')"><i class="ti ti-plus"></i> Add campaign entry</button>
+    </div>
+  </div>`);
+}
+
+async function saveCallLogForDay(dateStr){
+  const existing = state.callLogs.find(c=>c.date===dateStr);
+  const data = {
+    id: existing ? existing.id : uid(),
+    date: dateStr,
+    callsMade: Number($('#al-calls').value)||0,
+    conversationsHeld: Number($('#al-conv').value)||0,
+    offersMade: Number($('#al-offersmade').value)||0,
+    offersAccepted: Number($('#al-offersaccepted').value)||0,
+    notInterested: Number($('#al-dropped').value)||0,
+    notes: $('#al-notes').value.trim()
+  };
+  if(existing){ const i = state.callLogs.findIndex(c=>c.id===existing.id); state.callLogs[i] = data; }
+  else state.callLogs.push(data);
+  await saveOne('callLogs', data);
+  toast('Call log saved');
+  app.render();
+  openActivityDayModal(dateStr);
+}
+
+function openCampaignEntryForm(dateStr, id){
+  const existing = id ? state.campaignLogs.find(c=>c.id===id) : null;
+  const c = existing || {campaignName:'', channel:'', countiesHit:'', leadsGenerated:'', notes:''};
+  showSubModal(`<div class="modal" style="max-width:420px">
+    <div class="modal-header">
+      <h2 class="modal-title">${existing?'Edit':'Add'} campaign entry</h2>
+      <button class="icon-btn" onclick="closeSubModal()"><i class="ti ti-x"></i></button>
+    </div>
+    <div class="form-group"><label class="form-label">Campaign name</label><input class="form-input" id="ace-name" value="${escape(c.campaignName)}" placeholder="e.g. July direct mail drop" autofocus></div>
+    <div class="form-group"><label class="form-label">Channel</label>
+      <select class="form-select" id="ace-channel">
+        <option value="">—</option>
+        ${CAMPAIGN_CHANNELS.map(ch=>`<option ${ch===c.channel?'selected':''}>${ch}</option>`).join('')}
+      </select>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Counties hit</label><input class="form-input" id="ace-counties" value="${escape(c.countiesHit)}" placeholder="e.g. Brazoria, Fort Bend"></div>
+      <div class="form-group"><label class="form-label">Leads generated</label><input class="form-input" id="ace-leads" type="number" min="0" value="${c.leadsGenerated}"></div>
+    </div>
+    <div class="form-group"><label class="form-label">Notes</label><textarea class="form-textarea" id="ace-notes" rows="2">${escape(c.notes)}</textarea></div>
+    <div class="modal-actions">
+      <button class="btn" onclick="closeSubModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="saveCampaignEntry('${dateStr}'${existing?`,'${existing.id}'`:''})">Save</button>
+    </div>
+  </div>`);
+}
+
+async function saveCampaignEntry(dateStr, id){
+  const name = $('#ace-name').value.trim();
+  if(!name){ toast('Campaign name is required','err'); return; }
+  const existing = id ? state.campaignLogs.find(c=>c.id===id) : null;
+  const data = {
+    id: existing ? existing.id : uid(),
+    date: dateStr,
+    campaignName: name,
+    channel: $('#ace-channel').value,
+    countiesHit: $('#ace-counties').value.trim(),
+    leadsGenerated: $('#ace-leads').value,
+    notes: $('#ace-notes').value.trim()
+  };
+  if(existing){ const i = state.campaignLogs.findIndex(c=>c.id===existing.id); state.campaignLogs[i] = data; }
+  else state.campaignLogs.push(data);
+  await saveOne('campaignLogs', data);
+  closeSubModal();
+  toast('Campaign entry saved');
+  app.render();
+  openActivityDayModal(dateStr);
+}
+
+async function deleteCampaignEntry(id, dateStr){
+  if(!confirm('Delete this campaign entry?')) return;
+  state.campaignLogs = state.campaignLogs.filter(c=>c.id!==id);
+  await deleteOne('campaignLogs', id);
+  toast('Campaign entry deleted');
+  app.render();
+  openActivityDayModal(dateStr);
+}
+
 function renderTeam(){
   return pageHeader('Workspace', 'Team', 'Everyone with access to this workspace.',
     `<button class="btn btn-primary" data-action="new-user"><i class="ti ti-user-plus"></i> Add member</button>`) + `
@@ -2108,6 +2506,7 @@ function renderSettings(){
   const on = StorageAdapter.backend === 'supabase';
   const notifPerm = ('Notification' in window) ? Notification.permission : 'unsupported';
   const notifOn = notifPerm==='granted' && localStorage.getItem('notif_enabled')==='1';
+  const iosNeedsInstall = isIOS() && !isStandalonePWA();
   return pageHeader('Configure', 'Settings', 'Backend, backups, and data hygiene.', '') + `
   <div class="settings-section">
     <h3>Data backend</h3>
@@ -2138,9 +2537,18 @@ function renderSettings(){
 
   <div class="settings-section">
     <h3>Notifications</h3>
-    <p>Get a browser notification for whoever's signed in on this device: when a task or project is assigned to them, when one of their tasks is completed, and reminders 1 day before and on the day a task is due. Checked every few minutes while the app is open — this needs the app open in a tab or installed, it won't wake up a fully closed browser.</p>
-    <div style="display:flex;align-items:center;gap:10px">
-      <button class="btn ${notifOn?'btn-primary':''}" onclick="toggleNotifications()">
+    <p>Get a notification for whoever's signed in on this device: when a task or project is assigned to them, when one of their tasks is completed, and reminders 1 day before and on the day a task is due. This checks while the app is open, and immediately whenever you reopen it — there's no push server, so it can't wake up a fully closed browser.</p>
+    ${iosNeedsInstall ? `
+      <div style="background:var(--warn-soft);border-radius:var(--r-md);padding:12px 14px;font-size:12.5px;color:var(--warn-ink);display:flex;align-items:flex-start;gap:8px;margin-bottom:12px">
+        <i class="ti ti-device-mobile" style="font-size:18px;flex-shrink:0"></i>
+        <div>
+          <div style="font-weight:600">iPhone/iPad: install the app first</div>
+          <div style="opacity:.9;margin-top:2px">iOS Safari only allows notifications inside an installed app. Tap the Share icon → <strong>Add to Home Screen</strong>, then open Utopian CRM from your home screen and enable notifications from there.</div>
+        </div>
+      </div>
+    ` : ''}
+    <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+      <button class="btn ${notifOn?'btn-primary':''}" onclick="toggleNotifications()" ${iosNeedsInstall?'disabled':''}>
         <i class="ti ti-bell"></i> ${notifPerm==='denied'?'Blocked in browser settings':notifOn?'Notifications on':'Enable notifications'}
       </button>
       ${notifPerm==='denied'?`<span style="font-size:12px;color:var(--ink-3)">Blocked — re-enable via your browser's site settings for this page.</span>`:''}
@@ -2860,7 +3268,8 @@ function exportData(){
     exportedAt: new Date().toISOString(),
     version: 1,
     users: state.users, leads: state.leads, props: state.props,
-    tasks: state.tasks, projects: state.projects
+    tasks: state.tasks, projects: state.projects,
+    callLogs: state.callLogs, campaignLogs: state.campaignLogs
   };
   const blob = new Blob([JSON.stringify(payload,null,2)], {type:'application/json'});
   const url = URL.createObjectURL(blob);
@@ -2888,9 +3297,12 @@ function importData(){
         if(data.props) state.props = data.props;
         if(data.tasks) state.tasks = data.tasks;
         if(data.projects) state.projects = data.projects;
+        if(data.callLogs) state.callLogs = data.callLogs;
+        if(data.campaignLogs) state.campaignLogs = data.campaignLogs;
         await StorageAdapter.saveBulk({
           users:state.users, leads:state.leads, props:state.props,
-          tasks:state.tasks, projects:state.projects
+          tasks:state.tasks, projects:state.projects,
+          callLogs:state.callLogs, campaignLogs:state.campaignLogs
         });
         toast('Data imported');
         app.render();
@@ -2904,8 +3316,9 @@ function importData(){
 }
 async function resetData(){
   if(!confirm('This wipes everything. Sure?')) return;
-  if(!confirm('Really sure? All leads, properties, tasks, and projects will be gone.')) return;
-  state.users=[]; state.leads=[]; state.props=[]; state.tasks=[]; state.projects=[]; state.activeUserId='';
+  if(!confirm('Really sure? All leads, properties, tasks, projects, and activity logs will be gone.')) return;
+  state.users=[]; state.leads=[]; state.props=[]; state.tasks=[]; state.projects=[];
+  state.callLogs=[]; state.campaignLogs=[]; state.activeUserId='';
   await StorageAdapter.wipeAll();
   await seed();
   toast('Data reset');

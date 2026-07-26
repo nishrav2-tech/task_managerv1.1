@@ -128,6 +128,39 @@ create table if not exists kpi_meta (
 -- alter table kpi_metrics drop column if exists trailing_7_updated_at;
 -- alter table kpi_metrics drop column if exists trailing_30_updated_at;
 
+-- ---------------------------------------------------------
+-- call_logs (Activity Log tab — one row per calendar day,
+-- aggregate team call metrics for that day)
+-- ---------------------------------------------------------
+create table if not exists call_logs (
+  id                    uuid primary key default gen_random_uuid(),
+  log_date              date not null unique,
+  calls_made            integer not null default 0,
+  conversations_held    integer not null default 0,
+  offers_made           integer not null default 0,
+  offers_accepted       integer not null default 0,
+  not_interested        integer not null default 0,
+  notes                 text,
+  created_at            timestamptz not null default now()
+);
+create index if not exists idx_call_logs_log_date on call_logs(log_date);
+
+-- ---------------------------------------------------------
+-- campaign_logs (Activity Log tab — any number of campaign
+-- touches per day, e.g. mail drops, PPC pushes, SMS blasts)
+-- ---------------------------------------------------------
+create table if not exists campaign_logs (
+  id                uuid primary key default gen_random_uuid(),
+  log_date          date not null,
+  campaign_name     text not null,
+  channel           text,
+  counties_hit      text,
+  leads_generated   integer,
+  notes             text,
+  created_at        timestamptz not null default now()
+);
+create index if not exists idx_campaign_logs_log_date on campaign_logs(log_date);
+
 -- =========================================================
 -- Row Level Security
 -- =========================================================
@@ -150,6 +183,8 @@ alter table tasks      enable row level security;
 alter table projects   enable row level security;
 alter table kpi_metrics enable row level security;
 alter table kpi_meta   enable row level security;
+alter table call_logs     enable row level security;
+alter table campaign_logs enable row level security;
 
 -- Drop existing permissive policies if re-running
 drop policy if exists "anon full access users"      on users;
@@ -159,6 +194,8 @@ drop policy if exists "anon full access tasks"      on tasks;
 drop policy if exists "anon full access projects"   on projects;
 drop policy if exists "anon full access kpi_metrics" on kpi_metrics;
 drop policy if exists "anon full access kpi_meta"    on kpi_meta;
+drop policy if exists "anon full access call_logs"     on call_logs;
+drop policy if exists "anon full access campaign_logs" on campaign_logs;
 
 create policy "anon full access users"      on users      for all to anon using (true) with check (true);
 create policy "anon full access leads"      on leads      for all to anon using (true) with check (true);
@@ -167,6 +204,8 @@ create policy "anon full access tasks"      on tasks      for all to anon using 
 create policy "anon full access projects"   on projects   for all to anon using (true) with check (true);
 create policy "anon full access kpi_metrics" on kpi_metrics for all to anon using (true) with check (true);
 create policy "anon full access kpi_meta"    on kpi_meta    for all to anon using (true) with check (true);
+create policy "anon full access call_logs"     on call_logs     for all to anon using (true) with check (true);
+create policy "anon full access campaign_logs" on campaign_logs for all to anon using (true) with check (true);
 
 -- =========================================================
 -- Done. Now:

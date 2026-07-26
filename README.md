@@ -144,6 +144,7 @@ Ping me when you're ready to add real auth — it's a targeted change to the sto
 - **Properties** — deals with ask / offer / ARV, auto-computed margin, linked lead, single assignee
 - **Tasks** — multi-assignee, priorities (high/medium/low), statuses (todo/in-progress/done/blocked), due dates, linkable to leads or properties
 - **Projects** — kanban board for business improvements (Marketing, SOPs, Tools, Team, Finance, Other) × 4 statuses (ideas/planned/in-progress/done)
+- **Activity Log** — month calendar of daily call logging (calls made, conversations held, offers made, offers accepted, not interested/dropped) and campaign logging (any number of campaign touches per day, with channel, counties hit, leads generated)
 - **Team** — add/edit members with color-coded avatars, role labels
 - **Settings** — backend status, JSON export/import, reset
 
@@ -175,8 +176,6 @@ Useful before schema changes, big imports, or team handoffs.
 Things we've discussed but haven't built:
 
 - File uploads on leads and properties (Supabase Storage)
-- Activity log / audit trail
-- Calendar view of tasks + closing dates
 - Email/SMS templates with merge fields
 - Property map view (county heatmap)
 - Reporting: closed deal profit, lead source ROI, team performance
