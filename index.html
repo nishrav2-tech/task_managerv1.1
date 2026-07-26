@@ -823,11 +823,9 @@ const StorageAdapter = {
       offers_accepted:Number(c.offersAccepted)||0,
       not_interested:Number(c.notInterested)||0,
       notes:c.notes||null}),
-    campaignLogs: c => ({id:c.id, log_date:c.date, campaign_name:c.campaignName,
-      channel:c.channel||null,
-      counties_hit:c.countiesHit||null,
-      leads_generated:c.leadsGenerated!==''&&c.leadsGenerated!=null?parseInt(c.leadsGenerated):null,
-      notes:c.notes||null})
+    campaignLogs: c => ({id:c.id, log_date:c.date,
+      county:c.county||null,
+      leads_generated:c.leadsGenerated!==''&&c.leadsGenerated!=null?parseInt(c.leadsGenerated):null})
   },
   fromDb: {
     users: u => ({id:u.id, name:u.name, role:u.role||'', colorIdx:u.color_idx||0}),
@@ -861,10 +859,9 @@ const StorageAdapter = {
       callsMade:c.calls_made||0, conversationsHeld:c.conversations_held||0,
       offersMade:c.offers_made||0, offersAccepted:c.offers_accepted||0,
       notInterested:c.not_interested||0, notes:c.notes||''}),
-    campaignLogs: c => ({id:c.id, date:c.log_date, campaignName:c.campaign_name,
-      channel:c.channel||'', countiesHit:c.counties_hit||'',
-      leadsGenerated:c.leads_generated!=null?String(c.leads_generated):'',
-      notes:c.notes||''})
+    campaignLogs: c => ({id:c.id, date:c.log_date,
+      county:c.county||'',
+      leadsGenerated:c.leads_generated!=null?String(c.leads_generated):''})
   },
 
   async init(){
@@ -1050,7 +1047,6 @@ const TASK_STATUSES = ['todo','in-progress','done','blocked'];
 const PROJECT_CATEGORIES = ['Marketing','SOPs & Processes','Tools & Software','Team & Hiring','Finance','Other'];
 const PROJECT_STATUSES = ['ideas','planned','in-progress','done'];
 const LEAD_SOURCES = ['Direct Mail','Cold Call','Referral','PPC','Facebook','Driving for Dollars','Other'];
-const CAMPAIGN_CHANNELS = ['Direct Mail','Cold Call','SMS','PPC','Facebook','Email','Referral','Other'];
 
 const state = {
   users:[], leads:[], props:[], tasks:[], projects:[], kpis:[], kpiMeta:[],
@@ -2220,7 +2216,7 @@ function renderActivity(){
   }, {calls:0, conv:0, offersMade:0, offersAccepted:0, dropped:0});
   const campLeads = rangeCampaigns.reduce((s,c)=>s+(parseInt(c.leadsGenerated)||0),0);
   const countySet = new Set();
-  rangeCampaigns.forEach(c=>(c.countiesHit||'').split(',').map(x=>x.trim()).filter(Boolean).forEach(x=>countySet.add(x)));
+  rangeCampaigns.forEach(c=>(c.county||'').split(',').map(x=>x.trim()).filter(Boolean).forEach(x=>countySet.add(x)));
 
   return pageHeader('Team activity', 'Activity Log', 'Daily call logging and campaign logging, at a glance.', '') + `
   <div class="toolbar" style="margin-bottom:16px">
@@ -2372,11 +2368,9 @@ function openActivityDayModal(dateStr){
         <div class="item-row" style="animation:none">
           <div style="width:28px;height:28px;border-radius:8px;background:var(--purple-soft);color:var(--purple-ink);display:flex;align-items:center;justify-content:center;flex-shrink:0"><i class="ti ti-speakerphone"></i></div>
           <div class="item-main">
-            <div class="item-title">${escape(c.campaignName)}</div>
+            <div class="item-title">${escape(c.county) || 'Unspecified county'}</div>
             <div class="item-meta">
-              ${c.channel?`<span class="badge">${escape(c.channel)}</span>`:''}
-              ${c.countiesHit?`<span>· ${escape(c.countiesHit)}</span>`:''}
-              ${c.leadsGenerated!==''&&c.leadsGenerated!=null?`<span>· ${escape(c.leadsGenerated)} leads</span>`:''}
+              ${c.leadsGenerated!==''&&c.leadsGenerated!=null?`<span>${escape(c.leadsGenerated)} leads</span>`:'<span>—</span>'}
             </div>
           </div>
           <button class="icon-btn" onclick="openCampaignEntryForm('${dateStr}','${c.id}')" title="Edit">${ICON_EDIT}</button>
@@ -2414,24 +2408,14 @@ async function saveCallLogForDay(dateStr){
 
 function openCampaignEntryForm(dateStr, id){
   const existing = id ? state.campaignLogs.find(c=>c.id===id) : null;
-  const c = existing || {campaignName:'', channel:'', countiesHit:'', leadsGenerated:'', notes:''};
-  showSubModal(`<div class="modal" style="max-width:420px">
+  const c = existing || {county:'', leadsGenerated:''};
+  showSubModal(`<div class="modal" style="max-width:360px">
     <div class="modal-header">
       <h2 class="modal-title">${existing?'Edit':'Add'} campaign entry</h2>
       <button class="icon-btn" onclick="closeSubModal()"><i class="ti ti-x"></i></button>
     </div>
-    <div class="form-group"><label class="form-label">Campaign name</label><input class="form-input" id="ace-name" value="${escape(c.campaignName)}" placeholder="e.g. July direct mail drop" autofocus></div>
-    <div class="form-group"><label class="form-label">Channel</label>
-      <select class="form-select" id="ace-channel">
-        <option value="">—</option>
-        ${CAMPAIGN_CHANNELS.map(ch=>`<option ${ch===c.channel?'selected':''}>${ch}</option>`).join('')}
-      </select>
-    </div>
-    <div class="form-row">
-      <div class="form-group"><label class="form-label">Counties hit</label><input class="form-input" id="ace-counties" value="${escape(c.countiesHit)}" placeholder="e.g. Brazoria, Fort Bend"></div>
-      <div class="form-group"><label class="form-label">Leads generated</label><input class="form-input" id="ace-leads" type="number" min="0" value="${c.leadsGenerated}"></div>
-    </div>
-    <div class="form-group"><label class="form-label">Notes</label><textarea class="form-textarea" id="ace-notes" rows="2">${escape(c.notes)}</textarea></div>
+    <div class="form-group"><label class="form-label">County</label><input class="form-input" id="ace-counties" value="${escape(c.county)}" placeholder="e.g. Brazoria" autofocus></div>
+    <div class="form-group"><label class="form-label">Number of leads</label><input class="form-input" id="ace-leads" type="number" min="0" value="${c.leadsGenerated}"></div>
     <div class="modal-actions">
       <button class="btn" onclick="closeSubModal()">Cancel</button>
       <button class="btn btn-primary" onclick="saveCampaignEntry('${dateStr}'${existing?`,'${existing.id}'`:''})">Save</button>
@@ -2440,17 +2424,15 @@ function openCampaignEntryForm(dateStr, id){
 }
 
 async function saveCampaignEntry(dateStr, id){
-  const name = $('#ace-name').value.trim();
-  if(!name){ toast('Campaign name is required','err'); return; }
+  const county = $('#ace-counties').value.trim();
+  const leads = $('#ace-leads').value;
+  if(!county && !leads){ toast('Enter a county or a number of leads','err'); return; }
   const existing = id ? state.campaignLogs.find(c=>c.id===id) : null;
   const data = {
     id: existing ? existing.id : uid(),
     date: dateStr,
-    campaignName: name,
-    channel: $('#ace-channel').value,
-    countiesHit: $('#ace-counties').value.trim(),
-    leadsGenerated: $('#ace-leads').value,
-    notes: $('#ace-notes').value.trim()
+    county: county,
+    leadsGenerated: leads
   };
   if(existing){ const i = state.campaignLogs.findIndex(c=>c.id===existing.id); state.campaignLogs[i] = data; }
   else state.campaignLogs.push(data);
