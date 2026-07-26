@@ -2233,7 +2233,10 @@ function renderActivity(){
       <input type="date" class="filter-select" data-filter="activityRangeEnd" value="${end}">
     ` : ''}
   </div>
-  <div style="font-size:11px;font-weight:600;color:var(--ink-3);text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px">Call stats</div>
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+    <div style="font-size:11px;font-weight:600;color:var(--ink-3);text-transform:uppercase;letter-spacing:.08em">Call stats</div>
+    <button class="btn" style="padding:5px 10px;font-size:12px" onclick="openActivityDayModal('${today()}')"><i class="ti ti-phone-plus"></i> Log today</button>
+  </div>
   <div style="display:flex;gap:12px;margin-bottom:20px;flex-wrap:wrap">
     <div class="stat-card" style="flex:1;min-width:150px">
       <div class="stat-label"><i class="ti ti-phone" style="font-size:14px"></i> Calls made</div>
@@ -2257,7 +2260,10 @@ function renderActivity(){
     </div>
   </div>
 
-  <div style="font-size:11px;font-weight:600;color:var(--ink-3);text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px">Campaign stats</div>
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+    <div style="font-size:11px;font-weight:600;color:var(--ink-3);text-transform:uppercase;letter-spacing:.08em">Campaign stats</div>
+    <button class="btn" style="padding:5px 10px;font-size:12px" onclick="openActivityDayModal('${today()}')"><i class="ti ti-speakerphone" style="font-size:12px"></i> Log today</button>
+  </div>
   <div style="display:flex;gap:12px;margin-bottom:20px;flex-wrap:wrap">
     <div class="stat-card" style="flex:1;min-width:150px">
       <div class="stat-label"><i class="ti ti-map-pin" style="font-size:14px"></i> Counties hit</div>
