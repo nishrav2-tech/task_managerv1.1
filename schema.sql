@@ -19,30 +19,10 @@ create table if not exists users (
 );
 
 -- ---------------------------------------------------------
--- leads (sellers, buyers, other contacts)
--- ---------------------------------------------------------
-create table if not exists leads (
-  id           uuid primary key default gen_random_uuid(),
-  name         text not null,
-  phone        text,
-  email        text,
-  source       text,
-  status       text not null default 'new',
-  county       text,
-  state        text default 'TX',
-  notes        text,
-  assigned_to  uuid references users(id) on delete set null,
-  created_at   timestamptz not null default now()
-);
-create index if not exists idx_leads_status      on leads(status);
-create index if not exists idx_leads_assigned_to on leads(assigned_to);
-
--- ---------------------------------------------------------
 -- properties (deals under evaluation / contract / closed)
 -- ---------------------------------------------------------
 create table if not exists properties (
   id           uuid primary key default gen_random_uuid(),
-  lead_id      uuid references leads(id) on delete set null,
   address      text not null,
   county       text,
   state        text default 'TX',
@@ -57,17 +37,16 @@ create table if not exists properties (
 );
 create index if not exists idx_properties_status      on properties(status);
 create index if not exists idx_properties_assigned_to on properties(assigned_to);
-create index if not exists idx_properties_lead_id     on properties(lead_id);
 
 -- ---------------------------------------------------------
 -- tasks (assigned to multiple users, optionally linked to
--- a lead or a property)
+-- a property)
 -- ---------------------------------------------------------
 create table if not exists tasks (
   id           uuid primary key default gen_random_uuid(),
   title        text not null,
   linked_id    uuid,
-  linked_type  text check (linked_type in ('lead','property') or linked_type is null),
+  linked_type  text check (linked_type in ('property') or linked_type is null),
   due_date     date,
   priority     text not null default 'medium' check (priority in ('high','medium','low')),
   status       text not null default 'todo'   check (status   in ('todo','in-progress','done','blocked')),
@@ -162,6 +141,17 @@ create table if not exists campaign_logs (
 create index if not exists idx_campaign_logs_log_date on campaign_logs(log_date);
 
 -- =========================================================
+-- Migrating an existing install that still has the old
+-- standalone "leads" table / properties.lead_id column?
+-- The Leads feature has been removed from the app — run this
+-- once against an existing database to drop it cleanly:
+--
+--   alter table properties drop column if exists lead_id;
+--   drop table if exists leads cascade;
+--
+-- =========================================================
+
+-- =========================================================
 -- Row Level Security
 -- =========================================================
 -- The app uses Supabase's anon key with permissive policies
@@ -177,7 +167,6 @@ create index if not exists idx_campaign_logs_log_date on campaign_logs(log_date)
 -- =========================================================
 
 alter table users      enable row level security;
-alter table leads      enable row level security;
 alter table properties enable row level security;
 alter table tasks      enable row level security;
 alter table projects   enable row level security;
@@ -188,7 +177,6 @@ alter table campaign_logs enable row level security;
 
 -- Drop existing permissive policies if re-running
 drop policy if exists "anon full access users"      on users;
-drop policy if exists "anon full access leads"      on leads;
 drop policy if exists "anon full access properties" on properties;
 drop policy if exists "anon full access tasks"      on tasks;
 drop policy if exists "anon full access projects"   on projects;
@@ -198,7 +186,6 @@ drop policy if exists "anon full access call_logs"     on call_logs;
 drop policy if exists "anon full access campaign_logs" on campaign_logs;
 
 create policy "anon full access users"      on users      for all to anon using (true) with check (true);
-create policy "anon full access leads"      on leads      for all to anon using (true) with check (true);
 create policy "anon full access properties" on properties for all to anon using (true) with check (true);
 create policy "anon full access tasks"      on tasks      for all to anon using (true) with check (true);
 create policy "anon full access projects"   on projects   for all to anon using (true) with check (true);

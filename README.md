@@ -1,6 +1,6 @@
 # Utopian CRM
 
-A single-file HTML CRM for land investing operations. Tracks leads, properties (with ARV / offer / margin), tasks with multi-user assignment, and a projects board for business improvements.
+A single-file HTML CRM for land investing operations. Tracks properties (with ARV / offer / margin), tasks with multi-user assignment, and a projects board for business improvements.
 
 Works entirely offline in `localStorage`, or synced across the team via **Supabase** — flip between them by dropping in a `config.js`.
 
@@ -37,7 +37,7 @@ Go to [supabase.com](https://supabase.com), create a new project. Save the datab
 
 In the Supabase dashboard → **SQL Editor** → New query → paste all of `schema.sql` → Run.
 
-You should see all 5 tables (`users`, `leads`, `properties`, `tasks`, `projects`) appear under **Table Editor**.
+You should see all 4 tables (`users`, `properties`, `tasks`, `projects`) appear under **Table Editor**.
 
 ### 3. Grab your API credentials
 
@@ -64,7 +64,7 @@ window.CRM_CONFIG = {
 
 Open `index.html`. The sidebar badge should now read **Supabase** (green dot). Everything you add, edit, or delete syncs live.
 
-To confirm it's really syncing: add a lead, then open the app on another device or browser — it appears immediately.
+To confirm it's really syncing: add a task, then open the app on another device or browser — it appears immediately.
 
 ---
 
@@ -139,12 +139,11 @@ Ping me when you're ready to add real auth — it's a targeted change to the sto
 
 ## What's inside
 
-- **Dashboard** — pipeline value, KPIs, deal stages, your open task list
-- **Leads** — sellers/buyers with source, status, county/state, single assignee
-- **Properties** — deals with ask / offer / ARV, auto-computed margin, linked lead, single assignee
-- **Tasks** — multi-assignee, priorities (high/medium/low), statuses (todo/in-progress/done/blocked), due dates, linkable to leads or properties
+- **Dashboard** — a "Create Task" button front and center, pipeline value, KPIs, deal stages, your open task list
+- **Properties** — deals with ask / offer / ARV, auto-computed margin, single assignee
+- **Tasks** — multi-assignee, priorities (high/medium/low), statuses (todo/in-progress/done/blocked), due dates, linkable to properties
 - **Projects** — kanban board for business improvements (Marketing, SOPs, Tools, Team, Finance, Other) × 4 statuses (ideas/planned/in-progress/done)
-- **Activity Log** — month calendar of daily call logging (calls made, conversations held, offers made, offers accepted, not interested/dropped) and campaign logging (any number of campaign touches per day, with channel, counties hit, leads generated)
+- **Activity Log** — month calendar (jump to any past month via the dropdowns or prev/next, your position is remembered) of daily call logging (calls made, conversations held, offers made, offers accepted, not interested/dropped) and campaign logging (any number of campaign touches per day, with channel, counties hit, leads generated); an "Activity trends" chart lets you compare up to two metrics (calls made, calls picked up, offers made, rejected leads, campaigns sent, SMS sent) over a selectable time period
 - **Team** — add/edit members with color-coded avatars, role labels
 - **Settings** — backend status, JSON export/import, reset
 
@@ -154,7 +153,7 @@ The `StorageAdapter` object in `index.html` handles both backends behind one int
 
 | Method | localStorage | Supabase |
 |---|---|---|
-| `loadAll()` | reads all JSON blobs | `.select('*')` on all 5 tables |
+| `loadAll()` | reads all JSON blobs | `.select('*')` on all 4 tables |
 | `saveEntity(kind, e)` | mutates array in one key | `.upsert()` one row |
 | `deleteEntity(kind, id)` | filters array | `.delete().eq('id', id)` |
 | `saveBulk(data)` | writes all keys | ordered upserts (users first for FK) |
@@ -175,10 +174,10 @@ Useful before schema changes, big imports, or team handoffs.
 
 Things we've discussed but haven't built:
 
-- File uploads on leads and properties (Supabase Storage)
+- File uploads on properties (Supabase Storage)
 - Email/SMS templates with merge fields
 - Property map view (county heatmap)
-- Reporting: closed deal profit, lead source ROI, team performance
+- Reporting: closed deal profit, campaign source ROI, team performance
 - Real authentication (Supabase Auth) with per-user RLS
 
 Open an issue in the repo — or start a new Claude chat with "continue the Utopian CRM."

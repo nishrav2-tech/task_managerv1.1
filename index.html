@@ -312,7 +312,7 @@ input,select,textarea{font:inherit;color:inherit}
 }
 .card-sub{font-size:12.5px;color:var(--ink-3)}
 
-/* ============ LEAD / PROPERTY / TASK ITEMS ============ */
+/* ============ PROPERTY / TASK ITEMS ============ */
 .item-list{display:flex;flex-direction:column;gap:8px}
 .item-row{
   background:var(--surface);
@@ -400,48 +400,6 @@ input,select,textarea{font:inherit;color:inherit}
   transform:rotate(45deg);
 }
 
-/* ============ PIPELINE ============ */
-.pipeline{
-  display:grid;grid-template-columns:repeat(6,1fr);gap:8px;
-  margin-bottom:24px;
-}
-.pipe-col{
-  background:var(--surface);
-  border:1px solid var(--border);
-  border-radius:var(--r-md);
-  padding:12px;min-height:180px;
-  transition:border-color .15s var(--ease);
-}
-.pipe-col:hover{border-color:var(--border-strong)}
-.pipe-head{
-  display:flex;align-items:center;justify-content:space-between;
-  padding-bottom:8px;margin-bottom:8px;
-  border-bottom:1px solid var(--border);
-}
-.pipe-head h3{
-  font-size:11px;font-weight:600;color:var(--ink-2);
-  text-transform:uppercase;letter-spacing:.06em;
-}
-.pipe-count{
-  font-size:11px;font-weight:600;color:var(--ink-3);
-  background:var(--surface-2);padding:1px 7px;border-radius:20px;
-}
-.pipe-card{
-  background:var(--bg);
-  border:1px solid var(--border);
-  border-radius:var(--r-sm);
-  padding:8px 10px;margin-bottom:6px;
-  cursor:pointer;font-size:12px;
-  transition:all .15s var(--ease);
-}
-.pipe-card:hover{background:var(--surface);border-color:var(--border-strong);transform:translateY(-1px)}
-.pipe-card-title{font-weight:600;color:var(--ink)}
-.pipe-card-sub{color:var(--ink-3);font-size:11px;margin-top:2px;font-variant-numeric:tabular-nums}
-.pipe-total{
-  font-size:11px;color:var(--ink-3);margin-top:6px;
-  padding-top:6px;border-top:1px solid var(--border);
-  text-align:right;font-variant-numeric:tabular-nums;
-}
 
 /* ============ MODAL ============ */
 .modal-bg{
@@ -595,6 +553,42 @@ input,select,textarea{font:inherit;color:inherit}
 .cal-task.cal-task-project{border-left-color:var(--accent);background:var(--accent-soft);color:var(--accent)}
 .cal-more{font-size:9.5px;color:var(--ink-3);padding-left:3px}
 
+/* ============ WEEK CALENDAR (Calendar tab) ============ */
+.week-grid{
+  display:grid;grid-template-columns:repeat(7,minmax(150px,1fr));gap:10px;
+  overflow-x:auto;align-items:start;
+}
+.week-day-col{
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:var(--r-md);padding:10px;min-width:150px;
+}
+.week-day-col.week-day-today{border-color:var(--accent);box-shadow:inset 0 0 0 1px var(--accent)}
+.week-day-head{
+  display:flex;align-items:baseline;gap:6px;
+  padding-bottom:8px;margin-bottom:8px;border-bottom:1px solid var(--border);
+}
+.week-day-name{font-size:11px;font-weight:600;color:var(--ink-2);text-transform:uppercase;letter-spacing:.05em}
+.week-day-num{font-size:14px;font-weight:700;color:var(--ink)}
+.week-day-today .week-day-num{color:var(--accent)}
+.week-day-count{
+  margin-left:auto;font-size:10px;font-weight:600;color:var(--ink-3);
+  background:var(--surface-2);padding:1px 7px;border-radius:20px;
+}
+.week-day-items{display:flex;flex-direction:column;gap:6px}
+.week-day-empty{font-size:11px;color:var(--ink-3);text-align:center;padding:10px 0}
+.week-item{
+  background:var(--surface-2);border-left:3px solid var(--border-strong);
+  border-radius:6px;padding:7px 9px;cursor:pointer;
+  transition:all .15s var(--ease);
+}
+.week-item:hover{background:var(--surface);transform:translateY(-1px);box-shadow:var(--shadow-sm)}
+.week-item-title{font-size:12.5px;font-weight:600;color:var(--ink);line-height:1.35;margin-bottom:4px}
+.week-item-meta{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.week-item.pri-high{border-left-color:var(--danger);background:var(--danger-soft)}
+.week-item.pri-medium{border-left-color:var(--gold);background:var(--warn-soft)}
+.week-item.pri-low{border-left-color:var(--border-strong);background:var(--surface-2)}
+.week-item.week-item-project{border-left-color:var(--accent);background:var(--accent-soft)}
+
 /* ============ RANKED PERFORMANCE ============ */
 .rank-list{display:flex;flex-direction:column;gap:12px}
 .rank-row{display:flex;align-items:center;gap:10px}
@@ -638,6 +632,10 @@ input,select,textarea{font:inherit;color:inherit}
   display:flex;align-items:center;justify-content:space-between;
   padding:0 4px 10px;
   border-bottom:1px solid var(--border);margin-bottom:10px;
+}
+.pipe-count{
+  font-size:11px;font-weight:600;color:var(--ink-3);
+  background:var(--surface-2);padding:1px 7px;border-radius:20px;
 }
 .proj-col-head h3{
   font-size:11px;font-weight:600;color:var(--ink-2);
@@ -700,10 +698,10 @@ input,select,textarea{font:inherit;color:inherit}
 .cal-cell:not(.cal-empty):hover{border-color:var(--border-strong);box-shadow:var(--shadow-sm);transform:translateY(-1px)}
 
 /* ============ DRAG & DROP ============ */
-.pipe-card[draggable="true"],.proj-card[draggable="true"]{cursor:grab}
-.pipe-card[draggable="true"]:active,.proj-card[draggable="true"]:active{cursor:grabbing}
+.proj-card[draggable="true"]{cursor:grab}
+.proj-card[draggable="true"]:active{cursor:grabbing}
 .dragging{opacity:.4;transform:scale(.97)}
-.pipe-col.drag-over,.proj-col.drag-over{
+.proj-col.drag-over{
   background:var(--accent-soft);
   box-shadow:inset 0 0 0 2px var(--accent);
   border-radius:var(--r-md);
@@ -743,9 +741,9 @@ input,select,textarea{font:inherit;color:inherit}
     <nav class="topnav">
       <div class="nav-item active" data-view="dashboard"><i class="ti ti-layout-dashboard"></i> Dashboard</div>
       <div class="nav-item" data-view="activity"><i class="ti ti-clipboard-list"></i> Activity Log</div>
+      <div class="nav-item" data-view="calendar"><i class="ti ti-calendar"></i> Calendar</div>
       <div class="nav-item" data-view="tasks"><i class="ti ti-checkbox"></i> Tasks <span class="count" id="count-tasks">0</span></div>
       <div class="nav-item" data-view="projects"><i class="ti ti-bulb"></i> Projects <span class="count" id="count-projs">0</span></div>
-      <div class="nav-item" data-view="leads"><i class="ti ti-users"></i> Leads <span class="count" id="count-leads">0</span></div>
       <div class="nav-item" data-view="properties"><i class="ti ti-home"></i> Properties <span class="count" id="count-props">0</span></div>
       <div class="nav-item" data-view="team"><i class="ti ti-building-community"></i> Team</div>
       <div class="nav-item" data-view="settings"><i class="ti ti-settings"></i> Settings</div>
@@ -781,13 +779,13 @@ const StorageAdapter = {
   syncing: false,
 
   localKeys: {
-    users:'ulc_users', leads:'ulc_leads', props:'ulc_props',
+    users:'ulc_users', props:'ulc_props',
     tasks:'ulc_tasks', projects:'ulc_projects', kpis:'ulc_kpis',
     kpiMeta:'ulc_kpiMeta', callLogs:'ulc_callLogs', campaignLogs:'ulc_campaignLogs',
     active:'ulc_activeUser'
   },
   tables: {
-    users:'users', leads:'leads', props:'properties',
+    users:'users', props:'properties',
     tasks:'tasks', projects:'projects', kpis:'kpi_metrics', kpiMeta:'kpi_meta',
     callLogs:'call_logs', campaignLogs:'campaign_logs'
   },
@@ -795,10 +793,7 @@ const StorageAdapter = {
   // ---- camelCase (app) <-> snake_case (Postgres) mappers ----
   toDb: {
     users: u => ({id:u.id, name:u.name, role:u.role||null, color_idx:u.colorIdx||0}),
-    leads: l => ({id:l.id, name:l.name, phone:l.phone||null, email:l.email||null,
-      source:l.source||null, status:l.status||'new', county:l.county||null,
-      state:l.state||null, notes:l.notes||null, assigned_to:l.assignedTo||null}),
-    props: p => ({id:p.id, lead_id:p.leadId||null, address:p.address,
+    props: p => ({id:p.id, address:p.address,
       county:p.county||null, state:p.state||null,
       acres:p.acres!==''&&p.acres!=null?parseFloat(p.acres):null,
       buy_price:p.buyPrice!==''&&p.buyPrice!=null?parseFloat(p.buyPrice):null,
@@ -823,17 +818,15 @@ const StorageAdapter = {
       offers_accepted:Number(c.offersAccepted)||0,
       not_interested:Number(c.notInterested)||0,
       notes:c.notes||null}),
-    campaignLogs: c => ({id:c.id, log_date:c.date,
-      county:c.county||null,
-      leads_generated:c.leadsGenerated!==''&&c.leadsGenerated!=null?parseInt(c.leadsGenerated):null})
+    campaignLogs: c => ({id:c.id, log_date:c.date, campaign_name:c.campaignName,
+      channel:c.channel||null,
+      counties_hit:c.countiesHit||null,
+      leads_generated:c.leadsGenerated!==''&&c.leadsGenerated!=null?parseInt(c.leadsGenerated):null,
+      notes:c.notes||null})
   },
   fromDb: {
     users: u => ({id:u.id, name:u.name, role:u.role||'', colorIdx:u.color_idx||0}),
-    leads: l => ({id:l.id, name:l.name, phone:l.phone||'', email:l.email||'',
-      source:l.source||'Other', status:l.status||'new', county:l.county||'',
-      state:l.state||'TX', notes:l.notes||'', assignedTo:l.assigned_to||'',
-      created:l.created_at?l.created_at.split('T')[0]:''}),
-    props: p => ({id:p.id, leadId:p.lead_id||'', address:p.address,
+    props: p => ({id:p.id, address:p.address,
       county:p.county||'', state:p.state||'TX',
       acres:p.acres!=null?String(p.acres):'',
       buyPrice:p.buy_price!=null?String(p.buy_price):'',
@@ -859,9 +852,10 @@ const StorageAdapter = {
       callsMade:c.calls_made||0, conversationsHeld:c.conversations_held||0,
       offersMade:c.offers_made||0, offersAccepted:c.offers_accepted||0,
       notInterested:c.not_interested||0, notes:c.notes||''}),
-    campaignLogs: c => ({id:c.id, date:c.log_date,
-      county:c.county||'',
-      leadsGenerated:c.leads_generated!=null?String(c.leads_generated):''})
+    campaignLogs: c => ({id:c.id, date:c.log_date, campaignName:c.campaign_name,
+      channel:c.channel||'', countiesHit:c.counties_hit||'',
+      leadsGenerated:c.leads_generated!=null?String(c.leads_generated):'',
+      notes:c.notes||''})
   },
 
   async init(){
@@ -887,9 +881,8 @@ const StorageAdapter = {
 
   async loadAll(){
     if(this.backend === 'supabase'){
-      const [u, l, p, t, pr, k, km, cl, cal] = await Promise.all([
+      const [u, p, t, pr, k, km, cl, cal] = await Promise.all([
         this.supabase.from('users').select('*').order('created_at'),
-        this.supabase.from('leads').select('*').order('created_at',{ascending:false}),
         this.supabase.from('properties').select('*').order('created_at',{ascending:false}),
         this.supabase.from('tasks').select('*').order('created_at',{ascending:false}),
         this.supabase.from('projects').select('*').order('created_at',{ascending:false}),
@@ -903,7 +896,6 @@ const StorageAdapter = {
       if(cal.error) console.warn('campaign_logs table not found yet — run the updated schema.sql to enable the Activity Log.', cal.error.message);
       return {
         users: (u.data||[]).map(this.fromDb.users),
-        leads: (l.data||[]).map(this.fromDb.leads),
         props: (p.data||[]).map(this.fromDb.props),
         tasks: (t.data||[]).map(this.fromDb.tasks),
         projects: (pr.data||[]).map(this.fromDb.projects),
@@ -916,7 +908,6 @@ const StorageAdapter = {
     }
     return {
       users: JSON.parse(localStorage.getItem(this.localKeys.users) || '[]'),
-      leads: JSON.parse(localStorage.getItem(this.localKeys.leads) || '[]'),
       props: JSON.parse(localStorage.getItem(this.localKeys.props) || '[]'),
       tasks: JSON.parse(localStorage.getItem(this.localKeys.tasks) || '[]'),
       projects: JSON.parse(localStorage.getItem(this.localKeys.projects) || '[]'),
@@ -978,7 +969,7 @@ const StorageAdapter = {
     try{
       if(this.backend === 'supabase'){
         // Order matters: users first (foreign key references)
-        const order = ['users','leads','props','tasks','projects','kpis','kpiMeta','callLogs','campaignLogs'];
+        const order = ['users','props','tasks','projects','kpis','kpiMeta','callLogs','campaignLogs'];
         for(const col of order){
           if(data[col]?.length){
             const rows = data[col].map(this.toDb[col]);
@@ -1005,7 +996,7 @@ const StorageAdapter = {
   async wipeAll(){
     if(this.backend === 'supabase'){
       // Delete in reverse dep order
-      const order = ['tasks','projects','props','leads','users','kpis','kpiMeta','callLogs','campaignLogs'];
+      const order = ['tasks','projects','props','users','kpis','kpiMeta','callLogs','campaignLogs'];
       for(const col of order){
         await this.supabase.from(this.tables[col]).delete().neq('id','00000000-0000-0000-0000-000000000000');
       }
@@ -1039,17 +1030,16 @@ const COLORS = [
 const ICON_EDIT = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4Z"/></svg>';
 const ICON_DELETE = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>';
 
-const LEAD_STATUSES = ['new','contacted','negotiating','under-contract','closed','dead'];
 // Deal/property pipeline: everything before a deal is made collapses into "pre-deal".
 // Everything after is the actual acquisition-to-exit workflow.
 const DEAL_STAGES = ['pre-deal','due-diligence','title-clearing','closing','renegotiation','disposition'];
 const TASK_STATUSES = ['todo','in-progress','done','blocked'];
 const PROJECT_CATEGORIES = ['Marketing','SOPs & Processes','Tools & Software','Team & Hiring','Finance','Other'];
 const PROJECT_STATUSES = ['ideas','planned','in-progress','done'];
-const LEAD_SOURCES = ['Direct Mail','Cold Call','Referral','PPC','Facebook','Driving for Dollars','Other'];
+const CAMPAIGN_CHANNELS = ['Direct Mail','Cold Call','SMS','PPC','Facebook','Email','Referral','Other'];
 
 const state = {
-  users:[], leads:[], props:[], tasks:[], projects:[], kpis:[], kpiMeta:[],
+  users:[], props:[], tasks:[], projects:[], kpis:[], kpiMeta:[],
   callLogs:[], campaignLogs:[],
   activeUserId:'', activeView:'dashboard',
   filters:{}
@@ -1062,6 +1052,10 @@ const $ = sel => document.querySelector(sel);
 const uid = () => (crypto.randomUUID ? crypto.randomUUID() : 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g,c=>{const r=Math.random()*16|0;return (c==='x'?r:(r&0x3|0x8)).toString(16)}));
 const today = () => new Date().toISOString().split('T')[0];
 const isOverdue = d => d && d < today();
+// Builds a YYYY-MM-DD string from a Date's *local* fields (no UTC shift) —
+// used anywhere we need to match against stored dueDate/log_date strings,
+// which come from <input type="date"> and are always local-calendar dates.
+const isoLocal = d => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
 const initials = n => (n||'').trim().split(/\s+/).map(w=>w[0]||'').join('').toUpperCase().slice(0,2)||'?';
 const fmt = d => {if(!d)return'';const x=new Date(d);return x.toLocaleDateString('en-US',{month:'short',day:'numeric'})};
 const fmtLong = d => {if(!d)return'';const x=new Date(d);return x.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})};
@@ -1328,7 +1322,6 @@ function updateBackendBadge(){
 async function loadAll(){
   const data = await StorageAdapter.loadAll();
   state.users = data.users;
-  state.leads = data.leads;
   state.props = data.props;
   state.tasks = data.tasks;
   state.projects = data.projects;
@@ -1350,7 +1343,6 @@ async function deleteOne(collection, id){
 
 async function seed(){
   const u1=uid(), u2=uid(), u3=uid();
-  const l1=uid(), l2=uid(), l3=uid();
   const p1=uid(), p2=uid();
 
   state.users = [
@@ -1358,19 +1350,14 @@ async function seed(){
     {id:u2, name:'Jordan Lee', role:'Acquisitions', colorIdx:1},
     {id:u3, name:'Casey Nguyen', role:'Dispositions', colorIdx:2},
   ];
-  state.leads = [
-    {id:l1, name:'John Hargrove', phone:'(713) 555-0192', email:'j.hargrove@email.com', source:'Direct Mail', status:'negotiating', county:'Brazoria', state:'TX', notes:'Motivated seller, inherited land', assignedTo:u2, created:today()},
-    {id:l2, name:'Sandra Mills', phone:'(281) 555-0347', email:'smills@gmail.com', source:'Cold Call', status:'contacted', county:'Fort Bend', state:'TX', notes:'Wants quick close', assignedTo:u2, created:today()},
-    {id:l3, name:'Ray Dupont', phone:'(409) 555-0581', email:'', source:'Referral', status:'new', county:'Galveston', state:'TX', notes:'', assignedTo:'', created:today()},
-  ];
   state.props = [
-    {id:p1, leadId:l1, address:'1423 CR 45', county:'Brazoria', state:'TX', acres:'12.5', buyPrice:'31000', sellPrice:'', status:'pre-deal', notes:'Wooded lot, no utilities', assignedTo:u3, created:today()},
-    {id:p2, leadId:l2, address:'Lot 7 Hwy 36', county:'Fort Bend', state:'TX', acres:'5.0', buyPrice:'14500', sellPrice:'', status:'due-diligence', notes:'Near new development', assignedTo:u3, created:today()},
+    {id:p1, address:'1423 CR 45', county:'Brazoria', state:'TX', acres:'12.5', buyPrice:'31000', sellPrice:'', status:'pre-deal', notes:'Wooded lot, no utilities', assignedTo:u3, created:today()},
+    {id:p2, address:'Lot 7 Hwy 36', county:'Fort Bend', state:'TX', acres:'5.0', buyPrice:'14500', sellPrice:'', status:'due-diligence', notes:'Near new development', assignedTo:u3, created:today()},
   ];
   state.tasks = [
-    {id:uid(), title:'Send offer letter to John Hargrove', linkedId:l1, linkedType:'lead', dueDate:today(), priority:'high', status:'todo', notes:'', assignees:[u2], created:today()},
+    {id:uid(), title:'Send offer letter to John Hargrove', linkedId:'', linkedType:'', dueDate:today(), priority:'high', status:'todo', notes:'', assignees:[u2], created:today()},
     {id:uid(), title:'Order title search for Lot 7 Hwy 36', linkedId:p2, linkedType:'property', dueDate:'2026-07-10', priority:'medium', status:'in-progress', notes:'Use Texas Title Co', assignees:[u1,u3], created:today()},
-    {id:uid(), title:'Follow up with Sandra re: closing date', linkedId:l2, linkedType:'lead', dueDate:'2026-07-15', priority:'medium', status:'todo', notes:'', assignees:[u2], created:today()},
+    {id:uid(), title:'Follow up with Sandra re: closing date', linkedId:'', linkedType:'', dueDate:'2026-07-15', priority:'medium', status:'todo', notes:'', assignees:[u2], created:today()},
     {id:uid(), title:'Post CR 45 listing on Lands of Texas', linkedId:p1, linkedType:'property', dueDate:'2026-07-01', priority:'low', status:'done', notes:'', assignees:[u3], created:today()},
   ];
   state.projects = [
@@ -1382,7 +1369,7 @@ async function seed(){
   state.activeUserId = u1;
   await StorageAdapter.saveActiveUser(u1);
   await StorageAdapter.saveBulk({
-    users:state.users, leads:state.leads, props:state.props,
+    users:state.users, props:state.props,
     tasks:state.tasks, projects:state.projects
   });
 }
@@ -1443,7 +1430,6 @@ const app = {
 
   render(){
     // Sidebar counts
-    $('#count-leads').textContent = state.leads.length;
     $('#count-props').textContent = state.props.length;
     $('#count-tasks').textContent = state.tasks.filter(t=>t.status!=='done').length;
     $('#count-projs').textContent = state.projects.filter(p=>p.status!=='done').length;
@@ -1468,11 +1454,11 @@ const app = {
 
     const renderers = {
       dashboard: renderDashboard,
-      leads: renderLeads,
       properties: renderProperties,
       tasks: renderTasks,
       projects: renderProjects,
       activity: renderActivity,
+      calendar: renderCalendarPage,
       team: renderTeam,
       settings: renderSettings,
     };
@@ -1531,7 +1517,7 @@ function renderDashboard(){
     activeUser ? `Signed in as ${activeUser.name}` : 'Overview',
     'Dashboard',
     'Here\'s what the team needs to get done today.',
-    ''
+    `<button class="btn btn-primary" data-action="new-task"><i class="ti ti-plus"></i> Create Task</button>`
   ) + `
   <div class="card" style="margin-bottom:20px;background:var(--accent-soft);border-color:var(--accent)">
     <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap">
@@ -1632,27 +1618,6 @@ function renderDashboard(){
   </div>
 
   ${renderMonthCalendar()}
-
-  <h2 style="font-family:var(--serif);font-size:20px;font-weight:500;margin-bottom:12px;letter-spacing:-.01em">Deal pipeline <span style="font-size:12px;font-family:var(--sans);color:var(--ink-3);font-weight:400;margin-left:8px">drag deals between stages</span></h2>
-  <div class="pipeline">
-    ${DEAL_STAGES.map(s=>{
-      const items = state.props.filter(p=>p.status===s);
-      const total = items.reduce((a,b)=>a+(parseFloat(b.buyPrice)||0),0);
-      return `<div class="pipe-col" ondragover="dragOverCol(event)" ondragleave="dragLeaveCol(event)" ondrop="dropProp(event,'${s}')">
-        <div class="pipe-head">
-          <h3>${s.replace('-',' ')}</h3>
-          <span class="pipe-count">${items.length}</span>
-        </div>
-        ${items.slice(0,5).map(p=>`
-          <div class="pipe-card" draggable="true" ondragstart="dragStartCard(event,'${p.id}')" ondragend="dragEndCard(event)" onclick="openPropForm('${p.id}')">
-            <div class="pipe-card-title">${escape(p.address)}</div>
-            <div class="pipe-card-sub">${p.acres}ac · Buy ${money(p.buyPrice)}</div>
-          </div>
-        `).join('') || '<div style="font-size:11px;color:var(--ink-3);text-align:center;padding:12px 0">—</div>'}
-        ${total?`<div class="pipe-total">${money(total)}</div>`:''}
-      </div>`;
-    }).join('')}
-  </div>
 
   <div class="grid grid-3" style="margin-top:24px">
     ${renderTeamPerformanceCard(monthFilter, monthLabel)}
@@ -1831,6 +1796,103 @@ function shiftCalendar(delta){
   app.render();
 }
 
+/* =========================================================
+   CALENDAR TAB — full week view. Every task and project due
+   each day is listed out in full (no "+N more" truncation),
+   click any item to open it large in its normal edit modal.
+   Scrolls to any past or future week; position is remembered.
+   ========================================================= */
+function getWeekCalendarOffset(){
+  if(state.weekCalendarOffset === undefined){
+    const stored = localStorage.getItem('ulc_weekCalOffset');
+    state.weekCalendarOffset = stored !== null ? (parseInt(stored,10)||0) : 0;
+  }
+  return state.weekCalendarOffset;
+}
+function setWeekCalendarOffset(v){
+  state.weekCalendarOffset = v;
+  localStorage.setItem('ulc_weekCalOffset', String(v));
+  app.render();
+}
+function shiftWeekCalendar(delta){
+  setWeekCalendarOffset(delta===0 ? 0 : getWeekCalendarOffset()+delta);
+}
+// Sunday that starts the week `offsetWeeks` away from the current week.
+function getWeekStart(offsetWeeks){
+  const d = new Date();
+  d.setHours(0,0,0,0);
+  d.setDate(d.getDate() - d.getDay() + offsetWeeks*7);
+  return d;
+}
+function renderCalendarPage(){
+  const offset = getWeekCalendarOffset();
+  const weekStart = getWeekStart(offset);
+  const days = [];
+  for(let i=0;i<7;i++){ const d = new Date(weekStart); d.setDate(d.getDate()+i); days.push(d); }
+  const weekEnd = days[6];
+  const todayStr = today();
+
+  const rangeLabel = weekStart.getMonth()===weekEnd.getMonth()
+    ? `${weekStart.toLocaleDateString('en-US',{month:'long'})} ${weekStart.getDate()}–${weekEnd.getDate()}, ${weekEnd.getFullYear()}`
+    : `${weekStart.toLocaleDateString('en-US',{month:'short',day:'numeric'})} – ${weekEnd.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})}`;
+
+  const byDate = {};
+  state.tasks.forEach(t=>{ if(!t.dueDate) return; (byDate[t.dueDate]=byDate[t.dueDate]||[]).push({...t,_kind:'task'}); });
+  state.projects.forEach(p=>{ if(!p.dueDate) return; (byDate[p.dueDate]=byDate[p.dueDate]||[]).push({...p,_kind:'project'}); });
+
+  const totalItems = days.reduce((s,d)=>s+((byDate[isoLocal(d)]||[]).length),0);
+  const isThisWeek = offset===0;
+
+  return pageHeader('Schedule', 'Calendar',
+    'Every task and project this team has on the books, day by day.',
+    `<button class="btn btn-sm ${isThisWeek?'btn-primary':''}" onclick="shiftWeekCalendar(0)"><i class="ti ti-calendar-event"></i> Today</button>
+     <button class="icon-btn" onclick="shiftWeekCalendar(-1)" title="Previous week"><i class="ti ti-chevron-left"></i></button>
+     <button class="icon-btn" onclick="shiftWeekCalendar(1)" title="Next week"><i class="ti ti-chevron-right"></i></button>`
+  ) + `
+  <div class="card" style="margin-bottom:16px">
+    <div class="card-header">
+      <div>
+        <div class="card-title">${rangeLabel}</div>
+        <div class="card-sub">${totalItems} item${totalItems!==1?'s':''} scheduled this week</div>
+      </div>
+    </div>
+    <div class="week-grid">
+      ${days.map(d=>{
+        const dateStr = isoLocal(d);
+        const isToday = dateStr === todayStr;
+        const items = (byDate[dateStr]||[]).slice().sort((a,b)=>{
+          const doneDiff = (a.status==='done') - (b.status==='done');
+          if(doneDiff) return doneDiff;
+          const order = {high:0, medium:1, low:2};
+          return (order[a.priority]??1) - (order[b.priority]??1);
+        });
+        return `<div class="week-day-col ${isToday?'week-day-today':''}">
+          <div class="week-day-head">
+            <div class="week-day-name">${d.toLocaleDateString('en-US',{weekday:'short'})}</div>
+            <div class="week-day-num">${d.getDate()}</div>
+            ${items.length?`<div class="week-day-count">${items.length}</div>`:''}
+          </div>
+          <div class="week-day-items">
+            ${items.length ? items.map(item=>{
+              const isProject = item._kind==='project';
+              const done = item.status==='done';
+              const pri = item.priority||'medium';
+              const clickFn = isProject ? `openProjectForm('${item.id}')` : `openTaskForm('${item.id}')`;
+              return `<div class="week-item ${isProject?'week-item-project':'pri-'+pri}" onclick="${clickFn}" title="${escape(item.title)}">
+                <div class="week-item-title" style="${done?'text-decoration:line-through;opacity:.55':''}">${isProject?'<i class="ti ti-bulb" style="font-size:11px"></i> ':''}${escape(item.title)}</div>
+                <div class="week-item-meta">
+                  ${isProject?`<span>${escape(item.category)}</span>`:`<span class="badge b-${pri}">${pri}</span>`}
+                  ${assigneeStack(item.assignees,'sm')}
+                </div>
+              </div>`;
+            }).join('') : `<div class="week-day-empty">Nothing scheduled</div>`}
+          </div>
+        </div>`;
+      }).join('')}
+    </div>
+  </div>`;
+}
+
 function renderTeamPerformanceCard(mf, monthLabel){
   const rows = state.users.map(u=>({u, stats:userTaskStats(u.id, mf)}))
     .sort((a,b)=>b.stats.completed - a.stats.completed);
@@ -1922,63 +1984,6 @@ function renderTaskRow(t, compact){
   </div>`;
 }
 
-function renderLeads(){
-  const q = (state.filters.leadSearch||'').toLowerCase();
-  const status = state.filters.leadStatus||'';
-  const assign = state.filters.leadAssign||'';
-  const filtered = state.leads.filter(l=>{
-    if(status && l.status!==status) return false;
-    if(assign && l.assignedTo!==assign) return false;
-    if(q && !JSON.stringify(l).toLowerCase().includes(q)) return false;
-    return true;
-  });
-
-  return pageHeader('People', 'Leads', 'Sellers, buyers, and everyone in between.',
-    `<button class="btn btn-primary" data-action="new-lead"><i class="ti ti-plus"></i> Add lead</button>`) + `
-    <div class="toolbar">
-      <div class="search-wrap">
-        <i class="ti ti-search"></i>
-        <input class="search-input" placeholder="Search by name, county, phone…" data-filter="leadSearch" value="${escape(q)}">
-      </div>
-      <select class="filter-select" data-filter="leadStatus">
-        <option value="">All statuses</option>
-        ${LEAD_STATUSES.map(s=>`<option ${s===status?'selected':''}>${s}</option>`).join('')}
-      </select>
-      <select class="filter-select" data-filter="leadAssign">
-        <option value="">All assignees</option>
-        ${state.users.map(u=>`<option value="${u.id}" ${u.id===assign?'selected':''}>${escape(u.name)}</option>`).join('')}
-      </select>
-    </div>
-    <div class="item-list">
-    ${filtered.map(l=>{
-      const c = userColor(l.assignedTo);
-      return `<div class="item-row">
-        <span class="avatar avatar-lg" style="background:${c.bg};color:${c.fg}">${initials(l.name)}</span>
-        <div class="item-main">
-          <div style="display:flex;align-items:center;gap:8px;margin-bottom:2px">
-            <span class="item-title">${escape(l.name)}</span>
-            <span class="badge b-${l.status}">${l.status}</span>
-          </div>
-          <div class="item-meta">
-            ${l.phone?`<span><i class="ti ti-phone" style="font-size:12px"></i> ${escape(l.phone)}</span>`:''}
-            ${l.email?`<span><i class="ti ti-mail" style="font-size:12px"></i> ${escape(l.email)}</span>`:''}
-            <span><i class="ti ti-map-pin" style="font-size:12px"></i> ${escape(l.county)}, ${escape(l.state)}</span>
-            <span><i class="ti ti-radar" style="font-size:12px"></i> ${escape(l.source)}</span>
-          </div>
-          ${l.notes?`<div class="item-meta" style="margin-top:4px;font-style:italic">${escape(l.notes)}</div>`:''}
-        </div>
-        <div style="display:flex;align-items:center;gap:8px">
-          ${l.assignedTo?avatarHTML(l.assignedTo,'sm'):'<span style="font-size:11px;color:var(--ink-3)">Unassigned</span>'}
-        </div>
-        <div class="item-actions">
-          <button class="icon-btn" data-action="edit-lead" data-id="${l.id}" title="Edit">${ICON_EDIT}</button>
-          <button class="icon-btn" data-action="delete-lead" data-id="${l.id}" title="Delete">${ICON_DELETE}</button>
-        </div>
-      </div>`;
-    }).join('') || `<div class="empty"><i class="ti ti-users"></i><h3>No leads yet</h3><p>${q||status||assign?'Try clearing filters.':'Add your first seller or buyer to get started.'}</p><button class="btn btn-primary" data-action="new-lead"><i class="ti ti-plus"></i> Add lead</button></div>`}
-    </div>`;
-}
-
 function renderProperties(){
   const q = (state.filters.propSearch||'').toLowerCase();
   const status = state.filters.propStatus||'';
@@ -2008,7 +2013,6 @@ function renderProperties(){
     </div>
     <div class="item-list">
     ${filtered.map(p=>{
-      const lead = state.leads.find(l=>l.id===p.leadId);
       const equity = equityOf(p);
       const equityPct = (equity!==null && parseFloat(p.buyPrice)) ? Math.round((equity/parseFloat(p.buyPrice))*100) : null;
       return `<div class="item-row">
@@ -2021,7 +2025,6 @@ function renderProperties(){
           <div class="item-meta">
             <span>${escape(p.county)}, ${escape(p.state)}</span>
             <span>· ${p.acres} acres</span>
-            ${lead?`<span>· ${escape(lead.name)}</span>`:''}
           </div>
           <div class="price-row">
             <div class="price-item"><span class="price-label">Buy</span><span class="price-value">${money(p.buyPrice)}</span></div>
@@ -2153,10 +2156,20 @@ function getCallLog(dateStr){
 function campaignEntriesForDay(dateStr){
   return state.campaignLogs.filter(c => c.date === dateStr);
 }
+// The calendar's month offset is persisted in localStorage so navigating
+// back to, say, six months ago and refreshing the page (or coming back
+// tomorrow) doesn't silently snap you back to the current month.
+function getActivityCalendarOffset(){
+  if(state.activityCalendarOffset === undefined){
+    const stored = localStorage.getItem('ulc_activityCalOffset');
+    state.activityCalendarOffset = stored !== null ? parseInt(stored,10)||0 : 0;
+  }
+  return state.activityCalendarOffset;
+}
 function activityMonthBase(){
   const base = new Date();
   base.setDate(1);
-  base.setMonth(base.getMonth() + (state.activityCalendarOffset||0));
+  base.setMonth(base.getMonth() + getActivityCalendarOffset());
   return base;
 }
 // Time range for the Activity Log stat totals — independent of which month
@@ -2175,6 +2188,107 @@ function isoDaysAgo(n){
   d.setDate(d.getDate()-n);
   return d.toISOString().slice(0,10);
 }
+/* =========================================================
+   ACTIVITY TRENDS CHART — pick any two metrics from calls,
+   campaigns, and SMS logging and compare them over a chosen
+   time period. Pure inline SVG, no charting library.
+   ========================================================= */
+const TREND_METRICS = {
+  callsMade:         {label:'Calls made',       color:'#2E5D3A'},
+  conversationsHeld: {label:'Calls picked up',  color:'#1F3C5C'},
+  offersMade:        {label:'Offers made',      color:'#6B4A0E'},
+  notInterested:     {label:'Rejected leads',   color:'#B8422E'},
+  campaignsSent:     {label:'Campaigns sent',   color:'#38315C'},
+  smsSent:           {label:'SMS sent',         color:'#72243E'}
+};
+const TREND_RANGES = {7:'Last 7 days', 30:'Last 30 days', 90:'Last 90 days', 180:'Last 6 months', 365:'Last 12 months'};
+
+function getTrendDayValue(metricKey, dateStr){
+  if(metricKey==='campaignsSent') return campaignEntriesForDay(dateStr).length;
+  if(metricKey==='smsSent') return campaignEntriesForDay(dateStr).filter(c=>c.channel==='SMS').length;
+  const log = state.callLogs.find(c=>c.date===dateStr);
+  return log ? (Number(log[metricKey])||0) : 0;
+}
+// One point per day for the trailing `days` days, aggregated into
+// weekly/monthly buckets for longer ranges so the chart stays readable.
+function buildTrendSeries(metricKey, days){
+  const points = [];
+  for(let i=days-1;i>=0;i--){
+    const d = new Date(); d.setDate(d.getDate()-i);
+    const dateStr = d.toISOString().slice(0,10);
+    points.push({date:dateStr, value:getTrendDayValue(metricKey,dateStr)});
+  }
+  if(days<=45) return points;
+  const bucketSize = days<=120 ? 7 : 30;
+  const buckets = [];
+  for(let i=0;i<points.length;i+=bucketSize){
+    const slice = points.slice(i,i+bucketSize);
+    buckets.push({date:slice[slice.length-1].date, value:slice.reduce((s,p)=>s+p.value,0)});
+  }
+  return buckets;
+}
+function renderTrendChart(){
+  const range = parseInt(state.filters.trendRange||'30',10);
+  const metricA = state.filters.trendMetricA || 'callsMade';
+  const metricB = state.filters.trendMetricB !== undefined ? state.filters.trendMetricB : 'offersMade';
+  const seriesA = buildTrendSeries(metricA, range);
+  const seriesB = metricB ? buildTrendSeries(metricB, range) : null;
+  const allVals = [...seriesA.map(p=>p.value), ...(seriesB?seriesB.map(p=>p.value):[])];
+  const maxVal = Math.max(1, ...allVals);
+  const W = 640, H = 220, padL = 30, padR = 12, padT = 14, padB = 24;
+  const plotW = W - padL - padR, plotH = H - padT - padB;
+  const n = seriesA.length;
+  const xFor = i => padL + (n<=1?0:(i/(n-1))*plotW);
+  const yFor = v => padT + plotH - (v/maxVal)*plotH;
+  const pathFor = series => series.map((p,i)=>`${i===0?'M':'L'}${xFor(i).toFixed(1)},${yFor(p.value).toFixed(1)}`).join(' ');
+  const gridLines = [0,0.25,0.5,0.75,1].map(f=>{
+    const y = padT + plotH - f*plotH;
+    return `<line x1="${padL}" y1="${y.toFixed(1)}" x2="${W-padR}" y2="${y.toFixed(1)}" stroke="var(--border)" stroke-width="1"/><text x="${padL-6}" y="${(y+3).toFixed(1)}" font-size="9" fill="var(--ink-3)" text-anchor="end">${Math.round(maxVal*f)}</text>`;
+  }).join('');
+  const labelCount = Math.min(6, n);
+  const xLabels = [];
+  for(let k=0;k<labelCount;k++){
+    const idx = n<=1?0:Math.round(k*(n-1)/((labelCount-1)||1));
+    const d = new Date(seriesA[idx].date+'T00:00:00');
+    xLabels.push(`<text x="${xFor(idx).toFixed(1)}" y="${H-6}" font-size="9" fill="var(--ink-3)" text-anchor="middle">${d.toLocaleDateString('en-US',{month:'short',day:'numeric'})}</text>`);
+  }
+  const colorA = TREND_METRICS[metricA].color;
+  const colorB = metricB ? TREND_METRICS[metricB].color : null;
+  const totalA = seriesA.reduce((s,p)=>s+p.value,0);
+  const totalB = seriesB ? seriesB.reduce((s,p)=>s+p.value,0) : null;
+
+  return `<div class="card" style="margin-bottom:24px">
+    <div class="card-header" style="flex-wrap:wrap;gap:10px">
+      <div>
+        <div class="card-title">Activity trends</div>
+        <div class="card-sub">Pick up to two metrics to compare over time</div>
+      </div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">
+        <select class="filter-select" data-filter="trendRange" style="min-width:130px">
+          ${Object.entries(TREND_RANGES).map(([k,v])=>`<option value="${k}" ${String(range)===k?'selected':''}>${v}</option>`).join('')}
+        </select>
+        <select class="filter-select" data-filter="trendMetricA" style="min-width:150px">
+          ${Object.entries(TREND_METRICS).map(([k,v])=>`<option value="${k}" ${metricA===k?'selected':''}>${v.label}</option>`).join('')}
+        </select>
+        <select class="filter-select" data-filter="trendMetricB" style="min-width:150px">
+          <option value="" ${metricB?'':'selected'}>Compare to…</option>
+          ${Object.entries(TREND_METRICS).map(([k,v])=>`<option value="${k}" ${metricB===k?'selected':''}>${v.label}</option>`).join('')}
+        </select>
+      </div>
+    </div>
+    <div style="display:flex;gap:16px;margin-bottom:10px;font-size:12px;flex-wrap:wrap">
+      <span style="display:flex;align-items:center;gap:6px"><span style="width:10px;height:10px;border-radius:2px;background:${colorA};display:inline-block"></span>${TREND_METRICS[metricA].label} · ${totalA} total</span>
+      ${metricB?`<span style="display:flex;align-items:center;gap:6px"><span style="width:10px;height:10px;border-radius:2px;background:${colorB};display:inline-block;border:1px dashed ${colorB}"></span>${TREND_METRICS[metricB].label} · ${totalB} total</span>`:''}
+    </div>
+    <svg viewBox="0 0 ${W} ${H}" style="width:100%;height:auto;overflow:visible">
+      ${gridLines}
+      <path d="${pathFor(seriesA)}" fill="none" stroke="${colorA}" stroke-width="2.25" stroke-linejoin="round" stroke-linecap="round"/>
+      ${seriesB?`<path d="${pathFor(seriesB)}" fill="none" stroke="${colorB}" stroke-width="2.25" stroke-linejoin="round" stroke-linecap="round" stroke-dasharray="5,3"/>`:''}
+      ${xLabels.join('')}
+    </svg>
+  </div>`;
+}
+
 function getActivityRange(){
   const range = state.filters.activityRange || 'month';
   const todayStr = today();
@@ -2216,7 +2330,7 @@ function renderActivity(){
   }, {calls:0, conv:0, offersMade:0, offersAccepted:0, dropped:0});
   const campLeads = rangeCampaigns.reduce((s,c)=>s+(parseInt(c.leadsGenerated)||0),0);
   const countySet = new Set();
-  rangeCampaigns.forEach(c=>(c.county||'').split(',').map(x=>x.trim()).filter(Boolean).forEach(x=>countySet.add(x)));
+  rangeCampaigns.forEach(c=>(c.countiesHit||'').split(',').map(x=>x.trim()).filter(Boolean).forEach(x=>countySet.add(x)));
 
   return pageHeader('Team activity', 'Activity Log', 'Daily call logging and campaign logging, at a glance.', '') + `
   <div class="toolbar" style="margin-bottom:16px">
@@ -2229,10 +2343,7 @@ function renderActivity(){
       <input type="date" class="filter-select" data-filter="activityRangeEnd" value="${end}">
     ` : ''}
   </div>
-  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
-    <div style="font-size:11px;font-weight:600;color:var(--ink-3);text-transform:uppercase;letter-spacing:.08em">Call stats</div>
-    <button class="btn" style="padding:5px 10px;font-size:12px" onclick="openActivityDayModal('${today()}')"><i class="ti ti-phone-plus"></i> Log today</button>
-  </div>
+  <div style="font-size:11px;font-weight:600;color:var(--ink-3);text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px">Call stats</div>
   <div style="display:flex;gap:12px;margin-bottom:20px;flex-wrap:wrap">
     <div class="stat-card" style="flex:1;min-width:150px">
       <div class="stat-label"><i class="ti ti-phone" style="font-size:14px"></i> Calls made</div>
@@ -2256,10 +2367,7 @@ function renderActivity(){
     </div>
   </div>
 
-  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
-    <div style="font-size:11px;font-weight:600;color:var(--ink-3);text-transform:uppercase;letter-spacing:.08em">Campaign stats</div>
-    <button class="btn" style="padding:5px 10px;font-size:12px" onclick="openActivityDayModal('${today()}')"><i class="ti ti-speakerphone" style="font-size:12px"></i> Log today</button>
-  </div>
+  <div style="font-size:11px;font-weight:600;color:var(--ink-3);text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px">Campaign stats</div>
   <div style="display:flex;gap:12px;margin-bottom:20px;flex-wrap:wrap">
     <div class="stat-card" style="flex:1;min-width:150px">
       <div class="stat-label"><i class="ti ti-map-pin" style="font-size:14px"></i> Counties hit</div>
@@ -2272,6 +2380,7 @@ function renderActivity(){
       <div class="stat-delta">${label}</div>
     </div>
   </div>
+  ${renderTrendChart()}
   ${renderActivityCalendar()}`;
 }
 
@@ -2307,13 +2416,27 @@ function renderActivityCalendar(){
     </div>`;
   }
 
+  // Quick-jump dropdowns let you land on any month years back without
+  // clicking "previous" dozens of times — selecting either one jumps
+  // straight there and the choice is remembered (see getActivityCalendarOffset).
+  const MONTH_NAMES = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+  const nowY = new Date().getFullYear();
+  const yearOptions = [];
+  for(let y = nowY - 10; y <= nowY + 1; y++) yearOptions.push(y);
+
   return `<div class="card" style="margin-bottom:24px">
-    <div class="card-header">
+    <div class="card-header" style="flex-wrap:wrap;gap:10px">
       <div>
         <div class="card-title">Calendar</div>
         <div class="card-sub">${monthLabel} · click any day to log calls or campaigns</div>
       </div>
-      <div style="display:flex;gap:4px">
+      <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
+        <select class="filter-select" id="cal-jump-month" style="min-width:120px" onchange="calJumpChanged()">
+          ${MONTH_NAMES.map((m,i)=>`<option value="${i}" ${i===month?'selected':''}>${m}</option>`).join('')}
+        </select>
+        <select class="filter-select" id="cal-jump-year" style="min-width:90px" onchange="calJumpChanged()">
+          ${yearOptions.map(y=>`<option value="${y}" ${y===year?'selected':''}>${y}</option>`).join('')}
+        </select>
         <button class="icon-btn" onclick="shiftActivityCalendar(-1)" title="Previous month"><i class="ti ti-chevron-left"></i></button>
         <button class="icon-btn" onclick="shiftActivityCalendar(0)" title="Jump to today"><i class="ti ti-calendar-event"></i></button>
         <button class="icon-btn" onclick="shiftActivityCalendar(1)" title="Next month"><i class="ti ti-chevron-right"></i></button>
@@ -2327,9 +2450,25 @@ function renderActivityCalendar(){
     </div>
   </div>`;
 }
-function shiftActivityCalendar(delta){
-  state.activityCalendarOffset = delta===0 ? 0 : (state.activityCalendarOffset||0)+delta;
+function setActivityCalendarOffset(offset){
+  state.activityCalendarOffset = offset;
+  localStorage.setItem('ulc_activityCalOffset', String(offset));
   app.render();
+}
+function shiftActivityCalendar(delta){
+  setActivityCalendarOffset(delta===0 ? 0 : getActivityCalendarOffset()+delta);
+}
+// Jump straight to whatever month/year is selected in the calendar's
+// quick-jump dropdowns — works for any month in the past (or future).
+function calJumpChanged(){
+  const monthSel = document.getElementById('cal-jump-month');
+  const yearSel = document.getElementById('cal-jump-year');
+  if(!monthSel || !yearSel) return;
+  const targetMonth = parseInt(monthSel.value, 10);
+  const targetYear = parseInt(yearSel.value, 10);
+  const now = new Date(); now.setDate(1);
+  const offset = (targetYear - now.getFullYear()) * 12 + (targetMonth - now.getMonth());
+  setActivityCalendarOffset(offset);
 }
 
 function openActivityDayModal(dateStr){
@@ -2368,9 +2507,11 @@ function openActivityDayModal(dateStr){
         <div class="item-row" style="animation:none">
           <div style="width:28px;height:28px;border-radius:8px;background:var(--purple-soft);color:var(--purple-ink);display:flex;align-items:center;justify-content:center;flex-shrink:0"><i class="ti ti-speakerphone"></i></div>
           <div class="item-main">
-            <div class="item-title">${escape(c.county) || 'Unspecified county'}</div>
+            <div class="item-title">${escape(c.campaignName)}</div>
             <div class="item-meta">
-              ${c.leadsGenerated!==''&&c.leadsGenerated!=null?`<span>${escape(c.leadsGenerated)} leads</span>`:'<span>—</span>'}
+              ${c.channel?`<span class="badge">${escape(c.channel)}</span>`:''}
+              ${c.countiesHit?`<span>· ${escape(c.countiesHit)}</span>`:''}
+              ${c.leadsGenerated!==''&&c.leadsGenerated!=null?`<span>· ${escape(c.leadsGenerated)} leads</span>`:''}
             </div>
           </div>
           <button class="icon-btn" onclick="openCampaignEntryForm('${dateStr}','${c.id}')" title="Edit">${ICON_EDIT}</button>
@@ -2408,14 +2549,24 @@ async function saveCallLogForDay(dateStr){
 
 function openCampaignEntryForm(dateStr, id){
   const existing = id ? state.campaignLogs.find(c=>c.id===id) : null;
-  const c = existing || {county:'', leadsGenerated:''};
-  showSubModal(`<div class="modal" style="max-width:360px">
+  const c = existing || {campaignName:'', channel:'', countiesHit:'', leadsGenerated:'', notes:''};
+  showSubModal(`<div class="modal" style="max-width:420px">
     <div class="modal-header">
       <h2 class="modal-title">${existing?'Edit':'Add'} campaign entry</h2>
       <button class="icon-btn" onclick="closeSubModal()"><i class="ti ti-x"></i></button>
     </div>
-    <div class="form-group"><label class="form-label">County</label><input class="form-input" id="ace-counties" value="${escape(c.county)}" placeholder="e.g. Brazoria" autofocus></div>
-    <div class="form-group"><label class="form-label">Number of leads</label><input class="form-input" id="ace-leads" type="number" min="0" value="${c.leadsGenerated}"></div>
+    <div class="form-group"><label class="form-label">Campaign name</label><input class="form-input" id="ace-name" value="${escape(c.campaignName)}" placeholder="e.g. July direct mail drop" autofocus></div>
+    <div class="form-group"><label class="form-label">Channel</label>
+      <select class="form-select" id="ace-channel">
+        <option value="">—</option>
+        ${CAMPAIGN_CHANNELS.map(ch=>`<option ${ch===c.channel?'selected':''}>${ch}</option>`).join('')}
+      </select>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Counties hit</label><input class="form-input" id="ace-counties" value="${escape(c.countiesHit)}" placeholder="e.g. Brazoria, Fort Bend"></div>
+      <div class="form-group"><label class="form-label">Leads generated</label><input class="form-input" id="ace-leads" type="number" min="0" value="${c.leadsGenerated}"></div>
+    </div>
+    <div class="form-group"><label class="form-label">Notes</label><textarea class="form-textarea" id="ace-notes" rows="2">${escape(c.notes)}</textarea></div>
     <div class="modal-actions">
       <button class="btn" onclick="closeSubModal()">Cancel</button>
       <button class="btn btn-primary" onclick="saveCampaignEntry('${dateStr}'${existing?`,'${existing.id}'`:''})">Save</button>
@@ -2424,15 +2575,17 @@ function openCampaignEntryForm(dateStr, id){
 }
 
 async function saveCampaignEntry(dateStr, id){
-  const county = $('#ace-counties').value.trim();
-  const leads = $('#ace-leads').value;
-  if(!county && !leads){ toast('Enter a county or a number of leads','err'); return; }
+  const name = $('#ace-name').value.trim();
+  if(!name){ toast('Campaign name is required','err'); return; }
   const existing = id ? state.campaignLogs.find(c=>c.id===id) : null;
   const data = {
     id: existing ? existing.id : uid(),
     date: dateStr,
-    county: county,
-    leadsGenerated: leads
+    campaignName: name,
+    channel: $('#ace-channel').value,
+    countiesHit: $('#ace-counties').value.trim(),
+    leadsGenerated: $('#ace-leads').value,
+    notes: $('#ace-notes').value.trim()
   };
   if(existing){ const i = state.campaignLogs.findIndex(c=>c.id===existing.id); state.campaignLogs[i] = data; }
   else state.campaignLogs.push(data);
@@ -2459,7 +2612,6 @@ function renderTeam(){
     ${state.users.map(u=>{
       const c = userColor(u.id);
       const myTasks = state.tasks.filter(t=>t.status!=='done'&&(t.assignees||[]).includes(u.id));
-      const myLeads = state.leads.filter(l=>l.assignedTo===u.id);
       const myProps = state.props.filter(p=>p.assignedTo===u.id);
       const stats = userTaskStats(u.id);
       return `<div class="member-card">
@@ -2467,7 +2619,7 @@ function renderTeam(){
           <span class="avatar avatar-lg" style="background:${c.bg};color:${c.fg}">${initials(u.name)}</span>
           <div style="flex:1">
             <div class="member-name">${escape(u.name)}</div>
-            <div class="member-role">${escape(u.role||'—')} <span style="color:var(--border-strong)">·</span> ${myLeads.length} leads <span style="color:var(--border-strong)">·</span> ${myProps.length} deals</div>
+            <div class="member-role">${escape(u.role||'—')} <span style="color:var(--border-strong)">·</span> ${myProps.length} deals</div>
           </div>
           <div class="item-actions">
             <button class="icon-btn" data-action="edit-user" data-id="${u.id}" title="Edit">${ICON_EDIT}</button>
@@ -2557,9 +2709,7 @@ function renderSettings(){
     <h3>Schema reference</h3>
     <p>Tables in Postgres (see <code>schema.sql</code> in your repo for the full DDL):</p>
     <pre style="background:var(--bg);padding:14px;border-radius:var(--r-md);font-size:12px;overflow-x:auto;font-family:ui-monospace,SFMono-Regular,monospace;line-height:1.6">users       (id uuid, name, role, color_idx, created_at)
-leads       (id uuid, name, phone, email, source, status, county,
-             state, notes, assigned_to → users.id, created_at)
-properties  (id uuid, lead_id → leads.id, address, county, state,
+properties  (id uuid, address, county, state,
              acres, buy_price, sell_price, status,
              notes, assigned_to → users.id, created_at)
 tasks       (id uuid, title, linked_id, linked_type, due_date,
@@ -2589,9 +2739,6 @@ function bindViewEvents(){
       e.stopPropagation();
       const a = el.dataset.action, id = el.dataset.id;
       switch(a){
-        case 'new-lead': openLeadForm(); break;
-        case 'edit-lead': openLeadForm(id); break;
-        case 'delete-lead': confirmDelete('lead',id); break;
         case 'new-prop': openPropForm(); break;
         case 'edit-prop': openPropForm(id); break;
         case 'delete-prop': confirmDelete('prop',id); break;
@@ -2622,7 +2769,6 @@ function debounce(fn, ms){
 }
 
 function getLinkedName(id, type){
-  if(type==='lead'){ const l=state.leads.find(x=>x.id===id); return l?'↳ '+l.name:''; }
   if(type==='property'){ const p=state.props.find(x=>x.id===id); return p?'↳ '+p.address:''; }
   return '';
 }
@@ -2670,17 +2816,6 @@ function dragOverCol(e){
 }
 function dragLeaveCol(e){
   e.currentTarget.classList.remove('drag-over');
-}
-async function dropProp(e, status){
-  e.preventDefault();
-  e.currentTarget.classList.remove('drag-over');
-  const id = e.dataTransfer.getData('text/plain');
-  const p = state.props.find(x=>x.id===id);
-  if(!p || p.status===status) return;
-  p.status = status;
-  await saveOne('props', p);
-  toast(`${p.address} → ${status.replace('-',' ')}`);
-  app.render();
 }
 async function dropProject(e, status){
   e.preventDefault();
@@ -2761,15 +2896,14 @@ function toggleTaskInDay(id, dateStr){
 }
 
 async function confirmDelete(kind, id){
-  const labels = {lead:'lead', prop:'property', task:'task', project:'project', user:'team member'};
-  const map = {lead:'leads', prop:'props', task:'tasks', project:'projects', user:'users'};
+  const labels = {prop:'property', task:'task', project:'project', user:'team member'};
+  const map = {prop:'props', task:'tasks', project:'projects', user:'users'};
   let msg = `Delete this ${labels[kind]}? This cannot be undone.`;
   if(kind==='user'){
     const openTasks = state.tasks.filter(t=>t.status!=='done'&&(t.assignees||[]).includes(id)).length;
-    const leads = state.leads.filter(l=>l.assignedTo===id).length;
     const props = state.props.filter(p=>p.assignedTo===id).length;
-    if(openTasks||leads||props){
-      msg = `This person has ${openTasks} open task(s), ${leads} lead(s), and ${props} deal(s) assigned. `
+    if(openTasks||props){
+      msg = `This person has ${openTasks} open task(s) and ${props} deal(s) assigned. `
           + `They'll be unassigned (not deleted) when you remove this team member. Continue?`;
     }
   }
@@ -2800,8 +2934,8 @@ function closeModal(){
   document.body.style.overflow = '';
   $('#modal-root').innerHTML = '';
 }
-// Sub-modal: stacks on top of an already-open modal (e.g. quick-add a lead
-// or property from inside the task form) without touching/losing it underneath.
+// Sub-modal: stacks on top of an already-open modal (e.g. quick-add a
+// property from inside the task form) without touching/losing it underneath.
 function showSubModal(html){
   $('#submodal-root').innerHTML = `<div class="modal-bg" style="z-index:150" onclick="if(event.target===this)closeSubModal()">${html}</div>`;
   requestAnimationFrame(()=>{
@@ -2850,66 +2984,6 @@ function getChipValues(fieldId){
   return [...document.getElementById(fieldId).querySelectorAll('.chip.selected')].map(c=>c.dataset.uid);
 }
 
-/* ===== LEAD FORM ===== */
-function openLeadForm(id){
-  const l = id ? state.leads.find(x=>x.id===id) : {};
-  showModal(`<div class="modal">
-    <div class="modal-header">
-      <h2 class="modal-title">${id?'Edit lead':'New lead'}</h2>
-      <button class="icon-btn" onclick="closeModal()"><i class="ti ti-x"></i></button>
-    </div>
-    <div class="form-row">
-      <div class="form-group"><label class="form-label">Full name</label><input class="form-input" id="fl-name" value="${escape(l.name||'')}" placeholder="John Smith"></div>
-      <div class="form-group"><label class="form-label">Status</label>
-        <select class="form-select" id="fl-status">${LEAD_STATUSES.map(s=>`<option ${(l.status||'new')===s?'selected':''}>${s}</option>`).join('')}</select>
-      </div>
-    </div>
-    <div class="form-row">
-      <div class="form-group"><label class="form-label">Phone</label><input class="form-input" id="fl-phone" value="${escape(l.phone||'')}" placeholder="(555) 000-0000"></div>
-      <div class="form-group"><label class="form-label">Email</label><input class="form-input" id="fl-email" value="${escape(l.email||'')}" placeholder="email@example.com"></div>
-    </div>
-    <div class="form-row">
-      <div class="form-group"><label class="form-label">County</label><input class="form-input" id="fl-county" value="${escape(l.county||'')}"></div>
-      <div class="form-group"><label class="form-label">State</label><input class="form-input" id="fl-state" value="${escape(l.state||'TX')}"></div>
-    </div>
-    <div class="form-row">
-      <div class="form-group"><label class="form-label">Source</label>
-        <select class="form-select" id="fl-source">${LEAD_SOURCES.map(s=>`<option ${(l.source||'')===s?'selected':''}>${s}</option>`).join('')}</select>
-      </div>
-      <div class="form-group"><label class="form-label">Assigned to</label>
-        <select class="form-select" id="fl-assign"><option value="">Unassigned</option>${state.users.map(u=>`<option value="${u.id}" ${l.assignedTo===u.id?'selected':''}>${escape(u.name)}</option>`).join('')}</select>
-      </div>
-    </div>
-    <div class="form-group"><label class="form-label">Notes</label><textarea class="form-textarea" id="fl-notes">${escape(l.notes||'')}</textarea></div>
-    <div class="modal-actions">
-      <button class="btn" onclick="closeModal()">Cancel</button>
-      <button class="btn btn-primary" onclick="saveLead('${id||''}')">${id?'Save changes':'Add lead'}</button>
-    </div>
-  </div>`);
-}
-async function saveLead(id){
-  const name = $('#fl-name').value.trim();
-  if(!name) return toast('Name is required','err');
-  const data = {
-    id: id||uid(), name,
-    status: $('#fl-status').value,
-    phone: $('#fl-phone').value,
-    email: $('#fl-email').value,
-    county: $('#fl-county').value,
-    state: $('#fl-state').value,
-    source: $('#fl-source').value,
-    assignedTo: $('#fl-assign').value,
-    notes: $('#fl-notes').value,
-    created: id ? state.leads.find(x=>x.id===id).created : today()
-  };
-  if(id){ const i=state.leads.findIndex(l=>l.id===id); state.leads[i]=data; }
-  else state.leads.unshift(data);
-  await saveOne('leads', data);
-  closeModal();
-  toast(id?'Lead updated':'Lead added');
-  app.render();
-}
-
 /* ===== PROPERTY FORM ===== */
 function openPropForm(id){
   const p = id ? state.props.find(x=>x.id===id) : {};
@@ -2934,13 +3008,8 @@ function openPropForm(id){
       <div class="form-group"><label class="form-label">Sell price</label><input class="form-input" id="fp-sell" type="number" value="${escape(p.sellPrice||'')}" oninput="updateEquityPreview()" placeholder="Once known"></div>
     </div>
     <div id="fp-equity-preview" style="font-size:12.5px;font-weight:600;margin:-8px 0 14px"></div>
-    <div class="form-row">
-      <div class="form-group"><label class="form-label">Linked lead</label>
-        <select class="form-select" id="fp-lead"><option value="">None</option>${state.leads.map(l=>`<option value="${l.id}" ${p.leadId===l.id?'selected':''}>${escape(l.name)}</option>`).join('')}</select>
-      </div>
-      <div class="form-group"><label class="form-label">Assigned to</label>
-        <select class="form-select" id="fp-assign"><option value="">Unassigned</option>${state.users.map(u=>`<option value="${u.id}" ${p.assignedTo===u.id?'selected':''}>${escape(u.name)}</option>`).join('')}</select>
-      </div>
+    <div class="form-group"><label class="form-label">Assigned to</label>
+      <select class="form-select" id="fp-assign"><option value="">Unassigned</option>${state.users.map(u=>`<option value="${u.id}" ${p.assignedTo===u.id?'selected':''}>${escape(u.name)}</option>`).join('')}</select>
     </div>
     <div class="form-group"><label class="form-label">Notes</label><textarea class="form-textarea" id="fp-notes">${escape(p.notes||'')}</textarea></div>
     <div class="modal-actions">
@@ -2972,7 +3041,6 @@ async function saveProp(id){
     status: $('#fp-status').value,
     buyPrice: $('#fp-buy').value,
     sellPrice: $('#fp-sell').value,
-    leadId: $('#fp-lead').value,
     assignedTo: $('#fp-assign').value,
     notes: $('#fp-notes').value,
     created: id ? state.props.find(x=>x.id===id).created : today()
@@ -2989,7 +3057,6 @@ async function saveProp(id){
 function openTaskForm(id, presetDate){
   const t = id ? state.tasks.find(x=>x.id===id) : {};
   const allLinked = [
-    ...state.leads.map(l=>({id:l.id,type:'lead',label:'Lead: '+l.name})),
     ...state.props.map(p=>({id:p.id,type:'property',label:'Property: '+p.address}))
   ];
   const currentLink = (t.linkedId&&t.linkedType) ? `${t.linkedId}|${t.linkedType}` : '';
@@ -3017,7 +3084,6 @@ function openTaskForm(id, presetDate){
       <label class="form-label" style="display:flex;align-items:center;justify-content:space-between">
         <span>Link to</span>
         <span style="display:flex;gap:6px;text-transform:none;font-weight:500">
-          <button type="button" class="btn btn-sm" onclick="openQuickLeadForm()"><i class="ti ti-plus"></i> Lead</button>
           <button type="button" class="btn btn-sm" onclick="openQuickPropForm()"><i class="ti ti-plus"></i> Property</button>
         </span>
       </label>
@@ -3064,41 +3130,6 @@ async function saveTask(id){
   // If THIS device just marked it done, don't also notify "task completed" — that's redundant.
   if(newStatus==='done' && (!prev || prev.status!=='done')) markSeen('notif_task_done_seen', data.id);
 }
-function openQuickLeadForm(){
-  showSubModal(`<div class="modal" style="width:min(420px,100%)">
-    <div class="modal-header">
-      <h2 class="modal-title">Quick add lead</h2>
-      <button class="icon-btn" onclick="closeSubModal()"><i class="ti ti-x"></i></button>
-    </div>
-    <div class="form-group"><label class="form-label">Name</label><input class="form-input" id="qft-lead-name" placeholder="Seller or contact name"></div>
-    <div class="form-row">
-      <div class="form-group"><label class="form-label">Phone</label><input class="form-input" id="qft-lead-phone"></div>
-      <div class="form-group"><label class="form-label">County</label><input class="form-input" id="qft-lead-county"></div>
-    </div>
-    <p style="font-size:12px;color:var(--ink-3);margin-top:-4px">You can fill in the rest — email, source, notes — later from the Leads page.</p>
-    <div class="modal-actions">
-      <button class="btn" onclick="closeSubModal()">Cancel</button>
-      <button class="btn btn-primary" onclick="saveQuickLead()">Add lead</button>
-    </div>
-  </div>`);
-}
-async function saveQuickLead(){
-  const name = $('#qft-lead-name').value.trim();
-  if(!name) return toast('Name is required','err');
-  const data = {
-    id: uid(), name,
-    phone: $('#qft-lead-phone').value,
-    email: '', source: '', status: 'new',
-    county: $('#qft-lead-county').value, state: 'TX',
-    notes: '', assignedTo: '', created: today()
-  };
-  state.leads.unshift(data);
-  await saveOne('leads', data);
-  closeSubModal();
-  toast('Lead added');
-  linkNewEntity(data.id, 'lead', 'Lead: '+data.name);
-}
-
 function openQuickPropForm(){
   showSubModal(`<div class="modal" style="width:min(420px,100%)">
     <div class="modal-header">
@@ -3125,7 +3156,7 @@ async function saveQuickProp(){
     county: $('#qft-prop-county').value, state: 'TX',
     acres: $('#qft-prop-acres').value,
     buyPrice: '', sellPrice: '',
-    status: 'pre-deal', notes: '', leadId: '', assignedTo: '',
+    status: 'pre-deal', notes: '', assignedTo: '',
     created: today()
   };
   state.props.unshift(data);
@@ -3135,7 +3166,7 @@ async function saveQuickProp(){
   linkNewEntity(data.id, 'property', 'Property: '+data.address);
 }
 
-// Adds the newly created lead/property to the still-open task form's
+// Adds the newly created property to the still-open task form's
 // "Link to" dropdown and selects it, then refreshes background counts.
 function linkNewEntity(id, type, label){
   const sel = document.getElementById('ft-linked');
@@ -3255,7 +3286,7 @@ function exportData(){
   const payload = {
     exportedAt: new Date().toISOString(),
     version: 1,
-    users: state.users, leads: state.leads, props: state.props,
+    users: state.users, props: state.props,
     tasks: state.tasks, projects: state.projects,
     callLogs: state.callLogs, campaignLogs: state.campaignLogs
   };
@@ -3281,14 +3312,13 @@ function importData(){
         const data = JSON.parse(r.result);
         if(!confirm('Overwrite all current data with this import?')) return;
         if(data.users) state.users = data.users;
-        if(data.leads) state.leads = data.leads;
         if(data.props) state.props = data.props;
         if(data.tasks) state.tasks = data.tasks;
         if(data.projects) state.projects = data.projects;
         if(data.callLogs) state.callLogs = data.callLogs;
         if(data.campaignLogs) state.campaignLogs = data.campaignLogs;
         await StorageAdapter.saveBulk({
-          users:state.users, leads:state.leads, props:state.props,
+          users:state.users, props:state.props,
           tasks:state.tasks, projects:state.projects,
           callLogs:state.callLogs, campaignLogs:state.campaignLogs
         });
@@ -3304,8 +3334,8 @@ function importData(){
 }
 async function resetData(){
   if(!confirm('This wipes everything. Sure?')) return;
-  if(!confirm('Really sure? All leads, properties, tasks, projects, and activity logs will be gone.')) return;
-  state.users=[]; state.leads=[]; state.props=[]; state.tasks=[]; state.projects=[];
+  if(!confirm('Really sure? All properties, tasks, projects, and activity logs will be gone.')) return;
+  state.users=[]; state.props=[]; state.tasks=[]; state.projects=[];
   state.callLogs=[]; state.campaignLogs=[]; state.activeUserId='';
   await StorageAdapter.wipeAll();
   await seed();
