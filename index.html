@@ -443,18 +443,90 @@ input,select,textarea{font:inherit;color:inherit}
 }
 .prop-timeline-status .tl-sep{color:var(--ink-3);font-weight:500}
 
+/* ---- funding tier table (under the timeline) ---- */
+.funding-table{
+  width:100%;border-collapse:collapse;margin-top:12px;
+  font-size:12px;font-variant-numeric:tabular-nums;
+}
+.funding-table th{
+  text-align:left;font-size:10.5px;font-weight:500;color:var(--ink-3);
+  text-transform:uppercase;letter-spacing:.05em;
+  padding:0 10px 6px 0;border-bottom:1px solid var(--border);
+}
+.funding-table td{padding:7px 10px 7px 0;border-bottom:1px solid var(--border);color:var(--ink-2)}
+.funding-table tbody tr:last-child td{border-bottom:1px solid var(--border-strong)}
+.funding-table .ft-name{font-weight:600;color:var(--ink)}
+/* Tiers already reached read at full strength; upcoming ones sit back. */
+.funding-table tbody tr:not(.is-funded) td{color:var(--ink-3)}
+.funding-table .ft-num{text-align:right;white-space:nowrap}
+.funding-table .ft-status{text-align:right;white-space:nowrap}
+.funding-table .ft-dim{color:var(--ink-3);font-size:11px}
+.funding-table tfoot td{
+  padding-top:8px;border-bottom:none;font-weight:600;color:var(--ink);
+}
+.ft-pill{
+  display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:20px;
+  background:var(--surface-2);color:var(--ink-3);font-size:10.5px;font-weight:600;
+}
+.ft-pill.ft-done{background:var(--accent-soft);color:var(--accent)}
+.ft-pill i{font-size:11px}
+.ft-over{color:var(--danger)}
+@media(max-width:640px){
+  .funding-table th:nth-child(5),.funding-table td:nth-child(5){display:none}
+}
+
+/* ---- funding tab + inline editor (property card) ---- */
+.funding-tabs{display:flex;gap:6px;margin-top:10px}
+.funding-tab{
+  display:inline-flex;align-items:center;gap:6px;cursor:pointer;
+  padding:6px 12px;font-size:11.5px;font-weight:600;font-family:inherit;
+  color:var(--ink-2);background:var(--surface-2);
+  border:1px solid var(--border);border-bottom:none;
+  border-radius:var(--r-sm) var(--r-sm) 0 0;
+}
+.funding-tab:hover{background:var(--accent-soft);color:var(--accent)}
+/* Open tab merges into the panel below it — the seam is what makes it read
+   as a tab rather than a floating button. */
+.funding-tab.is-open{
+  background:var(--surface);color:var(--accent);
+  border-color:var(--border-strong);margin-bottom:-1px;position:relative;z-index:1;
+}
+.funding-tab i{font-size:13px}
+.funding-tab-count{
+  background:var(--accent-soft);color:var(--accent);
+  padding:1px 6px;border-radius:20px;font-size:10.5px;
+}
+.funding-panel{
+  border:1px solid var(--border-strong);border-radius:0 var(--r-sm) var(--r-sm) var(--r-sm);
+  padding:12px;background:var(--surface);
+}
+.funding-panel-head{
+  display:grid;grid-template-columns:1fr 110px 104px 112px auto;gap:8px;
+  font-size:10.5px;font-weight:500;color:var(--ink-3);
+  text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px;
+}
+.funding-panel-head span:nth-child(3),.funding-panel-head span:nth-child(4){text-align:left}
+.funding-panel-actions{margin-left:auto;display:flex;gap:6px}
+@media(max-width:640px){.funding-panel-head{display:none}}
+
 /* ---- funding schedule editor (property form) ---- */
 .form-hint{font-size:11.5px;color:var(--ink-3);margin:-2px 0 8px}
 .funding-row{
-  display:grid;grid-template-columns:1fr 146px 104px 112px auto;
+  display:grid;grid-template-columns:1fr 110px 104px 112px auto;
   gap:8px;align-items:center;margin-bottom:8px;
 }
+/* Derived band range, shown in the row rather than typed into it. */
+.funding-band{
+  font-size:11.5px;font-weight:600;color:var(--ink-2);
+  font-variant-numeric:tabular-nums;white-space:nowrap;
+}
+.funding-band.is-dim{color:var(--ink-3);font-weight:500}
+.funding-band.is-bad{color:var(--danger)}
 .funding-foot{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
 .funding-total{font-size:11.5px;color:var(--ink-2)}
 @media(max-width:640px){
   .funding-row{grid-template-columns:1fr 1fr auto}
-  .funding-row .funding-name{grid-column:1/-1}
-  .funding-row .funding-date{grid-column:1/-1}
+  .funding-row .funding-band{grid-column:1/-1}
 }
 
 /* ============ TASK CHECK ============ */
@@ -877,7 +949,7 @@ const StorageAdapter = {
       sell_price:p.sellPrice!==''&&p.sellPrice!=null?parseFloat(p.sellPrice):null,
       closing_date:p.closingDate||null,
       notes:p.notes||null,
-      funding_schedule:normalizeFunding(p.funding)}),
+      funding_schedule:normalizeFunding(p.funding, p)}),
     tasks: t => ({id:t.id, title:t.title, linked_id:t.linkedId||null,
       linked_type:t.linkedType||null, due_date:t.dueDate||null,
       priority:t.priority||'medium', status:t.status||'todo',
@@ -912,7 +984,9 @@ const StorageAdapter = {
       sellPrice:p.sell_price!=null?String(p.sell_price):'',
       closingDate:p.closing_date||'',
       notes:p.notes||'',
-      funding:normalizeFunding(p.funding_schedule),
+      // Pass the closing date through: tiers saved under the older dated-payment
+      // model are converted to day offsets against it on the way in.
+      funding:normalizeFunding(p.funding_schedule, {closingDate:p.closing_date||''}),
       created:p.created_at?p.created_at.split('T')[0]:''}),
     tasks: t => ({id:t.id, title:t.title, linkedId:t.linked_id||'',
       linkedType:t.linked_type||'', dueDate:t.due_date||'',
@@ -1125,6 +1199,9 @@ const state = {
   users:[], props:[], tasks:[], projects:[], kpis:[], kpiMeta:[],
   callLogs:[], campaignLogs:[],
   activeUserId:'', activeView:'dashboard',
+  // Which property has its funding-tier editor open on the Properties list.
+  // Held in state rather than the DOM so a re-render doesn't snap it shut.
+  fundingOpen:null,
   filters:{}
 };
 
@@ -1197,43 +1274,105 @@ function userName(id){
    string from an older export, or entries missing a date.
 --------------------------------------------------------------------------- */
 const numOrNull = v => (v===''||v==null||isNaN(parseFloat(v))) ? null : parseFloat(v);
-function normalizeFunding(raw){
+
+/* A funding tier is a band of days after closing, and how the profit splits
+   during it. Only three things are ever entered:
+
+     days     — the last day of the band, counted from the closing date
+     pctUs    — operator's share while the deal sits in that band
+     pctFunder— the funder's share
+
+   Everything else is derived: the band's start day is the previous tier's
+   end + 1, its calendar date is closing + days, and its label is "0-45 days".
+   Deriving rather than storing means moving a closing date reshuffles the
+   whole schedule automatically instead of leaving stale dates behind.
+
+   normalizeFunding() is the one gate every read and write passes through, so
+   nothing downstream defends against nulls, JSON strings from an old export,
+   or tiers left over from the earlier dated-payment model. */
+function normalizeFunding(raw, p){
   let list = raw;
   if(typeof list === 'string'){
     try{ list = JSON.parse(list); }catch(e){ return []; }
   }
   if(!Array.isArray(list)) return [];
-  return list
+  const closing = p && p.closingDate ? p.closingDate : null;
+
+  const out = list
     .filter(f => f && typeof f === 'object')
-    .map(f => ({
-      id:      f.id || uid(),
-      name:    (f.name || '').toString().trim(),
-      date:    (f.date || '').toString().slice(0,10),
-      percent: numOrNull(f.percent),
-      amount:  numOrNull(f.amount)
-    }))
-    .filter(f => f.date)                       // undated tiers can't be placed
-    .sort((a,b) => a.date.localeCompare(b.date));
+    .map(f => {
+      let days = numOrNull(f.days);
+      // Migration: tiers from the earlier model carried a calendar date and a
+      // single percent. Convert the date to a day offset where we can, and
+      // read the old percent as our share with the remainder to the funder.
+      if(days == null && f.date && closing){
+        days = Math.round((dateMs(String(f.date).slice(0,10)) - dateMs(closing)) / 86400000);
+      }
+      let pctUs     = numOrNull(f.pctUs);
+      let pctFunder = numOrNull(f.pctFunder);
+      if(pctUs == null && pctFunder == null && f.percent != null){
+        pctUs = numOrNull(f.percent);
+        if(pctUs != null) pctFunder = 100 - pctUs;
+      }
+      return {id: f.id || uid(), days: days==null?null:Math.round(days), pctUs, pctFunder};
+    })
+    .filter(f => f.days != null && f.days > 0)   // a band has to end somewhere
+    .sort((a,b) => a.days - b.days);
+
+  // Two tiers ending on the same day would make a zero-length band; keep the
+  // first and drop the duplicate rather than rendering an invisible marker.
+  return out.filter((f,i) => i===0 || f.days !== out[i-1].days);
 }
-// A tier's share of the profit, in dollars: percent x equity created.
-// Null when there's no percent, or no sell price yet to create equity
-// against — the timeline says so rather than showing a misleading $0.
-function fundingShare(p, f){
-  if(f.percent == null) return null;
+
+// Bands, with their start day and calendar date filled in. This is what every
+// renderer works from — none of them recompute the offsets themselves.
+function fundingBands(p){
+  const tiers = normalizeFunding(p.funding, p);
+  let from = 0;
+  return tiers.map(t => {
+    const band = {
+      ...t,
+      from,
+      to: t.days,
+      label: `${from}-${t.days} days`,
+      date: p.closingDate ? addDays(p.closingDate, t.days) : null
+    };
+    from = t.days + 1;
+    return band;
+  });
+}
+const addDays = (iso, n) => {
+  const d = new Date(dateMs(iso));
+  d.setDate(d.getDate() + n);
+  return isoLocal(d);
+};
+// How many days past closing the deal is today. Negative before closing,
+// null with no closing date set.
+function daysSinceClosing(p){
+  if(!p.closingDate) return null;
+  return Math.round((dateMs(today()) - dateMs(p.closingDate)) / 86400000);
+}
+// The band the deal is sitting in right now — the split that's live today.
+function activeBand(p){
+  const n = daysSinceClosing(p);
+  if(n == null || n < 0) return null;
+  return fundingBands(p).find(b => n >= b.from && n <= b.to) || null;
+}
+// A share of the profit, in dollars. Null with no sell price yet to create
+// equity against — callers say so rather than showing a misleading $0.
+function shareOf(p, pct){
+  if(pct == null) return null;
   const equity = equityOf(p);
   if(equity === null) return null;
-  return equity * (f.percent / 100);
-}
-// Total cash actually scheduled to be wired — shown against buy price so you
-// can see at a glance whether the schedule adds up to what you agreed to pay.
-function fundingTotal(p){
-  return normalizeFunding(p.funding).reduce((sum,f)=> sum + (f.amount||0), 0);
+  return equity * (pct / 100);
 }
 // --- Funding tiers, as the Properties sort control thinks of them ---
-// Final tier: the last scheduled tier on the deal.
-const finalTier = p => { const f=normalizeFunding(p.funding); return f.length ? f[f.length-1] : null; };
-// Next tier step: the earliest tier not yet reached.
-const nextTier  = p => normalizeFunding(p.funding).find(f => f.date >= today()) || null;
+// Final tier: the day the last band closes out.
+const finalTier = p => { const b=fundingBands(p); return b.length ? b[b.length-1] : null; };
+// Next tier step: the next band boundary still ahead of us.
+const nextTier  = p => { const n=daysSinceClosing(p);
+  return n==null ? null : (fundingBands(p).find(b => b.to >= n) || null); };
+
 // Parse a stored YYYY-MM-DD as a *local* midnight, matching isoLocal().
 // new Date('2026-08-05') alone is parsed as UTC and renders as Aug 4 in the
 // Americas, which would put markers on the wrong day.
@@ -1522,14 +1661,18 @@ async function seed(){
   // Seed one deal with a funding schedule so the timeline shows what
   // named checkpoints look like on a live property.
   const plusDays = n => {const d=new Date(); d.setDate(d.getDate()+n); return isoLocal(d);};
-  const p2Closing = plusDays(45);
+  // Already closed, so the deal sits inside a live band on the timeline.
+  const p2Closing = plusDays(-60);
   state.props = [
     {id:p1, propertyId:'BRZ-1423', county:'Brazoria', state:'TX', acres:'12.5', buyPrice:'31000', sellPrice:'', closingDate:'', notes:'Wooded lot, no utilities', funding:[], created:today()},
     {id:p2, propertyId:'FB-0007', county:'Fort Bend', state:'TX', acres:'5.0', buyPrice:'14500', sellPrice:'29500', closingDate:p2Closing, notes:'Near new development', created:today(),
+      // Day bands measured from the closing date, operator share first.
       funding:[
-        {id:uid(), name:'Tier 1',             date:plusDays(5),  percent:20, amount:1000},
-        {id:uid(), name:'Tier 2',             date:plusDays(18), percent:10, amount:500},
-        {id:uid(), name:'Balance at closing', date:p2Closing,    percent:70, amount:13000},
+        {id:uid(), days:45,  pctUs:75, pctFunder:25},
+        {id:uid(), days:90,  pctUs:70, pctFunder:30},
+        {id:uid(), days:135, pctUs:60, pctFunder:40},
+        {id:uid(), days:180, pctUs:50, pctFunder:50},
+        {id:uid(), days:300, pctUs:45, pctFunder:55},
       ]},
   ];
   state.tasks = [
@@ -1671,6 +1814,9 @@ const app = {
     };
     main.innerHTML = (renderers[state.activeView] || renderDashboard)();
     bindViewEvents();
+    // The inline funding editor builds its rows as real DOM nodes, so it has
+    // to be filled in after the view's HTML is in place.
+    hydrateFundingPanel();
   },
 };
 
@@ -2192,114 +2338,238 @@ function renderTaskRow(t, compact){
   </div>`;
 }
 
-// Horizontal timeline shown under each property. Only data actually held in
-// the CRM is labelled: each funding tier and the closing date. The property's
-// created date still sets the left edge of the scale so the elapsed-time fill
-// means something, but it is never drawn as a checkpoint.
+// Horizontal timeline shown under each property. It covers the window that
+// actually matters operationally: the post-closing period, from the closing
+// date through the end of the last funding band. Each marker is a band
+// boundary, labelled with the split that applies up to that day.
 //
-// A tier's figure is its share of the profit — percent x equity created —
-// not the cash wired, which is tracked separately in the roll-up line.
+// Before closing there is nothing to plot — the bands are all measured from a
+// date that hasn't happened yet — so the card says so instead.
 function renderClosingTimeline(p){
-  const funding = normalizeFunding(p.funding);
-  if(!p.closingDate && !funding.length){
-    return `<div class="prop-timeline prop-timeline-empty">
-      <i class="ti ti-calendar-off" style="font-size:13px"></i> No closing date or funding scheduled
+  const bands = fundingBands(p);
+  const since = daysSinceClosing(p);
+
+  if(!p.closingDate){
+    return `<div class="prop-timeline">
+      <div class="prop-timeline-empty">
+        <i class="ti ti-calendar-off" style="font-size:13px"></i>
+        No closing date set${bands.length?` — ${bands.length} tier${bands.length===1?'':'s'} waiting on one`:''}
+      </div>
+      ${renderFundingTab(p, bands)}
+    </div>`;
+  }
+  if(!bands.length){
+    return `<div class="prop-timeline">
+      <div class="prop-timeline-empty">
+        <i class="ti ti-timeline-event" style="font-size:13px"></i>
+        Closing ${fmtLong(p.closingDate)} · no funding tiers set
+      </div>
+      ${renderFundingTab(p, bands)}
     </div>`;
   }
 
-  const todayMs = dateMs(today());
+  const lastDay = bands[bands.length-1].to;
+  const pctOf   = day => Math.min(100, Math.max(0, (day / lastDay) * 100));
+  // Before closing the window hasn't opened; past the last band it's spent.
+  const elapsedPct = since == null || since < 0 ? 0 : pctOf(since);
+  const current = activeBand(p);
+  const expired = since != null && since > lastDay;
 
-  // --- Checkpoints: funding tiers + closing. Nothing else. ----------------
-  const marks = funding.map(f => ({
-    kind:'funding', name:f.name || 'Funding', date:f.date,
-    percent:f.percent, share:fundingShare(p, f), amount:f.amount
-  }));
-  if(p.closingDate) marks.push({kind:'closing', name:'Closing', date:p.closingDate});
-  // A tier and the closing date routinely share a day (the final tier lands on
-  // closing). Rank breaks those ties deterministically — a comparator that just
-  // returned 1 for every tie would order the bar differently run to run.
-  const RANK = {funding:0, closing:1};
-  marks.sort((a,b) => a.date.localeCompare(b.date) || RANK[a.kind] - RANK[b.kind]);
+  const accent = expired ? 'var(--danger)' : current ? 'var(--accent)' : 'var(--ink-3)';
 
-  // --- Domain -------------------------------------------------------------
-  // Left edge is the property's created date (unlabelled, scale only) so the
-  // green elapsed band reads as real time passed rather than starting at
-  // whatever the first tier happens to be.
-  const markMs  = marks.map(m => dateMs(m.date));
-  const startMs = Math.min(dateMs(p.created || today()), ...markMs);
-  const endMs   = Math.max(...markMs, todayMs);
-  const span    = Math.max(endMs - startMs, 1); // avoid divide-by-zero on a same-day deal
-  const pctOf   = ms => Math.min(100, Math.max(0, ((ms - startMs) / span) * 100));
-  const elapsedPct = pctOf(todayMs);
-
-  // --- Closing status -----------------------------------------------------
-  const closeMs     = p.closingDate ? dateMs(p.closingDate) : null;
-  const daysLeft    = closeMs!==null ? Math.round((closeMs - todayMs) / 86400000) : null;
-  const overdue     = closeMs!==null && todayMs > closeMs;
-  const closesToday = daysLeft === 0;
-  const accent = overdue ? 'var(--danger)' : closesToday ? 'var(--gold)' : 'var(--accent)';
-
-  // Labels alternate above and below the track so neighbouring checkpoints
-  // can never overprint each other, and are pinned inside the plot at the
-  // two ends rather than overflowing the card.
-  const html = marks.map((m, i) => {
-    const pct    = pctOf(dateMs(m.date));
+  // Band boundaries, labelled above/below alternately so neighbouring labels
+  // can't overprint each other on a tight schedule.
+  const html = bands.map((b, i) => {
+    const pct    = pctOf(b.to);
     const side   = i % 2 === 0 ? 'above' : 'below';
-    const future = dateMs(m.date) > todayMs;
-    const align  = pct <= 6 ? 'translateX(0)' : pct >= 94 ? 'translateX(-100%)' : 'translateX(-50%)';
-
-    // Profit share: "70% · $10,500", or "70% of —" when there is no sell
-    // price yet, so it is obvious why no dollar figure is shown.
-    let figure = '';
-    if(m.kind === 'funding' && m.percent != null){
-      figure = m.share != null
-        ? ` · ${m.percent}% · <span class="tl-amount">${money(m.share)}</span>`
-        : ` · <span class="tl-amount">${m.percent}% of —</span>`;
-    }
-    const meta = fmt(m.date) + figure;
-    const tip = `${m.name} — ${fmtLong(m.date)}`
-      + (m.percent != null ? ` · ${m.percent}% of profit${m.share!=null?` = ${money(m.share)}`:' (needs a sell price)'}` : '')
-      + (m.amount  != null ? ` · ${money(m.amount)} wired` : '');
-
+    const past   = since != null && since > b.to;
+    // Match on the band's end day, not its id: a tier saved without an id gets
+    // a fresh one on every normalize pass, so ids can't be compared across two
+    // separate calls. End days are unique after de-duplication.
+    const isNow  = current && current.to === b.to;
+    const align  = pct >= 94 ? 'translateX(-100%)' : 'translateX(-50%)';
+    const split  = (b.pctUs!=null||b.pctFunder!=null)
+      ? `${b.pctUs!=null?b.pctUs:'—'}% / ${b.pctFunder!=null?b.pctFunder:'—'}%` : '';
+    const tip = `${b.label}${b.date?` — through ${fmtLong(b.date)}`:''}`
+      + (split?` · us ${b.pctUs}% / funder ${b.pctFunder}%`:'')
+      + (isNow?' · current band':'');
     return `<div class="tl-mark" style="left:${pct}%" title="${escape(tip)}">
-      <div class="tl-dot ${future?'is-future':''}"
-           style="background:${future?'var(--surface)':(m.kind==='closing'?accent:'var(--accent)')};border-color:var(--surface)"></div>
+      <div class="tl-dot ${past?'':'is-future'}"
+           style="background:${past?'var(--accent)':'var(--surface)'};border-color:var(--surface)"></div>
       <div class="tl-stem ${side}"></div>
       <div class="tl-label ${side}" style="transform:${align}">
-        <span class="tl-name" style="${m.kind==='closing'?`color:${accent}`:''}">${escape(m.name)}</span>
-        <span class="tl-meta">${meta}</span>
+        <span class="tl-name" style="${isNow?'color:var(--accent)':''}">${escape(b.label)}</span>
+        <span class="tl-meta">${split}</span>
       </div>
     </div>`;
   }).join('');
 
-  const statusLabel = closeMs===null ? 'No closing date scheduled'
-    : overdue ? `${Math.abs(daysLeft)} day${Math.abs(daysLeft)===1?'':'s'} overdue`
-    : closesToday ? 'Closing today'
-    : `${daysLeft} day${daysLeft===1?'':'s'} to close`;
+  // Day 0 is the closing itself — anchor the left edge so the bands read as
+  // time since closing rather than floating free.
+  const zero = `<div class="tl-mark" style="left:0%" title="Closing ${escape(fmtLong(p.closingDate))}">
+    <div class="tl-dot" style="background:var(--accent);border-color:var(--surface)"></div>
+    <div class="tl-stem below"></div>
+    <div class="tl-label below" style="transform:translateX(0)">
+      <span class="tl-name">Closing</span>
+      <span class="tl-meta">${fmt(p.closingDate)}</span>
+    </div>
+  </div>`;
 
-  // Roll-up: profit share committed across the tiers, and cash wired to date.
-  const shares = funding.map(f => fundingShare(p, f)).filter(v => v != null);
-  const pctSum = funding.reduce((s,f)=> s + (f.percent||0), 0);
-  const wired  = funding.filter(f=>dateMs(f.date) <= todayMs).reduce((s,f)=>s+(f.amount||0),0);
-  const cash   = funding.reduce((s,f)=>s+(f.amount||0),0);
-  const bits = [];
-  if(funding.length) bits.push(`${funding.length} tier${funding.length===1?'':'s'}`);
-  if(pctSum)         bits.push(shares.length ? `${pctSum}% of profit · ${money(shares.reduce((a,b)=>a+b,0))}` : `${pctSum}% of profit`);
-  if(cash)           bits.push(`${money(wired)} of ${money(cash)} wired`);
-  const fundBit = bits.length
-    ? `<span class="tl-sep">·</span> <span style="color:var(--ink-3)">${bits.join(' · ')}</span>` : '';
+  const statusLabel = since == null ? ''
+    : since < 0  ? `Closes in ${Math.abs(since)} day${Math.abs(since)===1?'':'s'}`
+    : expired    ? `Day ${since} — past the ${lastDay}-day window`
+    : `Day ${since} of ${lastDay}`;
+
+  const bandBit = current
+    ? `<span class="tl-sep">·</span> <span style="color:var(--ink-3)">in ${current.label}
+         · us ${current.pctUs!=null?current.pctUs+'%':'—'} / funder ${current.pctFunder!=null?current.pctFunder+'%':'—'}
+         ${(()=>{const v=shareOf(p,current.pctUs);return v!=null?`· ${money(v)} to us`:'';})()}</span>`
+    : since != null && since < 0
+      ? `<span class="tl-sep">·</span> <span style="color:var(--ink-3)">${bands.length} tier${bands.length===1?'':'s'} ready</span>`
+      : '';
 
   return `<div class="prop-timeline">
     <div class="prop-timeline-plot">
       <div class="prop-timeline-track">
         <div class="prop-timeline-fill" style="width:${elapsedPct}%"></div>
+        ${zero}
         ${html}
       </div>
     </div>
     <div class="prop-timeline-status" style="color:${accent}">
-      <i class="ti ti-flag-3" style="font-size:11px"></i> ${statusLabel} ${fundBit}
+      <i class="ti ti-flag-3" style="font-size:11px"></i> ${statusLabel} ${bandBit}
     </div>
+    ${renderFundingTab(p, bands)}
   </div>`;
+}
+
+/* The tab under the timeline: click it to edit this property's funding tiers
+   in place, without opening the whole property form. Open/closed lives in
+   state.fundingOpen so a re-render (a save elsewhere, a background refresh)
+   doesn't snap the panel shut mid-edit.
+
+   The card stays quiet until you ask: closed, it's just the tab. The editor
+   and the band breakdown both live behind it, so a list of properties reads
+   as timelines rather than a wall of numbers.
+
+   Rows are appended to the DOM directly rather than re-rendering, so nothing
+   you've typed is lost while the panel is open. */
+function renderFundingTab(p, bands){
+  bands = bands || fundingBands(p);
+  const open = state.fundingOpen === p.id;
+
+  const tab = `<button class="funding-tab ${open?'is-open':''}" data-action="toggle-funding" data-id="${p.id}">
+    <i class="ti ti-${open?'chevron-down':'chevron-right'}"></i>
+    ${bands.length ? `Edit funding tiers <span class="funding-tab-count">${bands.length}</span>`
+                   : 'Add funding tiers'}
+  </button>`;
+
+  if(!open) return `<div class="funding-tabs">${tab}</div>`;
+
+  return `<div class="funding-tabs">${tab}</div>
+    <div class="funding-panel">
+      <p class="form-hint" style="margin-top:0">
+        One row per band. Enter the day the band ends — counted from the closing
+        date — and how the profit splits while the deal sits in it. Start days,
+        dates and totals are worked out for you.
+      </p>
+      <div class="funding-panel-head">
+        <span>Band</span><span>Ends day</span><span>% to us</span><span>% to funder</span><span></span>
+      </div>
+      <div id="fund-rows-${p.id}"></div>
+      <div class="funding-foot">
+        <button type="button" class="btn btn-sm" onclick="addFundingRow(null,'${p.id}')">
+          <i class="ti ti-plus"></i> Add tier
+        </button>
+        <span id="fund-total-${p.id}" class="funding-total"></span>
+        <span class="funding-panel-actions">
+          <button type="button" class="btn btn-sm" onclick="closeFundingPanel()">Cancel</button>
+          <button type="button" class="btn btn-sm btn-primary" onclick="saveFundingTiers('${p.id}')">Save tiers</button>
+        </span>
+      </div>
+      ${renderFundingTable(p, bands)}
+    </div>`;
+}
+
+function toggleFundingPanel(id){
+  state.fundingOpen = state.fundingOpen === id ? null : id;
+  app.render();
+}
+function closeFundingPanel(){
+  state.fundingOpen = null;
+  app.render();
+}
+// Called after render() so the rows land in a container that exists. An empty
+// schedule opens with one blank row — the point of the tab is to add tiers, so
+// making you click "Add tier" first would be a wasted step.
+function hydrateFundingPanel(){
+  const id = state.fundingOpen;
+  if(!id || !document.getElementById(`fund-rows-${id}`)) return;
+  const p = state.props.find(x=>x.id===id);
+  if(!p) return;
+  const tiers = normalizeFunding(p.funding, p);
+  if(tiers.length) tiers.forEach(t => addFundingRow(t, id));
+  else addFundingRow(null, id);
+  updateFundingTotal(id);
+}
+async function saveFundingTiers(id){
+  const p = state.props.find(x=>x.id===id);
+  if(!p) return;
+  const tiers = readFundingRows(id);
+  // Rows with no end day (or a duplicate one) can't form a band and are
+  // dropped by normalizeFunding — say so rather than letting them vanish.
+  const typed = document.getElementById(`fund-rows-${id}`).querySelectorAll('.funding-row').length;
+  p.funding = tiers;
+  await saveOne('props', p);
+  state.fundingOpen = null;
+  toast(typed > tiers.length
+    ? `Saved ${tiers.length} tier${tiers.length===1?'':'s'} · ${typed-tiers.length} skipped (needs an end day)`
+    : `Funding tiers saved`);
+  app.render();
+}
+
+// The band-by-band breakdown, shown inside the open panel. The timeline
+// answers "when"; this answers "what's the split, and what is it worth".
+function renderFundingTable(p, bands){
+  bands = bands || fundingBands(p);
+  if(!bands.length) return '';
+  const since   = daysSinceClosing(p);
+  const current = activeBand(p);
+
+  const rows = bands.map(b => {
+    const past = since != null && since > b.to;
+    const now  = current && current.to === b.to;   // see note in renderClosingTimeline
+    const ours = shareOf(p, b.pctUs);
+    return `<tr class="${past||now?'is-funded':''}">
+      <td class="ft-name">${escape(b.label)}</td>
+      <td>${b.date?fmt(b.date):'<span class="ft-dim">needs closing date</span>'}</td>
+      <td class="ft-num">${b.pctUs!=null?`${b.pctUs}%`:'—'}</td>
+      <td class="ft-num">${b.pctFunder!=null?`${b.pctFunder}%`:'—'}</td>
+      <td class="ft-num">${ours!=null?money(ours):(b.pctUs!=null?'<span class="ft-dim">needs sell price</span>':'—')}</td>
+      <td class="ft-status">${now
+        ? `<span class="ft-pill ft-done"><i class="ti ti-player-play"></i> Current</span>`
+        : past ? `<span class="ft-pill"><i class="ti ti-check"></i> Passed</span>`
+               : `<span class="ft-pill"><i class="ti ti-clock"></i> Upcoming</span>`}</td>
+    </tr>`;
+  }).join('');
+
+  const last = bands[bands.length-1];
+  return `<table class="funding-table">
+    <thead>
+      <tr>
+        <th>Band</th><th>Through</th><th class="ft-num">% to us</th>
+        <th class="ft-num">% to funder</th><th class="ft-num">Our share</th><th></th>
+      </tr>
+    </thead>
+    <tbody>${rows}</tbody>
+    <tfoot>
+      <tr>
+        <td colspan="2">${bands.length} tier${bands.length===1?'':'s'} · ${last.to}-day window</td>
+        <td class="ft-num"></td><td class="ft-num"></td><td class="ft-num"></td>
+        <td class="ft-status"></td>
+      </tr>
+    </tfoot>
+  </table>`;
 }
 
 /* Properties can be ordered by the dates that actually drive the work.
@@ -2314,12 +2584,12 @@ const PROP_SORTS = {
   },
   finalTier: {
     label: 'Funding final tier',
-    hint:  'By the last tier on the schedule',
+    hint:  'By the day the last band closes out',
     key:   p => (finalTier(p) || {}).date || ''
   },
   nextTier: {
     label: 'Next funding tier step',
-    hint:  'By the next tier still to come',
+    hint:  'By the next band boundary ahead',
     key:   p => (nextTier(p) || {}).date || ''
   }
 };
@@ -3104,6 +3374,7 @@ function bindViewEvents(){
         case 'export-data': exportData(); break;
         case 'import-data': importData(); break;
         case 'reset-data': resetData(); break;
+        case 'toggle-funding': toggleFundingPanel(id); break;
       }
     });
   });
@@ -3347,7 +3618,7 @@ function openPropForm(id){
     </div>
     <div class="form-row">
       <div class="form-group"><label class="form-label">Acres</label><input class="form-input" id="fp-acres" type="number" step="0.1" value="${escape(p.acres||'')}"></div>
-      <div class="form-group"><label class="form-label">Closing date</label><input class="form-input" id="fp-closing" type="date" value="${p.closingDate||''}"></div>
+      <div class="form-group"><label class="form-label">Closing date</label><input class="form-input" id="fp-closing" type="date" value="${p.closingDate||''}" oninput="updateFundingTotal('form')"></div>
     </div>
     <div class="form-row">
       <div class="form-group"><label class="form-label">Buy price</label><input class="form-input" id="fp-buy" type="number" value="${escape(p.buyPrice||'')}" oninput="updateEquityPreview()"></div>
@@ -3356,10 +3627,13 @@ function openPropForm(id){
     <div id="fp-equity-preview" style="font-size:12.5px;font-weight:600;margin:-8px 0 14px"></div>
 
     <div class="form-group">
-      <label class="form-label">Funding schedule</label>
-      <p class="form-hint">Each tier becomes a named checkpoint on this property's timeline. The
-        % is that tier's share of the profit — it's shown on the timeline as that share of the
-        equity created. Cash wired is tracked separately and stays off the bar.</p>
+      <label class="form-label">Funding tiers</label>
+      <p class="form-hint">One row per band. Enter the day the band ends — counted from the
+        closing date — and how the profit splits while the deal sits in it. Start days, dates
+        and labels are worked out for you.</p>
+      <div class="funding-panel-head">
+        <span>Band</span><span>Ends day</span><span>% to us</span><span>% to funder</span><span></span>
+      </div>
       <div id="fp-funding-rows"></div>
       <div class="funding-foot">
         <button type="button" class="btn btn-sm" onclick="addFundingRow()"><i class="ti ti-plus"></i> Add tier</button>
@@ -3373,74 +3647,139 @@ function openPropForm(id){
       <button class="btn btn-primary" onclick="saveProp('${id||''}')">${id?'Save changes':'Add property'}</button>
     </div>
   </div>`);
-  normalizeFunding(p.funding).forEach(addFundingRow);
+  // Not `.forEach(addFundingRow)` — forEach would pass the array index as the
+  // scope argument and send every row after the first to a container that
+  // doesn't exist.
+  normalizeFunding(p.funding, p).forEach(f => addFundingRow(f, 'form'));
   requestAnimationFrame(updateEquityPreview);
 }
 
-/* ---- Funding schedule editor (inside the property form) ----
-   Rows are plain DOM, read back positionally on save, so rows can be added
-   and removed in any order without re-rendering the whole modal and losing
-   what's already typed into the other fields. */
-function addFundingRow(entry){
-  const wrap = document.getElementById('fp-funding-rows');
+/* ---- Funding tier editor ----
+   Three inputs per row and nothing else: the day the band ends, our share,
+   the funder's share. Band start days, calendar dates and labels are all
+   derived, so there is nothing here to keep in sync by hand.
+
+   Rows are plain DOM read back positionally on save, so they can be added and
+   removed in any order without re-rendering and losing what's been typed.
+
+   The same editor runs in two places: inside the property form modal
+   (scope 'form') and inline on a property card (scope = the property id).
+   fundingCtx resolves which elements to talk to and where the deal's figures
+   come from — live inputs in the modal, the saved record on a card. */
+function fundingCtx(scope){
+  if(!scope || scope === 'form'){
+    return {
+      rows:'fp-funding-rows', total:'fp-funding-total',
+      buy:  ()=>parseFloat((document.getElementById('fp-buy') ||{}).value),
+      sell: ()=>parseFloat((document.getElementById('fp-sell')||{}).value),
+      closing: ()=>(document.getElementById('fp-closing')||{}).value || ''
+    };
+  }
+  const p = state.props.find(x=>x.id===scope) || {};
+  return {
+    rows:`fund-rows-${scope}`, total:`fund-total-${scope}`,
+    buy:  ()=>parseFloat(p.buyPrice),
+    sell: ()=>(p.sellPrice===''||p.sellPrice==null) ? NaN : parseFloat(p.sellPrice),
+    closing: ()=>p.closingDate || ''
+  };
+}
+function addFundingRow(entry, scope){
+  const wrap = document.getElementById(fundingCtx(scope).rows);
   if(!wrap) return;
   const e = entry && typeof entry === 'object' ? entry : {};
+  const s = (!scope || scope === 'form') ? 'form' : scope;
   const row = document.createElement('div');
   row.className = 'funding-row';
   row.innerHTML = `
-    <input class="form-input funding-name" placeholder="Tier name" value="${escape(e.name||'')}">
-    <input class="form-input funding-date" type="date" value="${e.date||''}">
-    <input class="form-input funding-percent" type="number" step="0.1" min="0" max="100" placeholder="% of profit"
-           value="${e.percent!=null?escape(e.percent):''}" oninput="updateFundingTotal()">
-    <input class="form-input funding-amount" type="number" step="0.01" placeholder="Cash wired"
-           value="${e.amount!=null?escape(e.amount):''}" oninput="updateFundingTotal()">
+    <span class="funding-band"></span>
+    <input class="form-input funding-days" type="number" step="1" min="1" placeholder="e.g. 45"
+           value="${e.days!=null?escape(e.days):''}" oninput="updateFundingTotal('${s}')">
+    <input class="form-input funding-us" type="number" step="0.1" min="0" max="100" placeholder="75"
+           value="${e.pctUs!=null?escape(e.pctUs):''}" oninput="syncSplit(this,'${s}')">
+    <input class="form-input funding-funder" type="number" step="0.1" min="0" max="100" placeholder="25"
+           value="${e.pctFunder!=null?escape(e.pctFunder):''}" oninput="syncSplit(this,'${s}')">
     <button type="button" class="icon-btn" title="Remove tier"
-            onclick="this.parentNode.remove();updateFundingTotal()"><i class="ti ti-x"></i></button>`;
+            onclick="this.parentNode.remove();updateFundingTotal('${s}')"><i class="ti ti-x"></i></button>`;
   wrap.appendChild(row);
-  updateFundingTotal();
+  updateFundingTotal(scope);
+  if(s !== 'form') row.querySelector('.funding-days').focus();
 }
-function readFundingRows(){
-  return normalizeFunding([...document.querySelectorAll('#fp-funding-rows .funding-row')].map(r=>({
-    name:    r.querySelector('.funding-name').value,
-    date:    r.querySelector('.funding-date').value,
-    percent: r.querySelector('.funding-percent').value,
-    amount:  r.querySelector('.funding-amount').value
-  })));
+// The two shares are two halves of one number. Filling either one fills the
+// other, so a 75/25 split is one keystroke rather than two — but typing
+// directly into the other field still overrides it.
+function syncSplit(input, scope){
+  const row = input.parentNode;
+  const us  = row.querySelector('.funding-us');
+  const fu  = row.querySelector('.funding-funder');
+  const other = input === us ? fu : us;
+  const v = parseFloat(input.value);
+  if(input.value !== '' && !isNaN(v) && v >= 0 && v <= 100){
+    if(other.value === '' || other.dataset.auto === '1'){
+      other.value = Math.round((100 - v) * 100) / 100;
+      other.dataset.auto = '1';
+    }
+  }
+  input.dataset.auto = '';
+  updateFundingTotal(scope);
 }
-// Live read-out under the tier rows: how much of the profit the split accounts
-// for, what that is worth in dollars at the current sell price, and whether the
-// cash column reconciles against the buy price.
-function updateFundingTotal(){
-  const el = document.getElementById('fp-funding-total');
-  if(!el) return;
-  const rows = [...document.querySelectorAll('#fp-funding-rows .funding-row')];
-  if(!rows.length){ el.textContent = ''; return; }
-  const num = (r,cls) => parseFloat(r.querySelector(cls).value) || 0;
-  const pctSum  = rows.reduce((s,r)=> s + num(r,'.funding-percent'), 0);
-  const cashSum = rows.reduce((s,r)=> s + num(r,'.funding-amount'),  0);
-  const buy  = parseFloat((document.getElementById('fp-buy')  ||{}).value);
-  const sell = parseFloat((document.getElementById('fp-sell') ||{}).value);
-  const equity = (isNaN(sell) || sell==='') ? null : (sell||0) - (buy||0);
+function readFundingRows(scope){
+  const wrap = document.getElementById(fundingCtx(scope).rows);
+  if(!wrap) return [];
+  const p = {closingDate: fundingCtx(scope).closing()};
+  return normalizeFunding([...wrap.querySelectorAll('.funding-row')].map(r=>({
+    days:      r.querySelector('.funding-days').value,
+    pctUs:     r.querySelector('.funding-us').value,
+    pctFunder: r.querySelector('.funding-funder').value
+  })), p);
+}
+// Live read-out under the rows: the bands as they currently stand, the total
+// window, and anything that doesn't add up.
+function updateFundingTotal(scope){
+  const ctx = fundingCtx(scope);
+  const el  = document.getElementById(ctx.total);
+  const wrap = document.getElementById(ctx.rows);
+  const rows = wrap ? [...wrap.querySelectorAll('.funding-row')] : [];
 
+  // Relabel each row's band from the rows above it, so the ranges update as
+  // you type rather than only after a save.
+  let from = 0;
+  const problems = [];
+  rows.forEach((r, i) => {
+    const days = parseFloat(r.querySelector('.funding-days').value);
+    const tag  = r.querySelector('.funding-band');
+    if(isNaN(days)){ tag.textContent = '—'; tag.className='funding-band is-dim'; return; }
+    if(days < from){
+      tag.textContent = `${from}-${days}`;
+      tag.className = 'funding-band is-bad';
+      problems.push(`row ${i+1} ends before it starts`);
+    }else{
+      tag.textContent = `${from}-${days} days`;
+      tag.className = 'funding-band';
+      from = days + 1;
+    }
+    const us = parseFloat(r.querySelector('.funding-us').value);
+    const fu = parseFloat(r.querySelector('.funding-funder').value);
+    if(!isNaN(us) && !isNaN(fu) && Math.abs(us + fu - 100) > 0.01){
+      problems.push(`row ${i+1} splits ${Math.round((us+fu)*100)/100}%`);
+    }
+  });
+
+  if(!el) return;
+  if(!rows.length){ el.textContent = ''; return; }
+  const days = rows.map(r=>parseFloat(r.querySelector('.funding-days').value)).filter(v=>!isNaN(v));
+  const last = days.length ? Math.max(...days) : null;
+  const closing = ctx.closing();
   const parts = [];
-  if(pctSum){
-    parts.push(equity !== null
-      ? `Split: <strong>${pctSum}%</strong> of profit · <strong>${money(equity * pctSum/100)}</strong>`
-      : `Split: <strong>${pctSum}%</strong> of profit <span style="color:var(--ink-3)">· needs a sell price</span>`);
-    // Over 100% means the tiers are promising more profit than the deal makes.
-    if(pctSum > 100) parts.push(`<span style="color:var(--danger)">over 100%</span>`);
+  if(last != null){
+    parts.push(`Window: <strong>${last} days</strong>` +
+      (closing ? ` <span style="color:var(--ink-3)">· through ${fmt(addDays(closing, last))}</span>`
+               : ` <span style="color:var(--ink-3)">· needs a closing date</span>`));
   }
-  if(cashSum){
-    const off = buy ? cashSum - buy : 0;
-    parts.push(`Cash: <strong>${money(cashSum)}</strong>` + (
-      buy && Math.abs(off) >= 0.01
-        ? ` <span style="color:var(--danger)">· ${off>0?'over':'under'} buy price by ${money(Math.abs(off))}</span>`
-        : buy ? ` <span style="color:var(--accent)">· matches buy price</span>` : ''));
-  }
+  if(problems.length) parts.push(`<span style="color:var(--danger)">${escape(problems.join(' · '))}</span>`);
   el.innerHTML = parts.join(' &nbsp;·&nbsp; ');
 }
 function updateEquityPreview(){
-  updateFundingTotal(); // buy price feeds the schedule's over/under check
+  updateFundingTotal('form'); // the closing date feeds the band date read-out
   const el = document.getElementById('fp-equity-preview');
   if(!el) return;
   const sellRaw = document.getElementById('fp-sell').value;
@@ -3463,7 +3802,7 @@ async function saveProp(id){
     sellPrice: $('#fp-sell').value,
     closingDate: $('#fp-closing').value,
     notes: $('#fp-notes').value,
-    funding: readFundingRows(),
+    funding: readFundingRows('form'),
     created: id ? state.props.find(x=>x.id===id).created : today()
   };
   if(id){ const i=state.props.findIndex(p=>p.id===id); state.props[i]=data; }
