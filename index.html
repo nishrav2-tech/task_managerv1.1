@@ -356,12 +356,6 @@ input,select,textarea{font:inherit;color:inherit}
 .b-under-contract{background:var(--success-soft);color:var(--success-ink)}
 .b-closed{background:var(--accent-soft);color:var(--accent)}
 .b-dead{background:var(--surface-2);color:var(--ink-3)}
-.b-pre-deal{background:var(--info-soft);color:var(--info-ink)}
-.b-due-diligence{background:var(--warn-soft);color:var(--warn-ink)}
-.b-title-clearing{background:var(--purple-soft);color:var(--purple-ink)}
-.b-closing{background:var(--success-soft);color:var(--success-ink)}
-.b-renegotiation{background:var(--danger-soft);color:var(--danger)}
-.b-disposition{background:var(--accent-soft);color:var(--accent)}
 .b-high{background:var(--danger-soft);color:var(--danger)}
 .b-medium{background:var(--warn-soft);color:var(--warn-ink)}
 .b-low{background:var(--surface-2);color:var(--ink-3)}
@@ -378,6 +372,40 @@ input,select,textarea{font:inherit;color:inherit}
   align-self:flex-end;padding:2px 10px;border-radius:20px;
   background:var(--accent-soft);color:var(--accent);
   font-size:11px;font-weight:700;font-variant-numeric:tabular-nums;
+}
+
+/* ============ PROPERTY CLOSING TIMELINE ============ */
+.prop-timeline{
+  width:100%;margin-top:12px;padding-top:12px;
+  border-top:1px solid var(--border);
+}
+.prop-timeline-empty{
+  font-size:12px;color:var(--ink-3);display:flex;align-items:center;gap:6px;
+}
+.prop-timeline-row{display:flex;align-items:center;gap:10px}
+.prop-timeline-endpoint{
+  font-size:11px;color:var(--ink-3);white-space:nowrap;flex-shrink:0;
+}
+.prop-timeline-track{
+  position:relative;flex:1;height:6px;border-radius:20px;
+  background:var(--surface-2);overflow:visible;
+}
+.prop-timeline-fill{
+  position:absolute;top:0;left:0;height:100%;border-radius:20px;
+  transition:width .2s var(--ease);
+}
+.prop-timeline-checkpoint{
+  position:absolute;top:50%;width:11px;height:11px;border-radius:50%;
+  transform:translate(-50%,-50%);border:2px solid var(--surface);
+  box-shadow:0 0 0 1px var(--border-strong);
+}
+.prop-timeline-today{
+  position:absolute;top:-4px;width:2px;height:14px;
+  background:var(--ink);transform:translateX(-50%);border-radius:1px;
+}
+.prop-timeline-status{
+  font-size:11px;font-weight:600;margin-top:6px;
+  display:flex;align-items:center;gap:5px;
 }
 
 /* ============ TASK CHECK ============ */
@@ -742,9 +770,9 @@ input,select,textarea{font:inherit;color:inherit}
       <div class="nav-item active" data-view="dashboard"><i class="ti ti-layout-dashboard"></i> Dashboard</div>
       <div class="nav-item" data-view="activity"><i class="ti ti-clipboard-list"></i> Activity Log</div>
       <div class="nav-item" data-view="calendar"><i class="ti ti-calendar"></i> Calendar</div>
+      <div class="nav-item" data-view="properties"><i class="ti ti-home"></i> Properties <span class="count" id="count-props">0</span></div>
       <div class="nav-item" data-view="tasks"><i class="ti ti-checkbox"></i> Tasks <span class="count" id="count-tasks">0</span></div>
       <div class="nav-item" data-view="projects"><i class="ti ti-bulb"></i> Projects <span class="count" id="count-projs">0</span></div>
-      <div class="nav-item" data-view="properties"><i class="ti ti-home"></i> Properties <span class="count" id="count-props">0</span></div>
       <div class="nav-item" data-view="team"><i class="ti ti-building-community"></i> Team</div>
       <div class="nav-item" data-view="settings"><i class="ti ti-settings"></i> Settings</div>
     </nav>
@@ -793,12 +821,13 @@ const StorageAdapter = {
   // ---- camelCase (app) <-> snake_case (Postgres) mappers ----
   toDb: {
     users: u => ({id:u.id, name:u.name, role:u.role||null, color_idx:u.colorIdx||0}),
-    props: p => ({id:p.id, address:p.address,
+    props: p => ({id:p.id, property_id:p.propertyId||null,
       county:p.county||null, state:p.state||null,
       acres:p.acres!==''&&p.acres!=null?parseFloat(p.acres):null,
       buy_price:p.buyPrice!==''&&p.buyPrice!=null?parseFloat(p.buyPrice):null,
       sell_price:p.sellPrice!==''&&p.sellPrice!=null?parseFloat(p.sellPrice):null,
-      status:p.status||'pre-deal', notes:p.notes||null, assigned_to:p.assignedTo||null}),
+      closing_date:p.closingDate||null,
+      notes:p.notes||null}),
     tasks: t => ({id:t.id, title:t.title, linked_id:t.linkedId||null,
       linked_type:t.linkedType||null, due_date:t.dueDate||null,
       priority:t.priority||'medium', status:t.status||'todo',
@@ -826,12 +855,13 @@ const StorageAdapter = {
   },
   fromDb: {
     users: u => ({id:u.id, name:u.name, role:u.role||'', colorIdx:u.color_idx||0}),
-    props: p => ({id:p.id, address:p.address,
+    props: p => ({id:p.id, propertyId:p.property_id||'',
       county:p.county||'', state:p.state||'TX',
       acres:p.acres!=null?String(p.acres):'',
       buyPrice:p.buy_price!=null?String(p.buy_price):'',
       sellPrice:p.sell_price!=null?String(p.sell_price):'',
-      status:p.status||'pre-deal', notes:p.notes||'', assignedTo:p.assigned_to||'',
+      closingDate:p.closing_date||'',
+      notes:p.notes||'',
       created:p.created_at?p.created_at.split('T')[0]:''}),
     tasks: t => ({id:t.id, title:t.title, linkedId:t.linked_id||'',
       linkedType:t.linked_type||'', dueDate:t.due_date||'',
@@ -1029,10 +1059,12 @@ const COLORS = [
 // webfont loading, so edit/delete stays visible even if that CDN is blocked.
 const ICON_EDIT = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4Z"/></svg>';
 const ICON_DELETE = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>';
+// Inline SVG chevrons for the week-calendar prev/next arrows — same
+// reasoning as ICON_EDIT/ICON_DELETE above: guaranteed visible even if the
+// Tabler icon webfont is blocked or slow to load.
+const ICON_CHEVRON_LEFT = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>';
+const ICON_CHEVRON_RIGHT = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>';
 
-// Deal/property pipeline: everything before a deal is made collapses into "pre-deal".
-// Everything after is the actual acquisition-to-exit workflow.
-const DEAL_STAGES = ['pre-deal','due-diligence','title-clearing','closing','renegotiation','disposition'];
 const TASK_STATUSES = ['todo','in-progress','done','blocked'];
 const PROJECT_CATEGORIES = ['Marketing','SOPs & Processes','Tools & Software','Team & Hiring','Finance','Other'];
 const PROJECT_STATUSES = ['ideas','planned','in-progress','done'];
@@ -1351,8 +1383,8 @@ async function seed(){
     {id:u3, name:'Casey Nguyen', role:'Dispositions', colorIdx:2},
   ];
   state.props = [
-    {id:p1, address:'1423 CR 45', county:'Brazoria', state:'TX', acres:'12.5', buyPrice:'31000', sellPrice:'', status:'pre-deal', notes:'Wooded lot, no utilities', assignedTo:u3, created:today()},
-    {id:p2, address:'Lot 7 Hwy 36', county:'Fort Bend', state:'TX', acres:'5.0', buyPrice:'14500', sellPrice:'', status:'due-diligence', notes:'Near new development', assignedTo:u3, created:today()},
+    {id:p1, propertyId:'BRZ-1423', county:'Brazoria', state:'TX', acres:'12.5', buyPrice:'31000', sellPrice:'', closingDate:'', notes:'Wooded lot, no utilities', created:today()},
+    {id:p2, propertyId:'FB-0007', county:'Fort Bend', state:'TX', acres:'5.0', buyPrice:'14500', sellPrice:'', closingDate:'2026-08-20', notes:'Near new development', created:today()},
   ];
   state.tasks = [
     {id:uid(), title:'Send offer letter to John Hargrove', linkedId:'', linkedType:'', dueDate:today(), priority:'high', status:'todo', notes:'', assignees:[u2], created:today()},
@@ -1582,6 +1614,7 @@ function renderDashboard(){
           <div class="item-actions">
             ${od?`<button class="btn btn-sm" onclick="rescheduleToToday('${t.id}')" title="Move to today"><i class="ti ti-calendar-plus"></i> Today</button>`:''}
             <button class="icon-btn" data-action="edit-task" data-id="${t.id}" title="Reschedule / edit">${ICON_EDIT}</button>
+            <button class="icon-btn" data-action="delete-task" data-id="${t.id}" title="Delete">${ICON_DELETE}</button>
           </div>
         </div>`;
       }).join('') || `<div style="text-align:center;padding:22px;color:var(--ink-3);font-size:13px"><i class="ti ti-sun" style="font-size:22px;display:block;margin-bottom:6px;color:var(--gold)"></i>Nothing due today — clear runway.</div>`}
@@ -1845,9 +1878,9 @@ function renderCalendarPage(){
 
   return pageHeader('Schedule', 'Calendar',
     'Every task and project this team has on the books, day by day.',
-    `<button class="btn btn-sm ${isThisWeek?'btn-primary':''}" onclick="shiftWeekCalendar(0)"><i class="ti ti-calendar-event"></i> Today</button>
-     <button class="icon-btn" onclick="shiftWeekCalendar(-1)" title="Previous week"><i class="ti ti-chevron-left"></i></button>
-     <button class="icon-btn" onclick="shiftWeekCalendar(1)" title="Next week"><i class="ti ti-chevron-right"></i></button>`
+    `<button class="btn btn-sm" onclick="shiftWeekCalendar(-1)" title="Previous week">${ICON_CHEVRON_LEFT} Prev</button>
+     <button class="btn btn-sm ${isThisWeek?'btn-primary':''}" onclick="shiftWeekCalendar(0)"><i class="ti ti-calendar-event"></i> Today</button>
+     <button class="btn btn-sm" onclick="shiftWeekCalendar(1)" title="Next week">Next ${ICON_CHEVRON_RIGHT}</button>`
   ) + `
   <div class="card" style="margin-bottom:16px">
     <div class="card-header">
@@ -1984,13 +2017,50 @@ function renderTaskRow(t, compact){
   </div>`;
 }
 
+// Small horizontal timeline shown under each property: Created -> Today ->
+// Closing, with a single checkpoint marking the closing date. If no closing
+// date is set yet, show a muted placeholder instead of a bar with nowhere
+// to point.
+function renderClosingTimeline(p){
+  if(!p.closingDate){
+    return `<div class="prop-timeline prop-timeline-empty">
+      <i class="ti ti-calendar-off" style="font-size:13px"></i> No closing date scheduled
+    </div>`;
+  }
+  const created = p.created || today();
+  const startMs = new Date(created+'T00:00:00').getTime();
+  const closeMs = new Date(p.closingDate+'T00:00:00').getTime();
+  const todayMs = new Date(today()+'T00:00:00').getTime();
+  const span = Math.max(closeMs - startMs, 1); // avoid divide-by-zero if same day
+  const rawPct = ((todayMs - startMs) / span) * 100;
+  const pct = Math.min(100, Math.max(0, rawPct));
+  const daysLeft = Math.round((closeMs - todayMs) / 86400000);
+  const overdue = todayMs > closeMs;
+  const isToday = daysLeft === 0;
+  const statusLabel = overdue ? `${Math.abs(daysLeft)} day${Math.abs(daysLeft)===1?'':'s'} overdue`
+    : isToday ? 'Closing today'
+    : `${daysLeft} day${daysLeft===1?'':'s'} to close`;
+  const dotColor = overdue ? 'var(--danger)' : isToday ? 'var(--gold)' : 'var(--accent)';
+
+  return `<div class="prop-timeline">
+    <div class="prop-timeline-row">
+      <span class="prop-timeline-endpoint" title="Created ${fmtLong(created)}">Created ${fmtLong(created)}</span>
+      <div class="prop-timeline-track">
+        <div class="prop-timeline-fill" style="width:${pct}%;background:${dotColor}"></div>
+        <div class="prop-timeline-checkpoint" style="left:100%;background:${dotColor}" title="Closing ${fmtLong(p.closingDate)}"></div>
+        ${!overdue&&!isToday?`<div class="prop-timeline-today" style="left:${pct}%" title="Today"></div>`:''}
+      </div>
+      <span class="prop-timeline-endpoint" title="Closing ${fmtLong(p.closingDate)}">Closing ${fmtLong(p.closingDate)}</span>
+    </div>
+    <div class="prop-timeline-status" style="color:${dotColor}">
+      <i class="ti ti-flag-3" style="font-size:11px"></i> ${statusLabel}
+    </div>
+  </div>`;
+}
+
 function renderProperties(){
   const q = (state.filters.propSearch||'').toLowerCase();
-  const status = state.filters.propStatus||'';
-  const assign = state.filters.propAssign||'';
   const filtered = state.props.filter(p=>{
-    if(status && p.status!==status) return false;
-    if(assign && p.assignedTo!==assign) return false;
     if(q && !JSON.stringify(p).toLowerCase().includes(q)) return false;
     return true;
   });
@@ -2000,27 +2070,18 @@ function renderProperties(){
     <div class="toolbar">
       <div class="search-wrap">
         <i class="ti ti-search"></i>
-        <input class="search-input" placeholder="Search address, county, notes…" data-filter="propSearch" value="${escape(q)}">
+        <input class="search-input" placeholder="Search property ID, county, notes…" data-filter="propSearch" value="${escape(q)}">
       </div>
-      <select class="filter-select" data-filter="propStatus">
-        <option value="">All stages</option>
-        ${DEAL_STAGES.map(s=>`<option ${s===status?'selected':''}>${s}</option>`).join('')}
-      </select>
-      <select class="filter-select" data-filter="propAssign">
-        <option value="">All assignees</option>
-        ${state.users.map(u=>`<option value="${u.id}" ${u.id===assign?'selected':''}>${escape(u.name)}</option>`).join('')}
-      </select>
     </div>
     <div class="item-list">
     ${filtered.map(p=>{
       const equity = equityOf(p);
       const equityPct = (equity!==null && parseFloat(p.buyPrice)) ? Math.round((equity/parseFloat(p.buyPrice))*100) : null;
-      return `<div class="item-row">
+      return `<div class="item-row" style="flex-wrap:wrap">
         <div style="width:38px;height:38px;border-radius:10px;background:var(--accent-soft);color:var(--accent);display:flex;align-items:center;justify-content:center;flex-shrink:0"><i class="ti ti-map-2" style="font-size:20px"></i></div>
         <div class="item-main">
           <div style="display:flex;align-items:center;gap:8px;margin-bottom:2px;flex-wrap:wrap">
-            <span class="item-title">${escape(p.address)}</span>
-            <span class="badge b-${p.status}">${p.status}</span>
+            <span class="item-title">${escape(p.propertyId || 'No property ID')}</span>
           </div>
           <div class="item-meta">
             <span>${escape(p.county)}, ${escape(p.state)}</span>
@@ -2032,13 +2093,13 @@ function renderProperties(){
             ${equity!==null?`<span class="margin-pill" style="${equity<0?'background:var(--danger-soft);color:var(--danger)':''}">${equity>=0?'+':''}${money(equity)} equity${equityPct!==null?` (${equityPct>=0?'+':''}${equityPct}%)`:''}</span>`:''}
           </div>
         </div>
-        <div>${p.assignedTo?avatarHTML(p.assignedTo,'sm'):'<span style="font-size:11px;color:var(--ink-3)">—</span>'}</div>
         <div class="item-actions">
           <button class="icon-btn" data-action="edit-prop" data-id="${p.id}" title="Edit">${ICON_EDIT}</button>
           <button class="icon-btn" data-action="delete-prop" data-id="${p.id}" title="Delete">${ICON_DELETE}</button>
         </div>
+        <div style="flex-basis:100%">${renderClosingTimeline(p)}</div>
       </div>`;
-    }).join('') || `<div class="empty"><i class="ti ti-home"></i><h3>No properties yet</h3><p>${q||status||assign?'Try clearing filters.':'Track your first deal.'}</p><button class="btn btn-primary" data-action="new-prop"><i class="ti ti-plus"></i> Add property</button></div>`}
+    }).join('') || `<div class="empty"><i class="ti ti-home"></i><h3>No properties yet</h3><p>${q?'Try a different search.':'Track your first deal.'}</p><button class="btn btn-primary" data-action="new-prop"><i class="ti ti-plus"></i> Add property</button></div>`}
     </div>`;
 }
 
@@ -2058,7 +2119,11 @@ function renderTasks(){
 
   const open = filter(state.tasks.filter(t=>t.status!=='done'))
     .sort((a,b)=>(a.dueDate||'').localeCompare(b.dueDate||''));
-  const done = filter(state.tasks.filter(t=>t.status==='done'));
+  // Sort completed tasks by when they were completed (most recent first) so
+  // the list holds a stable order instead of jumping around as tasks are
+  // checked off in whatever order they happen to sit in the underlying array.
+  const done = filter(state.tasks.filter(t=>t.status==='done'))
+    .sort((a,b)=>(b.completedAt||'').localeCompare(a.completedAt||''));
 
   return pageHeader('Work', 'Tasks', 'What\'s in flight across the team.',
     `<button class="btn btn-primary" data-action="new-task"><i class="ti ti-plus"></i> Add task</button>`) + `
@@ -2612,14 +2677,13 @@ function renderTeam(){
     ${state.users.map(u=>{
       const c = userColor(u.id);
       const myTasks = state.tasks.filter(t=>t.status!=='done'&&(t.assignees||[]).includes(u.id));
-      const myProps = state.props.filter(p=>p.assignedTo===u.id);
       const stats = userTaskStats(u.id);
       return `<div class="member-card">
         <div class="member-head">
           <span class="avatar avatar-lg" style="background:${c.bg};color:${c.fg}">${initials(u.name)}</span>
           <div style="flex:1">
             <div class="member-name">${escape(u.name)}</div>
-            <div class="member-role">${escape(u.role||'—')} <span style="color:var(--border-strong)">·</span> ${myProps.length} deals</div>
+            <div class="member-role">${escape(u.role||'—')} <span style="color:var(--border-strong)">·</span> ${myTasks.length} open task${myTasks.length===1?'':'s'}</div>
           </div>
           <div class="item-actions">
             <button class="icon-btn" data-action="edit-user" data-id="${u.id}" title="Edit">${ICON_EDIT}</button>
@@ -2709,9 +2773,9 @@ function renderSettings(){
     <h3>Schema reference</h3>
     <p>Tables in Postgres (see <code>schema.sql</code> in your repo for the full DDL):</p>
     <pre style="background:var(--bg);padding:14px;border-radius:var(--r-md);font-size:12px;overflow-x:auto;font-family:ui-monospace,SFMono-Regular,monospace;line-height:1.6">users       (id uuid, name, role, color_idx, created_at)
-properties  (id uuid, address, county, state,
-             acres, buy_price, sell_price, status,
-             notes, assigned_to → users.id, created_at)
+properties  (id uuid, property_id, county, state,
+             acres, buy_price, sell_price, closing_date,
+             notes, created_at)
 tasks       (id uuid, title, linked_id, linked_type, due_date,
              priority, status, notes, assignees uuid[], completed_at, created_at)
 projects    (id uuid, title, category, status, priority,
@@ -2769,7 +2833,7 @@ function debounce(fn, ms){
 }
 
 function getLinkedName(id, type){
-  if(type==='property'){ const p=state.props.find(x=>x.id===id); return p?'↳ '+p.address:''; }
+  if(type==='property'){ const p=state.props.find(x=>x.id===id); return p?'↳ '+(p.propertyId||'Property'):''; }
   return '';
 }
 
@@ -2901,9 +2965,8 @@ async function confirmDelete(kind, id){
   let msg = `Delete this ${labels[kind]}? This cannot be undone.`;
   if(kind==='user'){
     const openTasks = state.tasks.filter(t=>t.status!=='done'&&(t.assignees||[]).includes(id)).length;
-    const props = state.props.filter(p=>p.assignedTo===id).length;
-    if(openTasks||props){
-      msg = `This person has ${openTasks} open task(s) and ${props} deal(s) assigned. `
+    if(openTasks){
+      msg = `This person has ${openTasks} open task(s) assigned. `
           + `They'll be unassigned (not deleted) when you remove this team member. Continue?`;
     }
   }
@@ -2992,25 +3055,20 @@ function openPropForm(id){
       <h2 class="modal-title">${id?'Edit property':'New property'}</h2>
       <button class="icon-btn" onclick="closeModal()"><i class="ti ti-x"></i></button>
     </div>
-    <div class="form-group"><label class="form-label">Address or parcel</label><input class="form-input" id="fp-addr" value="${escape(p.address||'')}" placeholder="1234 CR 45 or Lot 7 Hwy 36"></div>
+    <div class="form-group"><label class="form-label">Property ID</label><input class="form-input" id="fp-propid" value="${escape(p.propertyId||'')}" placeholder="e.g. BRZ-1423"></div>
     <div class="form-row">
       <div class="form-group"><label class="form-label">County</label><input class="form-input" id="fp-county" value="${escape(p.county||'')}"></div>
       <div class="form-group"><label class="form-label">State</label><input class="form-input" id="fp-state" value="${escape(p.state||'TX')}"></div>
     </div>
     <div class="form-row">
       <div class="form-group"><label class="form-label">Acres</label><input class="form-input" id="fp-acres" type="number" step="0.1" value="${escape(p.acres||'')}"></div>
-      <div class="form-group"><label class="form-label">Stage</label>
-        <select class="form-select" id="fp-status">${DEAL_STAGES.map(s=>`<option ${(p.status||'pre-deal')===s?'selected':''}>${s}</option>`).join('')}</select>
-      </div>
+      <div class="form-group"><label class="form-label">Closing date</label><input class="form-input" id="fp-closing" type="date" value="${p.closingDate||''}"></div>
     </div>
     <div class="form-row">
       <div class="form-group"><label class="form-label">Buy price</label><input class="form-input" id="fp-buy" type="number" value="${escape(p.buyPrice||'')}" oninput="updateEquityPreview()"></div>
       <div class="form-group"><label class="form-label">Sell price</label><input class="form-input" id="fp-sell" type="number" value="${escape(p.sellPrice||'')}" oninput="updateEquityPreview()" placeholder="Once known"></div>
     </div>
     <div id="fp-equity-preview" style="font-size:12.5px;font-weight:600;margin:-8px 0 14px"></div>
-    <div class="form-group"><label class="form-label">Assigned to</label>
-      <select class="form-select" id="fp-assign"><option value="">Unassigned</option>${state.users.map(u=>`<option value="${u.id}" ${p.assignedTo===u.id?'selected':''}>${escape(u.name)}</option>`).join('')}</select>
-    </div>
     <div class="form-group"><label class="form-label">Notes</label><textarea class="form-textarea" id="fp-notes">${escape(p.notes||'')}</textarea></div>
     <div class="modal-actions">
       <button class="btn" onclick="closeModal()">Cancel</button>
@@ -3031,17 +3089,16 @@ function updateEquityPreview(){
   el.textContent = `Equity created: ${equity>=0?'+':''}${money(equity)}`;
 }
 async function saveProp(id){
-  const address = $('#fp-addr').value.trim();
-  if(!address) return toast('Address is required','err');
+  const propertyId = $('#fp-propid').value.trim();
+  if(!propertyId) return toast('Property ID is required','err');
   const data = {
-    id: id||uid(), address,
+    id: id||uid(), propertyId,
     county: $('#fp-county').value,
     state: $('#fp-state').value,
     acres: $('#fp-acres').value,
-    status: $('#fp-status').value,
     buyPrice: $('#fp-buy').value,
     sellPrice: $('#fp-sell').value,
-    assignedTo: $('#fp-assign').value,
+    closingDate: $('#fp-closing').value,
     notes: $('#fp-notes').value,
     created: id ? state.props.find(x=>x.id===id).created : today()
   };
@@ -3057,7 +3114,7 @@ async function saveProp(id){
 function openTaskForm(id, presetDate){
   const t = id ? state.tasks.find(x=>x.id===id) : {};
   const allLinked = [
-    ...state.props.map(p=>({id:p.id,type:'property',label:'Property: '+p.address}))
+    ...state.props.map(p=>({id:p.id,type:'property',label:'Property: '+(p.propertyId||'—')}))
   ];
   const currentLink = (t.linkedId&&t.linkedType) ? `${t.linkedId}|${t.linkedType}` : '';
   showModal(`<div class="modal">
@@ -3136,12 +3193,12 @@ function openQuickPropForm(){
       <h2 class="modal-title">Quick add property</h2>
       <button class="icon-btn" onclick="closeSubModal()"><i class="ti ti-x"></i></button>
     </div>
-    <div class="form-group"><label class="form-label">Address or parcel</label><input class="form-input" id="qft-prop-addr" placeholder="1234 CR 45 or Lot 7 Hwy 36"></div>
+    <div class="form-group"><label class="form-label">Property ID</label><input class="form-input" id="qft-prop-id" placeholder="e.g. BRZ-1423"></div>
     <div class="form-row">
       <div class="form-group"><label class="form-label">County</label><input class="form-input" id="qft-prop-county"></div>
       <div class="form-group"><label class="form-label">Acres</label><input class="form-input" id="qft-prop-acres" type="number" step="0.1"></div>
     </div>
-    <p style="font-size:12px;color:var(--ink-3);margin-top:-4px">Pricing, ARV, and stage can be filled in later from the Properties page — starts at Pre-Deal.</p>
+    <p style="font-size:12px;color:var(--ink-3);margin-top:-4px">Pricing, closing date, and stage can be filled in later from the Properties page — starts at Pre-Deal.</p>
     <div class="modal-actions">
       <button class="btn" onclick="closeSubModal()">Cancel</button>
       <button class="btn btn-primary" onclick="saveQuickProp()">Add property</button>
@@ -3149,13 +3206,13 @@ function openQuickPropForm(){
   </div>`);
 }
 async function saveQuickProp(){
-  const address = $('#qft-prop-addr').value.trim();
-  if(!address) return toast('Address is required','err');
+  const propertyId = $('#qft-prop-id').value.trim();
+  if(!propertyId) return toast('Property ID is required','err');
   const data = {
-    id: uid(), address,
+    id: uid(), propertyId,
     county: $('#qft-prop-county').value, state: 'TX',
     acres: $('#qft-prop-acres').value,
-    buyPrice: '', sellPrice: '',
+    buyPrice: '', sellPrice: '', closingDate: '',
     status: 'pre-deal', notes: '', assignedTo: '',
     created: today()
   };
@@ -3163,7 +3220,7 @@ async function saveQuickProp(){
   await saveOne('props', data);
   closeSubModal();
   toast('Property added');
-  linkNewEntity(data.id, 'property', 'Property: '+data.address);
+  linkNewEntity(data.id, 'property', 'Property: '+data.propertyId);
 }
 
 // Adds the newly created property to the still-open task form's
