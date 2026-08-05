@@ -1149,6 +1149,29 @@ const fmtLong = d => {if(!d)return'';const x=asLocalDate(d);return x.toLocaleDat
 const money = n => '$'+Number(n||0).toLocaleString();
 const escape = s => (s||'').toString().replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 
+/* ---- Which tab you're on, remembered -------------------------------------
+   The view is stored in two places on purpose: localStorage survives a reload
+   (and a fresh open of the app), while the URL hash makes tabs linkable and
+   lets the browser's back button work. On boot the hash wins if present —
+   someone following a #tasks link means it — otherwise the stored view does.
+--------------------------------------------------------------------------- */
+const VALID_VIEWS = ['dashboard','properties','tasks','projects','activity','calendar','team','settings'];
+const VIEW_KEY = 'ulc_activeView';
+const viewFromHash = () => {
+  const v = decodeURIComponent(location.hash.replace(/^#/,''));
+  return VALID_VIEWS.includes(v) ? v : null;
+};
+function rememberView(v){
+  try{ localStorage.setItem(VIEW_KEY, v); }catch(e){ /* private mode — not worth failing over */ }
+}
+function startingView(){
+  let stored = null;
+  try{ stored = localStorage.getItem(VIEW_KEY); }catch(e){}
+  // A view removed in a later version, or junk in the hash, must not leave the
+  // app rendering a blank main pane — fall back to the dashboard.
+  return viewFromHash() || (VALID_VIEWS.includes(stored) ? stored : 'dashboard');
+}
+
 function userColor(id){
   const u = state.users.find(x=>x.id===id);
   return u ? COLORS[u.colorIdx % COLORS.length] : {bg:'#F1EDE3',fg:'#857F76'};
@@ -1536,6 +1559,12 @@ const app = {
   async init(){
     await StorageAdapter.init();
     await loadAll();
+    // Restore the tab you were last on before the first render, so a reload
+    // lands you back where you were instead of bouncing to the dashboard.
+    state.activeView = startingView();
+    if(location.hash.slice(1) !== state.activeView){
+      history.replaceState(null, '', '#' + state.activeView);
+    }
     this.bindNav();
     this.buildUserSelect();
     this.render();
@@ -1563,11 +1592,34 @@ const app = {
   bindNav(){
     document.querySelectorAll('.nav-item[data-view]').forEach(el=>{
       el.addEventListener('click', ()=>{
-        state.activeView = el.dataset.view;
-        state.filters = {};
-        this.render();
+        this.go(el.dataset.view);
       });
     });
+    // Back/forward between tabs, and pasting a #view link, both land here.
+    window.addEventListener('hashchange', ()=>{
+      const v = viewFromHash();
+      if(v && v !== state.activeView){
+        state.activeView = v;
+        state.filters = {};
+        rememberView(v);
+        this.render();
+      }
+    });
+  },
+
+  // Single entry point for changing tab, so the stored view and the URL can
+  // never drift out of sync with what's actually on screen.
+  go(view){
+    if(!VALID_VIEWS.includes(view)) view = 'dashboard';
+    state.activeView = view;
+    state.filters = {};
+    rememberView(view);
+    if(location.hash.slice(1) !== view){
+      // replaceState rather than assigning location.hash: switching tabs
+      // shouldn't pile up history entries you have to click back through.
+      history.replaceState(null, '', '#' + view);
+    }
+    this.render();
   },
 
   buildUserSelect(){
@@ -1784,7 +1836,7 @@ function renderDashboard(){
           <div class="card-title">Active projects</div>
           <div class="card-sub">${activeProj} in progress</div>
         </div>
-        <button class="btn btn-sm" onclick="state.activeView='projects';app.render()">View all <i class="ti ti-arrow-right"></i></button>
+        <button class="btn btn-sm" onclick="app.go('projects')">View all <i class="ti ti-arrow-right"></i></button>
       </div>
       <div class="item-list">
         ${state.projects.filter(p=>p.status==='in-progress').slice(0,5).map(p=>`
