@@ -218,6 +218,13 @@ input,select,textarea{font:inherit;color:inherit}
   display:flex;gap:8px;margin-bottom:18px;flex-wrap:wrap;align-items:center;
 }
 .search-wrap{position:relative;flex:1;min-width:180px;max-width:340px}
+.sort-wrap{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.sort-label{
+  font-size:12px;font-weight:600;color:var(--ink-3);white-space:nowrap;
+  display:flex;align-items:center;gap:5px;
+}
+.sort-hint{font-size:11.5px;color:var(--ink-3)}
+@media(max-width:640px){.sort-hint{flex-basis:100%}}
 .search-wrap i{
   position:absolute;left:10px;top:50%;transform:translateY(-50%);
   color:var(--ink-3);font-size:15px;pointer-events:none;
@@ -382,79 +389,73 @@ input,select,textarea{font:inherit;color:inherit}
 .prop-timeline-empty{
   font-size:12px;color:var(--ink-3);display:flex;align-items:center;gap:6px;
 }
-.prop-timeline-row{display:flex;align-items:center;gap:10px}
-.prop-timeline-endpoint{
-  font-size:11px;color:var(--ink-3);white-space:nowrap;flex-shrink:0;
+/* The track sits mid-height; labels claim the space above and below it.
+   Every checkpoint is named on the bar itself, so the padding here is what
+   keeps those names from colliding with the card's other rows. */
+.prop-timeline-plot{
+  position:relative;padding:52px 0;margin:0 6px;
 }
 .prop-timeline-track{
-  position:relative;flex:1;height:6px;border-radius:20px;
-  background:var(--surface-2);overflow:visible;
+  position:relative;height:6px;border-radius:20px;
+  background:var(--surface-2);
 }
+/* Time already elapsed, always green — it reads as progress regardless of
+   whether the closing itself is on track, overdue, or unscheduled. */
 .prop-timeline-fill{
   position:absolute;top:0;left:0;height:100%;border-radius:20px;
-  transition:width .2s var(--ease);
+  background:var(--accent);transition:width .2s var(--ease);
 }
-.prop-timeline-checkpoint{
-  position:absolute;top:50%;width:11px;height:11px;border-radius:50%;
+.tl-mark{position:absolute;top:3px}
+.tl-dot{
+  position:absolute;top:0;left:0;width:11px;height:11px;border-radius:50%;
   transform:translate(-50%,-50%);border:2px solid var(--surface);
-  box-shadow:0 0 0 1px var(--border-strong);
-  cursor:default;
+  box-shadow:0 0 0 1px var(--border-strong);background:var(--surface-2);
 }
-.prop-timeline-tier{
-  width:8px;height:8px;background:var(--purple-ink);
+/* Scheduled-but-not-yet-reached payments read as hollow; anything in the
+   past is filled, so a glance tells you what's already gone out. */
+.tl-dot.is-future{background:var(--surface);box-shadow:0 0 0 1px var(--border-strong)}
+.tl-dot.is-today{
+  width:3px;height:16px;border-radius:2px;border:none;
+  box-shadow:none;background:var(--ink);
 }
-.prop-timeline-today{
-  position:absolute;top:-4px;width:2px;height:14px;
-  background:var(--ink);transform:translateX(-50%);border-radius:1px;
+/* Thin stem tying a label to its dot — without it, dense schedules make it
+   ambiguous which name belongs to which point. */
+.tl-stem{
+  position:absolute;left:0;width:1px;height:16px;
+  background:var(--border-strong);transform:translateX(-50%);
 }
+.tl-stem.above{bottom:3px}
+.tl-stem.below{top:3px}
+.tl-label{
+  position:absolute;width:max-content;max-width:132px;line-height:1.25;
+}
+.tl-label.above{bottom:21px}
+.tl-label.below{top:21px}
+.tl-name{
+  display:block;font-size:11px;font-weight:650;color:var(--ink-2);
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+.tl-meta{display:block;font-size:10.5px;color:var(--ink-3);white-space:nowrap}
+.tl-amount{font-variant-numeric:tabular-nums}
 .prop-timeline-status{
-  font-size:11px;font-weight:600;margin-top:6px;
-  display:flex;align-items:center;gap:5px;
+  font-size:11px;font-weight:600;margin-top:2px;
+  display:flex;align-items:center;gap:5px;flex-wrap:wrap;
 }
+.prop-timeline-status .tl-sep{color:var(--ink-3);font-weight:500}
 
-/* ============ PROPERTY FUNDING SCHEDULE TAB ============ */
-.prop-tabs{margin-top:10px;display:flex;gap:6px}
-.prop-tab-btn{
-  display:inline-flex;align-items:center;gap:6px;
-  padding:6px 12px;border-radius:20px;
-  font-size:11.5px;font-weight:600;color:var(--ink-2);
-  background:var(--surface-2);border:1px solid transparent;
-  transition:all .15s var(--ease);
+/* ---- funding schedule editor (property form) ---- */
+.form-hint{font-size:11.5px;color:var(--ink-3);margin:-2px 0 8px}
+.funding-row{
+  display:grid;grid-template-columns:1fr 146px 104px 112px auto;
+  gap:8px;align-items:center;margin-bottom:8px;
 }
-.prop-tab-btn:hover{background:var(--surface);border-color:var(--border-strong)}
-.prop-tab-btn-active{background:var(--purple-soft);color:var(--purple-ink)}
-.funding-panel{
-  margin-top:10px;padding:12px 14px;border-radius:var(--r-md);
-  background:var(--surface-2);border:1px solid var(--border);
+.funding-foot{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.funding-total{font-size:11.5px;color:var(--ink-2)}
+@media(max-width:640px){
+  .funding-row{grid-template-columns:1fr 1fr auto}
+  .funding-row .funding-name{grid-column:1/-1}
+  .funding-row .funding-date{grid-column:1/-1}
 }
-.funding-empty{
-  font-size:12px;color:var(--ink-3);display:flex;align-items:center;gap:6px;
-  padding:4px 0;
-}
-.funding-current{
-  font-size:12.5px;color:var(--ink);margin-bottom:10px;
-  display:flex;align-items:center;gap:6px;flex-wrap:wrap;
-}
-.funding-current i{color:var(--purple-ink)}
-.funding-current-sub{color:var(--ink-3);font-weight:400;font-size:11px}
-.funding-tier-list{display:flex;flex-direction:column;gap:6px}
-.funding-tier-row{
-  display:flex;align-items:center;gap:10px;
-  padding:7px 10px;border-radius:8px;background:var(--surface);
-  border:1px solid var(--border);
-}
-.funding-tier-active{border-color:var(--purple-ink);box-shadow:inset 0 0 0 1px var(--purple-ink)}
-.funding-tier-day{
-  font-size:12px;font-weight:600;color:var(--ink-2);
-  display:flex;align-items:center;gap:5px;min-width:90px;
-}
-.funding-tier-split{display:flex;gap:6px;flex:1}
-.funding-split-pill{
-  padding:2px 9px;border-radius:20px;font-size:11px;font-weight:700;
-  font-variant-numeric:tabular-nums;
-}
-.funding-split-ours{background:var(--accent-soft);color:var(--accent)}
-.funding-split-funder{background:var(--purple-soft);color:var(--purple-ink)}
 
 /* ============ TASK CHECK ============ */
 .task-check{
@@ -875,8 +876,8 @@ const StorageAdapter = {
       buy_price:p.buyPrice!==''&&p.buyPrice!=null?parseFloat(p.buyPrice):null,
       sell_price:p.sellPrice!==''&&p.sellPrice!=null?parseFloat(p.sellPrice):null,
       closing_date:p.closingDate||null,
-      funding_schedule:p.fundingSchedule||[],
-      notes:p.notes||null}),
+      notes:p.notes||null,
+      funding_schedule:normalizeFunding(p.funding)}),
     tasks: t => ({id:t.id, title:t.title, linked_id:t.linkedId||null,
       linked_type:t.linkedType||null, due_date:t.dueDate||null,
       priority:t.priority||'medium', status:t.status||'todo',
@@ -910,8 +911,8 @@ const StorageAdapter = {
       buyPrice:p.buy_price!=null?String(p.buy_price):'',
       sellPrice:p.sell_price!=null?String(p.sell_price):'',
       closingDate:p.closing_date||'',
-      fundingSchedule:p.funding_schedule||[],
       notes:p.notes||'',
+      funding:normalizeFunding(p.funding_schedule),
       created:p.created_at?p.created_at.split('T')[0]:''}),
     tasks: t => ({id:t.id, title:t.title, linkedId:t.linked_id||'',
       linkedType:t.linked_type||'', dueDate:t.due_date||'',
@@ -1139,8 +1140,12 @@ const isOverdue = d => d && d < today();
 // which come from <input type="date"> and are always local-calendar dates.
 const isoLocal = d => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
 const initials = n => (n||'').trim().split(/\s+/).map(w=>w[0]||'').join('').toUpperCase().slice(0,2)||'?';
-const fmt = d => {if(!d)return'';const x=new Date(d);return x.toLocaleDateString('en-US',{month:'short',day:'numeric'})};
-const fmtLong = d => {if(!d)return'';const x=new Date(d);return x.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})};
+// A bare 'YYYY-MM-DD' is parsed by Date as UTC midnight, which renders as the
+// previous day anywhere west of Greenwich. Pin it to local midnight first so a
+// date shown on a card always matches the date typed into the picker.
+const asLocalDate = d => new Date(/^\d{4}-\d{2}-\d{2}$/.test(d) ? d+'T00:00:00' : d);
+const fmt = d => {if(!d)return'';const x=asLocalDate(d);return x.toLocaleDateString('en-US',{month:'short',day:'numeric'})};
+const fmtLong = d => {if(!d)return'';const x=asLocalDate(d);return x.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})};
 const money = n => '$'+Number(n||0).toLocaleString();
 const escape = s => (s||'').toString().replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 
@@ -1152,6 +1157,65 @@ function userName(id){
   const u = state.users.find(x=>x.id===id);
   return u ? u.name : 'Unassigned';
 }
+/* ---- Funding schedule ----------------------------------------------------
+   A property's funding schedule is an ordered list of dated tiers:
+     [{id, name, date:'YYYY-MM-DD', percent:Number|null, amount:Number|null}, ...]
+
+   percent is this tier's share of the profit split (70 = 70% in our favour).
+   It's what the timeline displays, converted to dollars against the equity
+   the deal creates. amount is the separate, optional record of cash actually
+   wired — it never drives the timeline label.
+
+   It round-trips to the properties.funding_schedule jsonb column, and each
+   entry becomes a named checkpoint on that property's timeline.
+
+   normalizeFunding() is the single gate every read and write passes through,
+   so nothing downstream has to defend against nulls, a bare object, a JSON
+   string from an older export, or entries missing a date.
+--------------------------------------------------------------------------- */
+const numOrNull = v => (v===''||v==null||isNaN(parseFloat(v))) ? null : parseFloat(v);
+function normalizeFunding(raw){
+  let list = raw;
+  if(typeof list === 'string'){
+    try{ list = JSON.parse(list); }catch(e){ return []; }
+  }
+  if(!Array.isArray(list)) return [];
+  return list
+    .filter(f => f && typeof f === 'object')
+    .map(f => ({
+      id:      f.id || uid(),
+      name:    (f.name || '').toString().trim(),
+      date:    (f.date || '').toString().slice(0,10),
+      percent: numOrNull(f.percent),
+      amount:  numOrNull(f.amount)
+    }))
+    .filter(f => f.date)                       // undated tiers can't be placed
+    .sort((a,b) => a.date.localeCompare(b.date));
+}
+// A tier's share of the profit, in dollars: percent x equity created.
+// Null when there's no percent, or no sell price yet to create equity
+// against — the timeline says so rather than showing a misleading $0.
+function fundingShare(p, f){
+  if(f.percent == null) return null;
+  const equity = equityOf(p);
+  if(equity === null) return null;
+  return equity * (f.percent / 100);
+}
+// Total cash actually scheduled to be wired — shown against buy price so you
+// can see at a glance whether the schedule adds up to what you agreed to pay.
+function fundingTotal(p){
+  return normalizeFunding(p.funding).reduce((sum,f)=> sum + (f.amount||0), 0);
+}
+// --- Funding tiers, as the Properties sort control thinks of them ---
+// Final tier: the last scheduled tier on the deal.
+const finalTier = p => { const f=normalizeFunding(p.funding); return f.length ? f[f.length-1] : null; };
+// Next tier step: the earliest tier not yet reached.
+const nextTier  = p => normalizeFunding(p.funding).find(f => f.date >= today()) || null;
+// Parse a stored YYYY-MM-DD as a *local* midnight, matching isoLocal().
+// new Date('2026-08-05') alone is parsed as UTC and renders as Aug 4 in the
+// Americas, which would put markers on the wrong day.
+const dateMs = d => new Date(d+'T00:00:00').getTime();
+
 // Equity created on a deal = sell price - buy price. Null until a sell price is entered.
 function equityOf(p){
   if(p.sellPrice===''||p.sellPrice==null) return null;
@@ -1432,13 +1496,18 @@ async function seed(){
     {id:u2, name:'Jordan Lee', role:'Acquisitions', colorIdx:1},
     {id:u3, name:'Casey Nguyen', role:'Dispositions', colorIdx:2},
   ];
+  // Seed one deal with a funding schedule so the timeline shows what
+  // named checkpoints look like on a live property.
+  const plusDays = n => {const d=new Date(); d.setDate(d.getDate()+n); return isoLocal(d);};
+  const p2Closing = plusDays(45);
   state.props = [
-    {id:p1, propertyId:'BRZ-1423', county:'Brazoria', state:'TX', acres:'12.5', buyPrice:'31000', sellPrice:'', closingDate:'', notes:'Wooded lot, no utilities', created:today()},
-    {id:p2, propertyId:'FB-0007', county:'Fort Bend', state:'TX', acres:'5.0', buyPrice:'14500', sellPrice:'', closingDate:'2026-08-20', fundingSchedule:[
-      {id:uid(), daysFromClosing:0, ourPct:70},
-      {id:uid(), daysFromClosing:30, ourPct:60},
-      {id:uid(), daysFromClosing:60, ourPct:50},
-    ], notes:'Near new development', created:today()},
+    {id:p1, propertyId:'BRZ-1423', county:'Brazoria', state:'TX', acres:'12.5', buyPrice:'31000', sellPrice:'', closingDate:'', notes:'Wooded lot, no utilities', funding:[], created:today()},
+    {id:p2, propertyId:'FB-0007', county:'Fort Bend', state:'TX', acres:'5.0', buyPrice:'14500', sellPrice:'29500', closingDate:p2Closing, notes:'Near new development', created:today(),
+      funding:[
+        {id:uid(), name:'Tier 1',             date:plusDays(5),  percent:20, amount:1000},
+        {id:uid(), name:'Tier 2',             date:plusDays(18), percent:10, amount:500},
+        {id:uid(), name:'Balance at closing', date:p2Closing,    percent:70, amount:13000},
+      ]},
   ];
   state.tasks = [
     {id:uid(), title:'Send offer letter to John Hargrove', linkedId:'', linkedType:'', dueDate:today(), priority:'high', status:'todo', notes:'', assignees:[u2], created:today()},
@@ -2071,137 +2140,155 @@ function renderTaskRow(t, compact){
   </div>`;
 }
 
-// Small horizontal timeline shown under each property: Created -> Today ->
-// Closing, with a single checkpoint marking the closing date. If no closing
-// date is set yet, show a muted placeholder instead of a bar with nowhere
-// to point.
-/* =========================================================
-   FUNDING SCHEDULE — the split between what the company keeps
-   and what goes to the funder shifts over time after closing,
-   on a per-property schedule (tiers of {daysFromClosing, ourPct}).
-   ========================================================= */
-function sortedFundingTiers(p){
-  return (p.fundingSchedule||[]).slice().sort((a,b)=>a.daysFromClosing-b.daysFromClosing);
-}
-// The tier in effect right now, based on days elapsed since closing.
-// Returns null before closing, or if no tiers are defined yet.
-function getCurrentFundingSplit(p){
-  if(!p.closingDate) return null;
-  const tiers = sortedFundingTiers(p);
-  if(!tiers.length) return null;
-  const closeMs = new Date(p.closingDate+'T00:00:00').getTime();
-  const todayMs = new Date(today()+'T00:00:00').getTime();
-  const daysSince = Math.floor((todayMs - closeMs) / 86400000);
-  let applicable = null;
-  for(const t of tiers){ if(daysSince >= t.daysFromClosing) applicable = t; else break; }
-  if(!applicable) return null;
-  return {ourPct: applicable.ourPct, funderPct: 100-applicable.ourPct, tier: applicable, daysSince};
-}
-
+// Horizontal timeline shown under each property. Only data actually held in
+// the CRM is labelled: each funding tier and the closing date. The property's
+// created date still sets the left edge of the scale so the elapsed-time fill
+// means something, but it is never drawn as a checkpoint.
+//
+// A tier's figure is its share of the profit — percent x equity created —
+// not the cash wired, which is tracked separately in the roll-up line.
 function renderClosingTimeline(p){
-  if(!p.closingDate){
+  const funding = normalizeFunding(p.funding);
+  if(!p.closingDate && !funding.length){
     return `<div class="prop-timeline prop-timeline-empty">
-      <i class="ti ti-calendar-off" style="font-size:13px"></i> No closing date scheduled
+      <i class="ti ti-calendar-off" style="font-size:13px"></i> No closing date or funding scheduled
     </div>`;
   }
-  const tiers = sortedFundingTiers(p);
-  const created = p.created || today();
-  const startMs = new Date(created+'T00:00:00').getTime();
-  const closeMs = new Date(p.closingDate+'T00:00:00').getTime();
-  const todayMs = new Date(today()+'T00:00:00').getTime();
-  const maxTierDays = tiers.length ? Math.max(0, ...tiers.map(t=>t.daysFromClosing)) : 0;
-  // Extend the track past the closing checkpoint far enough to fit the
-  // last funding tier, so those checkpoints have somewhere to sit too.
-  const endMs = Math.max(closeMs, closeMs + maxTierDays*86400000);
-  const span = Math.max(endMs - startMs, 1); // avoid divide-by-zero
-  const pctFor = ms => Math.min(100, Math.max(0, ((ms-startMs)/span)*100));
-  const todayPct = pctFor(todayMs);
-  const closingPct = pctFor(closeMs);
 
-  const daysLeft = Math.round((closeMs - todayMs) / 86400000);
-  const overdue = todayMs > closeMs;
-  const isClosingToday = daysLeft === 0;
-  const split = getCurrentFundingSplit(p);
+  const todayMs = dateMs(today());
 
-  let statusLabel, dotColor;
-  if(!overdue){
-    statusLabel = isClosingToday ? 'Closing today' : `${daysLeft} day${daysLeft===1?'':'s'} to close`;
-    dotColor = isClosingToday ? 'var(--gold)' : 'var(--accent)';
-  } else if(split){
-    statusLabel = `You ${split.ourPct}% / Funder ${split.funderPct}% (day ${split.daysSince} since closing)`;
-    dotColor = 'var(--purple-ink)';
-  } else if(tiers.length){
-    statusLabel = `Closed ${Math.abs(daysLeft)} day${Math.abs(daysLeft)===1?'':'s'} ago — no tier in effect yet`;
-    dotColor = 'var(--ink-3)';
-  } else {
-    statusLabel = `Closed ${Math.abs(daysLeft)} day${Math.abs(daysLeft)===1?'':'s'} ago — no funding schedule set`;
-    dotColor = 'var(--ink-3)';
-  }
+  // --- Checkpoints: funding tiers + closing. Nothing else. ----------------
+  const marks = funding.map(f => ({
+    kind:'funding', name:f.name || 'Funding', date:f.date,
+    percent:f.percent, share:fundingShare(p, f), amount:f.amount
+  }));
+  if(p.closingDate) marks.push({kind:'closing', name:'Closing', date:p.closingDate});
+  // A tier and the closing date routinely share a day (the final tier lands on
+  // closing). Rank breaks those ties deterministically — a comparator that just
+  // returned 1 for every tie would order the bar differently run to run.
+  const RANK = {funding:0, closing:1};
+  marks.sort((a,b) => a.date.localeCompare(b.date) || RANK[a.kind] - RANK[b.kind]);
 
-  const tierCheckpoints = tiers.map(t=>{
-    const tMs = closeMs + t.daysFromClosing*86400000;
-    const tPct = pctFor(tMs);
-    return `<div class="prop-timeline-checkpoint prop-timeline-tier" style="left:${tPct}%" title="Day ${t.daysFromClosing}: You ${t.ourPct}% / Funder ${100-t.ourPct}%"></div>`;
+  // --- Domain -------------------------------------------------------------
+  // Left edge is the property's created date (unlabelled, scale only) so the
+  // green elapsed band reads as real time passed rather than starting at
+  // whatever the first tier happens to be.
+  const markMs  = marks.map(m => dateMs(m.date));
+  const startMs = Math.min(dateMs(p.created || today()), ...markMs);
+  const endMs   = Math.max(...markMs, todayMs);
+  const span    = Math.max(endMs - startMs, 1); // avoid divide-by-zero on a same-day deal
+  const pctOf   = ms => Math.min(100, Math.max(0, ((ms - startMs) / span) * 100));
+  const elapsedPct = pctOf(todayMs);
+
+  // --- Closing status -----------------------------------------------------
+  const closeMs     = p.closingDate ? dateMs(p.closingDate) : null;
+  const daysLeft    = closeMs!==null ? Math.round((closeMs - todayMs) / 86400000) : null;
+  const overdue     = closeMs!==null && todayMs > closeMs;
+  const closesToday = daysLeft === 0;
+  const accent = overdue ? 'var(--danger)' : closesToday ? 'var(--gold)' : 'var(--accent)';
+
+  // Labels alternate above and below the track so neighbouring checkpoints
+  // can never overprint each other, and are pinned inside the plot at the
+  // two ends rather than overflowing the card.
+  const html = marks.map((m, i) => {
+    const pct    = pctOf(dateMs(m.date));
+    const side   = i % 2 === 0 ? 'above' : 'below';
+    const future = dateMs(m.date) > todayMs;
+    const align  = pct <= 6 ? 'translateX(0)' : pct >= 94 ? 'translateX(-100%)' : 'translateX(-50%)';
+
+    // Profit share: "70% · $10,500", or "70% of —" when there is no sell
+    // price yet, so it is obvious why no dollar figure is shown.
+    let figure = '';
+    if(m.kind === 'funding' && m.percent != null){
+      figure = m.share != null
+        ? ` · ${m.percent}% · <span class="tl-amount">${money(m.share)}</span>`
+        : ` · <span class="tl-amount">${m.percent}% of —</span>`;
+    }
+    const meta = fmt(m.date) + figure;
+    const tip = `${m.name} — ${fmtLong(m.date)}`
+      + (m.percent != null ? ` · ${m.percent}% of profit${m.share!=null?` = ${money(m.share)}`:' (needs a sell price)'}` : '')
+      + (m.amount  != null ? ` · ${money(m.amount)} wired` : '');
+
+    return `<div class="tl-mark" style="left:${pct}%" title="${escape(tip)}">
+      <div class="tl-dot ${future?'is-future':''}"
+           style="background:${future?'var(--surface)':(m.kind==='closing'?accent:'var(--accent)')};border-color:var(--surface)"></div>
+      <div class="tl-stem ${side}"></div>
+      <div class="tl-label ${side}" style="transform:${align}">
+        <span class="tl-name" style="${m.kind==='closing'?`color:${accent}`:''}">${escape(m.name)}</span>
+        <span class="tl-meta">${meta}</span>
+      </div>
+    </div>`;
   }).join('');
 
+  const statusLabel = closeMs===null ? 'No closing date scheduled'
+    : overdue ? `${Math.abs(daysLeft)} day${Math.abs(daysLeft)===1?'':'s'} overdue`
+    : closesToday ? 'Closing today'
+    : `${daysLeft} day${daysLeft===1?'':'s'} to close`;
+
+  // Roll-up: profit share committed across the tiers, and cash wired to date.
+  const shares = funding.map(f => fundingShare(p, f)).filter(v => v != null);
+  const pctSum = funding.reduce((s,f)=> s + (f.percent||0), 0);
+  const wired  = funding.filter(f=>dateMs(f.date) <= todayMs).reduce((s,f)=>s+(f.amount||0),0);
+  const cash   = funding.reduce((s,f)=>s+(f.amount||0),0);
+  const bits = [];
+  if(funding.length) bits.push(`${funding.length} tier${funding.length===1?'':'s'}`);
+  if(pctSum)         bits.push(shares.length ? `${pctSum}% of profit · ${money(shares.reduce((a,b)=>a+b,0))}` : `${pctSum}% of profit`);
+  if(cash)           bits.push(`${money(wired)} of ${money(cash)} wired`);
+  const fundBit = bits.length
+    ? `<span class="tl-sep">·</span> <span style="color:var(--ink-3)">${bits.join(' · ')}</span>` : '';
+
   return `<div class="prop-timeline">
-    <div class="prop-timeline-row">
-      <span class="prop-timeline-endpoint" title="Created ${fmtLong(created)}">Created ${fmtLong(created)}</span>
+    <div class="prop-timeline-plot">
       <div class="prop-timeline-track">
-        <div class="prop-timeline-fill" style="width:${todayPct}%;background:${dotColor}"></div>
-        <div class="prop-timeline-checkpoint" style="left:${closingPct}%;background:var(--accent)" title="Closing ${fmtLong(p.closingDate)}"></div>
-        ${tierCheckpoints}
-        ${!overdue&&!isClosingToday?`<div class="prop-timeline-today" style="left:${todayPct}%" title="Today"></div>`:''}
+        <div class="prop-timeline-fill" style="width:${elapsedPct}%"></div>
+        ${html}
       </div>
-      <span class="prop-timeline-endpoint" title="${maxTierDays?`Last funding tier: day ${maxTierDays}`:`Closing ${fmtLong(p.closingDate)}`}">${maxTierDays?`+${maxTierDays}d funding`:fmtLong(p.closingDate)}</span>
     </div>
-    <div class="prop-timeline-status" style="color:${dotColor}">
-      <i class="ti ti-flag-3" style="font-size:11px"></i> ${statusLabel}
+    <div class="prop-timeline-status" style="color:${accent}">
+      <i class="ti ti-flag-3" style="font-size:11px"></i> ${statusLabel} ${fundBit}
     </div>
   </div>`;
 }
 
-// Which properties currently have their Funding Schedule tab expanded —
-// keyed by property id. Kept outside `state` on purpose: it's pure UI
-// state, not data, and doesn't need to persist across reloads.
-const fundingPanelOpen = {};
-function toggleFundingPanel(id){
-  fundingPanelOpen[id] = !fundingPanelOpen[id];
-  app.render();
-}
-function renderFundingSchedulePanel(p){
-  const tiers = sortedFundingTiers(p);
-  const current = getCurrentFundingSplit(p);
-  return `<div class="funding-panel">
-    ${!p.closingDate?`<div class="funding-empty"><i class="ti ti-calendar-off"></i> Set a closing date first — the funding schedule counts days from closing.</div>`:''}
-    ${current?`<div class="funding-current">
-      <i class="ti ti-flag-3"></i> Current split: <strong>You ${current.ourPct}%</strong> / <strong>Funder ${current.funderPct}%</strong> <span class="funding-current-sub">(day ${current.daysSince} since closing, tier starting day ${current.tier.daysFromClosing})</span>
-    </div>`:''}
-    <div class="funding-tier-list">
-      ${tiers.length ? tiers.map(t=>`
-        <div class="funding-tier-row ${current&&current.tier.id===t.id?'funding-tier-active':''}">
-          <div class="funding-tier-day"><i class="ti ti-calendar-time" style="font-size:12px"></i> Day ${t.daysFromClosing}+</div>
-          <div class="funding-tier-split">
-            <span class="funding-split-pill funding-split-ours">You ${t.ourPct}%</span>
-            <span class="funding-split-pill funding-split-funder">Funder ${100-t.ourPct}%</span>
-          </div>
-          <div class="item-actions">
-            <button class="icon-btn" onclick="openFundingTierForm('${p.id}','${t.id}')" title="Edit tier">${ICON_EDIT}</button>
-            <button class="icon-btn" onclick="deleteFundingTier('${p.id}','${t.id}')" title="Delete tier">${ICON_DELETE}</button>
-          </div>
-        </div>
-      `).join('') : `<div class="funding-empty"><i class="ti ti-percentage"></i> No funding tiers set yet — the whole thing stays with the company until you add one.</div>`}
-    </div>
-    <button class="btn btn-sm" style="margin-top:10px" onclick="openFundingTierForm('${p.id}')"><i class="ti ti-plus"></i> Add tier</button>
-  </div>`;
-}
+/* Properties can be ordered by the dates that actually drive the work.
+   Each sorter returns a date string, or '' for a deal the sort can't place —
+   those always sink to the bottom rather than jumping to the top on an empty
+   string comparison. */
+const PROP_SORTS = {
+  closing: {
+    label: 'Closing date',
+    hint:  'Soonest closing first',
+    key:   p => p.closingDate || ''
+  },
+  finalTier: {
+    label: 'Funding final tier',
+    hint:  'By the last tier on the schedule',
+    key:   p => (finalTier(p) || {}).date || ''
+  },
+  nextTier: {
+    label: 'Next funding tier step',
+    hint:  'By the next tier still to come',
+    key:   p => (nextTier(p) || {}).date || ''
+  }
+};
 
 function renderProperties(){
   const q = (state.filters.propSearch||'').toLowerCase();
+  const sortKey = state.filters.propSort || 'closing';
+  const sorter  = PROP_SORTS[sortKey] || PROP_SORTS.closing;
+
   const filtered = state.props.filter(p=>{
     if(q && !JSON.stringify(p).toLowerCase().includes(q)) return false;
     return true;
+  }).sort((a,b)=>{
+    const ka = sorter.key(a), kb = sorter.key(b);
+    if(!ka && !kb) return (b.created||'').localeCompare(a.created||'');
+    if(!ka) return 1;          // undated deals sink, whichever sort is active
+    if(!kb) return -1;
+    return ka.localeCompare(kb);
   });
+
+  const unplaced = filtered.filter(p=>!sorter.key(p)).length;
 
   return pageHeader('Deals', 'Properties', 'Every parcel, offer, and ARV.',
     `<button class="btn btn-primary" data-action="new-prop"><i class="ti ti-plus"></i> Add property</button>`) + `
@@ -2209,6 +2296,14 @@ function renderProperties(){
       <div class="search-wrap">
         <i class="ti ti-search"></i>
         <input class="search-input" placeholder="Search property ID, county, notes…" data-filter="propSearch" value="${escape(q)}">
+      </div>
+      <div class="sort-wrap">
+        <label class="sort-label" for="prop-sort"><i class="ti ti-arrows-sort"></i> Organize by</label>
+        <select class="form-select" id="prop-sort" data-filter="propSort" style="max-width:210px">
+          ${Object.entries(PROP_SORTS).map(([k,s])=>
+            `<option value="${k}" ${sortKey===k?'selected':''}>${s.label}</option>`).join('')}
+        </select>
+        <span class="sort-hint">${sorter.hint}${unplaced?` · ${unplaced} without one, listed last`:''}</span>
       </div>
     </div>
     <div class="item-list">
@@ -2236,15 +2331,6 @@ function renderProperties(){
           <button class="icon-btn" data-action="delete-prop" data-id="${p.id}" title="Delete">${ICON_DELETE}</button>
         </div>
         <div style="flex-basis:100%">${renderClosingTimeline(p)}</div>
-        <div style="flex-basis:100%">
-          <div class="prop-tabs">
-            <button class="prop-tab-btn ${fundingPanelOpen[p.id]?'prop-tab-btn-active':''}" onclick="toggleFundingPanel('${p.id}')">
-              <i class="ti ti-percentage"></i> Funding Schedule
-              <i class="ti ${fundingPanelOpen[p.id]?'ti-chevron-up':'ti-chevron-down'}" style="font-size:12px;margin-left:4px"></i>
-            </button>
-          </div>
-          ${fundingPanelOpen[p.id]?renderFundingSchedulePanel(p):''}
-        </div>
       </div>`;
     }).join('') || `<div class="empty"><i class="ti ti-home"></i><h3>No properties yet</h3><p>${q?'Try a different search.':'Track your first deal.'}</p><button class="btn btn-primary" data-action="new-prop"><i class="ti ti-plus"></i> Add property</button></div>`}
     </div>`;
@@ -2922,7 +3008,7 @@ function renderSettings(){
     <pre style="background:var(--bg);padding:14px;border-radius:var(--r-md);font-size:12px;overflow-x:auto;font-family:ui-monospace,SFMono-Regular,monospace;line-height:1.6">users       (id uuid, name, role, color_idx, created_at)
 properties  (id uuid, property_id, county, state,
              acres, buy_price, sell_price, closing_date,
-             funding_schedule jsonb, notes, created_at)
+             notes, funding_schedule jsonb, created_at)
 tasks       (id uuid, title, linked_id, linked_type, due_date,
              priority, status, notes, assignees uuid[], completed_at, created_at)
 projects    (id uuid, title, category, status, priority,
@@ -3216,15 +3302,93 @@ function openPropForm(id){
       <div class="form-group"><label class="form-label">Sell price</label><input class="form-input" id="fp-sell" type="number" value="${escape(p.sellPrice||'')}" oninput="updateEquityPreview()" placeholder="Once known"></div>
     </div>
     <div id="fp-equity-preview" style="font-size:12.5px;font-weight:600;margin:-8px 0 14px"></div>
+
+    <div class="form-group">
+      <label class="form-label">Funding schedule</label>
+      <p class="form-hint">Each tier becomes a named checkpoint on this property's timeline. The
+        % is that tier's share of the profit — it's shown on the timeline as that share of the
+        equity created. Cash wired is tracked separately and stays off the bar.</p>
+      <div id="fp-funding-rows"></div>
+      <div class="funding-foot">
+        <button type="button" class="btn btn-sm" onclick="addFundingRow()"><i class="ti ti-plus"></i> Add tier</button>
+        <span id="fp-funding-total" class="funding-total"></span>
+      </div>
+    </div>
+
     <div class="form-group"><label class="form-label">Notes</label><textarea class="form-textarea" id="fp-notes">${escape(p.notes||'')}</textarea></div>
     <div class="modal-actions">
       <button class="btn" onclick="closeModal()">Cancel</button>
       <button class="btn btn-primary" onclick="saveProp('${id||''}')">${id?'Save changes':'Add property'}</button>
     </div>
   </div>`);
+  normalizeFunding(p.funding).forEach(addFundingRow);
   requestAnimationFrame(updateEquityPreview);
 }
+
+/* ---- Funding schedule editor (inside the property form) ----
+   Rows are plain DOM, read back positionally on save, so rows can be added
+   and removed in any order without re-rendering the whole modal and losing
+   what's already typed into the other fields. */
+function addFundingRow(entry){
+  const wrap = document.getElementById('fp-funding-rows');
+  if(!wrap) return;
+  const e = entry && typeof entry === 'object' ? entry : {};
+  const row = document.createElement('div');
+  row.className = 'funding-row';
+  row.innerHTML = `
+    <input class="form-input funding-name" placeholder="Tier name" value="${escape(e.name||'')}">
+    <input class="form-input funding-date" type="date" value="${e.date||''}">
+    <input class="form-input funding-percent" type="number" step="0.1" min="0" max="100" placeholder="% of profit"
+           value="${e.percent!=null?escape(e.percent):''}" oninput="updateFundingTotal()">
+    <input class="form-input funding-amount" type="number" step="0.01" placeholder="Cash wired"
+           value="${e.amount!=null?escape(e.amount):''}" oninput="updateFundingTotal()">
+    <button type="button" class="icon-btn" title="Remove tier"
+            onclick="this.parentNode.remove();updateFundingTotal()"><i class="ti ti-x"></i></button>`;
+  wrap.appendChild(row);
+  updateFundingTotal();
+}
+function readFundingRows(){
+  return normalizeFunding([...document.querySelectorAll('#fp-funding-rows .funding-row')].map(r=>({
+    name:    r.querySelector('.funding-name').value,
+    date:    r.querySelector('.funding-date').value,
+    percent: r.querySelector('.funding-percent').value,
+    amount:  r.querySelector('.funding-amount').value
+  })));
+}
+// Live read-out under the tier rows: how much of the profit the split accounts
+// for, what that is worth in dollars at the current sell price, and whether the
+// cash column reconciles against the buy price.
+function updateFundingTotal(){
+  const el = document.getElementById('fp-funding-total');
+  if(!el) return;
+  const rows = [...document.querySelectorAll('#fp-funding-rows .funding-row')];
+  if(!rows.length){ el.textContent = ''; return; }
+  const num = (r,cls) => parseFloat(r.querySelector(cls).value) || 0;
+  const pctSum  = rows.reduce((s,r)=> s + num(r,'.funding-percent'), 0);
+  const cashSum = rows.reduce((s,r)=> s + num(r,'.funding-amount'),  0);
+  const buy  = parseFloat((document.getElementById('fp-buy')  ||{}).value);
+  const sell = parseFloat((document.getElementById('fp-sell') ||{}).value);
+  const equity = (isNaN(sell) || sell==='') ? null : (sell||0) - (buy||0);
+
+  const parts = [];
+  if(pctSum){
+    parts.push(equity !== null
+      ? `Split: <strong>${pctSum}%</strong> of profit · <strong>${money(equity * pctSum/100)}</strong>`
+      : `Split: <strong>${pctSum}%</strong> of profit <span style="color:var(--ink-3)">· needs a sell price</span>`);
+    // Over 100% means the tiers are promising more profit than the deal makes.
+    if(pctSum > 100) parts.push(`<span style="color:var(--danger)">over 100%</span>`);
+  }
+  if(cashSum){
+    const off = buy ? cashSum - buy : 0;
+    parts.push(`Cash: <strong>${money(cashSum)}</strong>` + (
+      buy && Math.abs(off) >= 0.01
+        ? ` <span style="color:var(--danger)">· ${off>0?'over':'under'} buy price by ${money(Math.abs(off))}</span>`
+        : buy ? ` <span style="color:var(--accent)">· matches buy price</span>` : ''));
+  }
+  el.innerHTML = parts.join(' &nbsp;·&nbsp; ');
+}
 function updateEquityPreview(){
+  updateFundingTotal(); // buy price feeds the schedule's over/under check
   const el = document.getElementById('fp-equity-preview');
   if(!el) return;
   const sellRaw = document.getElementById('fp-sell').value;
@@ -3238,7 +3402,6 @@ function updateEquityPreview(){
 async function saveProp(id){
   const propertyId = $('#fp-propid').value.trim();
   if(!propertyId) return toast('Property ID is required','err');
-  const existing = id ? state.props.find(x=>x.id===id) : null;
   const data = {
     id: id||uid(), propertyId,
     county: $('#fp-county').value,
@@ -3247,76 +3410,15 @@ async function saveProp(id){
     buyPrice: $('#fp-buy').value,
     sellPrice: $('#fp-sell').value,
     closingDate: $('#fp-closing').value,
-    // Funding schedule isn't edited from this form — carry it over as-is
-    // so saving basic details never wipes out the tiers.
-    fundingSchedule: existing ? (existing.fundingSchedule||[]) : [],
     notes: $('#fp-notes').value,
-    created: existing ? existing.created : today()
+    funding: readFundingRows(),
+    created: id ? state.props.find(x=>x.id===id).created : today()
   };
   if(id){ const i=state.props.findIndex(p=>p.id===id); state.props[i]=data; }
   else state.props.unshift(data);
   await saveOne('props', data);
   closeModal();
   toast(id?'Property updated':'Property added');
-  app.render();
-}
-
-/* ===== FUNDING SCHEDULE TIER FORM ===== */
-function openFundingTierForm(propId, tierId){
-  const p = state.props.find(x=>x.id===propId);
-  if(!p) return;
-  const t = tierId ? (p.fundingSchedule||[]).find(x=>x.id===tierId) : null;
-  showModal(`<div class="modal" style="max-width:400px">
-    <div class="modal-header">
-      <h2 class="modal-title">${t?'Edit funding tier':'Add funding tier'}</h2>
-      <button class="icon-btn" onclick="closeModal()"><i class="ti ti-x"></i></button>
-    </div>
-    <p style="font-size:12px;color:var(--ink-3);margin-top:-6px;margin-bottom:14px">This split takes effect the given number of days after closing, and stays in effect until the next tier's day is reached.</p>
-    <div class="form-row">
-      <div class="form-group"><label class="form-label">Days from closing</label><input class="form-input" id="ftr-days" type="number" min="0" value="${t?t.daysFromClosing:0}"></div>
-      <div class="form-group"><label class="form-label">We keep (%)</label><input class="form-input" id="ftr-ourpct" type="number" min="0" max="100" value="${t?t.ourPct:100}" oninput="updateTierFunderPreview()"></div>
-    </div>
-    <div id="ftr-funder-preview" style="font-size:12.5px;font-weight:600;color:var(--purple-ink);margin:-8px 0 14px"></div>
-    <div class="modal-actions">
-      <button class="btn" onclick="closeModal()">Cancel</button>
-      <button class="btn btn-primary" onclick="saveFundingTier('${propId}'${t?`,'${t.id}'`:''})">${t?'Save changes':'Add tier'}</button>
-    </div>
-  </div>`);
-  requestAnimationFrame(updateTierFunderPreview);
-}
-function updateTierFunderPreview(){
-  const el = document.getElementById('ftr-funder-preview');
-  if(!el) return;
-  const ourInput = document.getElementById('ftr-ourpct');
-  if(!ourInput) return;
-  const our = Math.min(100, Math.max(0, parseFloat(ourInput.value)||0));
-  el.textContent = `Funder gets ${100-our}%`;
-}
-async function saveFundingTier(propId, tierId){
-  const p = state.props.find(x=>x.id===propId);
-  if(!p) return;
-  const days = Math.max(0, parseInt($('#ftr-days').value,10)||0);
-  const ourPct = Math.min(100, Math.max(0, parseFloat($('#ftr-ourpct').value)||0));
-  const list = (p.fundingSchedule||[]).slice();
-  if(tierId){
-    const i = list.findIndex(x=>x.id===tierId);
-    if(i>=0) list[i] = {...list[i], daysFromClosing:days, ourPct};
-  } else {
-    list.push({id:uid(), daysFromClosing:days, ourPct});
-  }
-  p.fundingSchedule = list;
-  await saveOne('props', p);
-  closeModal();
-  toast(tierId?'Tier updated':'Tier added');
-  app.render();
-}
-async function deleteFundingTier(propId, tierId){
-  const p = state.props.find(x=>x.id===propId);
-  if(!p) return;
-  if(!confirm('Delete this funding tier?')) return;
-  p.fundingSchedule = (p.fundingSchedule||[]).filter(x=>x.id!==tierId);
-  await saveOne('props', p);
-  toast('Tier deleted');
   app.render();
 }
 
