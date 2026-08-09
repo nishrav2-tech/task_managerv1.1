@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Utopian Land CRM</title>
+<title>Utopian Land CRM — Local</title>
 <link rel="icon" type="image/svg+xml" href="favicon.svg">
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#2E5D3A">
@@ -15,9 +15,9 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/[email protected]/dist/tabler-icons.min.css">
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
-<script>window.CRM_CONFIG = null;</script>
-<script src="config.js" onerror="console.log('%cNo config.js — using localStorage. Copy config.example.js to config.js to enable Supabase sync.','color:#857F76')"></script>
+<!-- LOCAL BUILD: Supabase SDK and config.js loading are intentionally removed.
+     This copy always runs on localStorage and never touches the shared team database. -->
+<script>window.CRM_CONFIG = null; window.CRM_FORCE_LOCAL = true;</script>
 <style>
 :root{
   --bg: #F8F5EF;
@@ -264,12 +264,66 @@ input,select,textarea{font:inherit;color:inherit}
 .stat-card:hover{box-shadow:var(--shadow-md);transform:translateY(-1px)}
 
 /* ============ KPI SECTION ============ */
-.kpi-grid{display:flex;flex-direction:column}
+/* Segmented control — Tasks / Projects switch on the merged tab */
+.seg-control{
+  display:inline-flex;gap:2px;padding:3px;margin-bottom:18px;
+  background:var(--surface-2);border:1px solid var(--border);
+  border-radius:var(--r-md);max-width:100%;overflow-x:auto;
+}
+.seg-btn{
+  display:inline-flex;align-items:center;gap:7px;flex-shrink:0;
+  padding:7px 15px;border:none;background:transparent;cursor:pointer;
+  font-family:inherit;font-size:13px;font-weight:500;color:var(--ink-2);
+  border-radius:calc(var(--r-md) - 4px);
+  transition:background .14s var(--ease),color .14s var(--ease);
+}
+.seg-btn i{font-size:15px}
+.seg-btn:hover{color:var(--ink)}
+.seg-btn.active{background:var(--surface);color:var(--ink);box-shadow:var(--shadow-sm);font-weight:600}
+.seg-count{
+  font-size:11px;font-weight:600;padding:1px 6px;border-radius:9px;
+  background:var(--border);color:var(--ink-3);font-variant-numeric:tabular-nums;
+}
+.seg-btn.active .seg-count{background:var(--ink);color:var(--surface)}
+
+.kpi-grid{display:flex;flex-direction:column;--kpi-cols:3}
 .kpi-row{
-  display:grid;grid-template-columns:1fr 90px 90px;
+  display:grid;
+  grid-template-columns:1fr repeat(calc(var(--kpi-cols) - 1), 90px);
   align-items:center;gap:8px;
   padding:10px 4px;border-bottom:1px solid var(--border);
 }
+/* Custom From/To range strip above the KPI table */
+.kpi-range{
+  display:flex;align-items:center;gap:8px;flex-wrap:wrap;
+  padding:10px 4px 12px;margin-bottom:2px;
+  border-bottom:1px solid var(--border);
+}
+.kpi-range-label{
+  display:inline-flex;align-items:center;gap:6px;
+  font-size:11px;font-weight:600;color:var(--ink-3);
+  text-transform:uppercase;letter-spacing:.06em;
+}
+.kpi-range-label i{font-size:14px}
+.kpi-range-input{width:auto;min-width:132px;padding:5px 8px;font-size:12.5px}
+.kpi-range-dash{color:var(--ink-3);font-size:13px}
+.kpi-range-note{font-size:11.5px;color:var(--ink-3)}
+/* Recent-entries list inside the KPI log modal */
+.kpi-history{
+  max-height:190px;overflow-y:auto;
+  border:1px solid var(--border);border-radius:var(--r-sm);
+}
+.kpi-history-row{
+  display:grid;grid-template-columns:1fr auto 28px;
+  align-items:center;gap:8px;
+  padding:6px 10px;font-size:12.5px;
+  border-bottom:1px solid var(--border);
+}
+.kpi-history-row:last-child{border-bottom:none}
+.kpi-history-row.current{background:var(--accent-soft)}
+.kpi-history-date{color:var(--ink-2);cursor:pointer}
+.kpi-history-date:hover{color:var(--ink);text-decoration:underline}
+.kpi-history-val{font-weight:600;font-variant-numeric:tabular-nums}
 .kpi-row:last-child{border-bottom:none}
 .kpi-row.kpi-head{
   color:var(--ink-3);font-size:10.5px;font-weight:600;
@@ -287,6 +341,82 @@ input,select,textarea{font:inherit;color:inherit}
 .kpi-edit-ic{display:inline-flex;opacity:.3;margin-left:4px;vertical-align:middle;transition:opacity .12s var(--ease)}
 .kpi-cell:hover .kpi-edit-ic{opacity:.85}
 .kpi-updated{font-size:9.5px;color:var(--ink-3);text-align:center;margin-top:1px}
+
+/* ---- Firm performance tiles ---- */
+.kpi-tiles{display:grid;grid-template-columns:repeat(auto-fill,minmax(228px,1fr));gap:10px}
+.kpi-tile{
+  border:1px solid var(--border);border-radius:var(--r-md);padding:12px 13px 11px;
+  background:var(--surface);cursor:pointer;position:relative;
+  transition:border-color .12s var(--ease),box-shadow .12s var(--ease),transform .12s var(--ease);
+  display:flex;flex-direction:column;gap:7px;
+}
+.kpi-tile:hover{border-color:var(--ink-3);box-shadow:var(--shadow-sm);transform:translateY(-1px)}
+.kpi-tile.is-good{border-left:3px solid var(--success-ink)}
+.kpi-tile.is-bad{border-left:3px solid var(--danger)}
+.kpi-tile.no-data{opacity:.62}
+.kpi-tile-head{display:flex;align-items:flex-start;justify-content:space-between;gap:8px}
+.kpi-tile-name{font-size:12px;font-weight:600;color:var(--ink);line-height:1.3}
+.kpi-tile-win{
+  font-size:9.5px;font-weight:600;color:var(--ink-3);background:var(--surface-2);
+  border-radius:99px;padding:2px 7px;white-space:nowrap;letter-spacing:.03em;flex-shrink:0;
+}
+.kpi-tile-val{
+  font-family:var(--serif);font-size:27px;font-weight:500;line-height:1;
+  font-variant-numeric:tabular-nums;display:flex;align-items:baseline;gap:8px;
+}
+.kpi-tile-delta{font-size:11px;font-weight:600;font-family:var(--sans)}
+.kpi-tile-delta.up{color:var(--success-ink)}
+.kpi-tile-delta.down{color:var(--danger)}
+.kpi-tile-delta.flat{color:var(--ink-3)}
+.kpi-tile-goal{
+  display:flex;align-items:center;justify-content:space-between;gap:6px;
+  font-size:10.5px;color:var(--ink-3);border-top:1px solid var(--border);padding-top:7px;margin-top:auto;
+}
+.kpi-tile-goal b{color:var(--ink-2);font-variant-numeric:tabular-nums}
+.kpi-goal-set{
+  font-size:10.5px;color:var(--accent);font-weight:600;cursor:pointer;
+  background:none;border:none;padding:0;text-decoration:underline;text-underline-offset:2px;
+}
+.kpi-bar{height:4px;border-radius:99px;background:var(--surface-2);overflow:hidden}
+.kpi-bar-fill{height:100%;border-radius:99px;transition:width .3s var(--ease)}
+.kpi-note{font-size:10.5px;color:var(--ink-3);line-height:1.4}
+.kpi-score{display:flex;align-items:center;gap:14px;flex-wrap:wrap;padding:4px 2px}
+.kpi-score-big{font-family:var(--serif);font-size:32px;font-weight:500;line-height:1}
+.kpi-pill{
+  font-size:11px;font-weight:600;border-radius:99px;padding:3px 10px;
+  display:inline-flex;align-items:center;gap:5px;
+}
+.kpi-pill.good{background:var(--accent-soft);color:var(--success-ink)}
+.kpi-pill.bad{background:var(--danger-soft,rgba(180,60,50,.12));color:var(--danger)}
+.kpi-pill.none{background:var(--surface-2);color:var(--ink-3)}
+/* ---- One-day entry form ---- */
+.kpi-day-grid{
+  display:grid;grid-template-columns:repeat(auto-fill,minmax(290px,1fr));
+  gap:0 28px;
+}
+.kpi-day-row{
+  display:flex;align-items:center;gap:10px;
+  padding:6px 6px;border-bottom:1px solid var(--border);cursor:pointer;
+}
+.kpi-day-row:hover{background:var(--surface-2)}
+.kpi-day-row > i{font-size:15px;color:var(--ink-3);flex-shrink:0;width:16px;text-align:center}
+.kpi-day-name{
+  flex:1;min-width:0;font-size:12.5px;color:var(--ink);
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+}
+.kpi-day-input{
+  width:76px;flex-shrink:0;text-align:right;padding:4px 7px;
+  font-size:12.5px;font-variant-numeric:tabular-nums;
+}
+.kpi-day-row.filled .kpi-day-name{font-weight:600}
+.kpi-day-row.filled .kpi-day-input{font-weight:600;border-color:var(--accent)}
+.kpi-day-unit{font-size:10.5px;color:var(--ink-3);width:20px;flex-shrink:0}
+.kpi-log-group-title{margin-top:2px}
+.kpi-log-group{margin-bottom:14px}
+.kpi-log-group-title{
+  font-size:10.5px;font-weight:700;color:var(--ink-3);text-transform:uppercase;
+  letter-spacing:.08em;margin-bottom:7px;
+}
 .stat-label{
   font-size:11px;font-weight:600;color:var(--ink-3);
   text-transform:uppercase;letter-spacing:.08em;
@@ -889,11 +1019,9 @@ input,select,textarea{font:inherit;color:inherit}
     </div>
     <nav class="topnav">
       <div class="nav-item active" data-view="dashboard"><i class="ti ti-layout-dashboard"></i> Dashboard</div>
-      <div class="nav-item" data-view="activity"><i class="ti ti-clipboard-list"></i> Activity Log</div>
-      <div class="nav-item" data-view="calendar"><i class="ti ti-calendar"></i> Calendar</div>
+      <div class="nav-item" data-view="activity"><i class="ti ti-chart-histogram"></i> KPIs &amp; Tracking</div>
       <div class="nav-item" data-view="properties"><i class="ti ti-home"></i> Properties <span class="count" id="count-props">0</span></div>
-      <div class="nav-item" data-view="tasks"><i class="ti ti-checkbox"></i> Tasks <span class="count" id="count-tasks">0</span></div>
-      <div class="nav-item" data-view="projects"><i class="ti ti-bulb"></i> Projects <span class="count" id="count-projs">0</span></div>
+      <div class="nav-item" data-view="tasks"><i class="ti ti-checkbox"></i> Tasks &amp; Projects <span class="count" id="count-tasks">0</span></div>
       <div class="nav-item" data-view="team"><i class="ti ti-building-community"></i> Team</div>
       <div class="nav-item" data-view="settings"><i class="ti ti-settings"></i> Settings</div>
     </nav>
@@ -930,12 +1058,14 @@ const StorageAdapter = {
   localKeys: {
     users:'ulc_users', props:'ulc_props',
     tasks:'ulc_tasks', projects:'ulc_projects', kpis:'ulc_kpis',
-    kpiMeta:'ulc_kpiMeta', callLogs:'ulc_callLogs', campaignLogs:'ulc_campaignLogs',
+    kpiMeta:'ulc_kpiMeta', kpiEntries:'ulc_kpiEntries',
+    callLogs:'ulc_callLogs', campaignLogs:'ulc_campaignLogs',
     active:'ulc_activeUser'
   },
   tables: {
     users:'users', props:'properties',
     tasks:'tasks', projects:'projects', kpis:'kpi_metrics', kpiMeta:'kpi_meta',
+    kpiEntries:'kpi_entries',
     callLogs:'call_logs', campaignLogs:'campaign_logs'
   },
 
@@ -962,6 +1092,8 @@ const StorageAdapter = {
       trailing_7_value:Number(k.trailing7Value)||0,
       trailing_30_value:Number(k.trailing30Value)||0}),
     kpiMeta: m => ({id:m.id, updated_at:m.updatedAt || new Date().toISOString()}),
+    kpiEntries: e => ({id:e.id, metric_key:e.metricKey, log_date:e.date,
+      value:Number(e.value)||0}),
     callLogs: c => ({id:c.id, log_date:c.date,
       calls_made:Number(c.callsMade)||0,
       conversations_held:Number(c.conversationsHeld)||0,
@@ -1003,6 +1135,8 @@ const StorageAdapter = {
       trailing7Value:k.trailing_7_value||0,
       trailing30Value:k.trailing_30_value||0}),
     kpiMeta: m => ({id:m.id, updatedAt:m.updated_at||''}),
+    kpiEntries: e => ({id:e.id, metricKey:e.metric_key, date:e.log_date,
+      value:e.value||0}),
     callLogs: c => ({id:c.id, date:c.log_date,
       callsMade:c.calls_made||0, conversationsHeld:c.conversations_held||0,
       offersMade:c.offers_made||0, offersAccepted:c.offers_accepted||0,
@@ -1014,6 +1148,11 @@ const StorageAdapter = {
   },
 
   async init(){
+    // LOCAL BUILD: hard guard — never connect to Supabase from this copy.
+    if(window.CRM_FORCE_LOCAL){
+      console.log('%c⚡ Local build — localStorage backend (Supabase disabled)','color:#857F76');
+      return {ok:true, backend:'local'};
+    }
     const cfg = window.CRM_CONFIG;
     if(cfg?.supabaseUrl && cfg?.supabaseKey && window.supabase){
       try{
@@ -1036,17 +1175,19 @@ const StorageAdapter = {
 
   async loadAll(){
     if(this.backend === 'supabase'){
-      const [u, p, t, pr, k, km, cl, cal] = await Promise.all([
+      const [u, p, t, pr, k, km, ke, cl, cal] = await Promise.all([
         this.supabase.from('users').select('*').order('created_at'),
         this.supabase.from('properties').select('*').order('created_at',{ascending:false}),
         this.supabase.from('tasks').select('*').order('created_at',{ascending:false}),
         this.supabase.from('projects').select('*').order('created_at',{ascending:false}),
         this.supabase.from('kpi_metrics').select('*').order('metric_key'),
         this.supabase.from('kpi_meta').select('*').order('updated_at',{ascending:false}).limit(1),
+        this.supabase.from('kpi_entries').select('*').order('log_date',{ascending:false}),
         this.supabase.from('call_logs').select('*').order('log_date',{ascending:false}),
         this.supabase.from('campaign_logs').select('*').order('log_date',{ascending:false}),
       ]);
       if(k.error) console.warn('kpi_metrics table not found yet — run the updated schema.sql to enable KPIs.', k.error.message);
+      if(ke.error) console.warn('kpi_entries table not found yet — run the updated schema.sql to enable daily KPI logging.', ke.error.message);
       if(cl.error) console.warn('call_logs table not found yet — run the updated schema.sql to enable the Activity Log.', cl.error.message);
       if(cal.error) console.warn('campaign_logs table not found yet — run the updated schema.sql to enable the Activity Log.', cal.error.message);
       return {
@@ -1056,6 +1197,7 @@ const StorageAdapter = {
         projects: (pr.data||[]).map(this.fromDb.projects),
         kpis: (k.data||[]).map(this.fromDb.kpis),
         kpiMeta: (km.data||[]).map(this.fromDb.kpiMeta),
+        kpiEntries: (ke.data||[]).map(this.fromDb.kpiEntries),
         callLogs: (cl.data||[]).map(this.fromDb.callLogs),
         campaignLogs: (cal.data||[]).map(this.fromDb.campaignLogs),
         activeUserId: localStorage.getItem(this.localKeys.active) || ''
@@ -1068,6 +1210,7 @@ const StorageAdapter = {
       projects: JSON.parse(localStorage.getItem(this.localKeys.projects) || '[]'),
       kpis: JSON.parse(localStorage.getItem(this.localKeys.kpis) || '[]'),
       kpiMeta: JSON.parse(localStorage.getItem(this.localKeys.kpiMeta) || '[]'),
+      kpiEntries: JSON.parse(localStorage.getItem(this.localKeys.kpiEntries) || '[]'),
       callLogs: JSON.parse(localStorage.getItem(this.localKeys.callLogs) || '[]'),
       campaignLogs: JSON.parse(localStorage.getItem(this.localKeys.campaignLogs) || '[]'),
       activeUserId: localStorage.getItem(this.localKeys.active) || ''
@@ -1124,7 +1267,7 @@ const StorageAdapter = {
     try{
       if(this.backend === 'supabase'){
         // Order matters: users first (foreign key references)
-        const order = ['users','props','tasks','projects','kpis','kpiMeta','callLogs','campaignLogs'];
+        const order = ['users','props','tasks','projects','kpis','kpiMeta','kpiEntries','callLogs','campaignLogs'];
         for(const col of order){
           if(data[col]?.length){
             const rows = data[col].map(this.toDb[col]);
@@ -1151,7 +1294,7 @@ const StorageAdapter = {
   async wipeAll(){
     if(this.backend === 'supabase'){
       // Delete in reverse dep order
-      const order = ['tasks','projects','props','users','kpis','kpiMeta','callLogs','campaignLogs'];
+      const order = ['tasks','projects','props','users','kpis','kpiMeta','kpiEntries','callLogs','campaignLogs'];
       for(const col of order){
         await this.supabase.from(this.tables[col]).delete().neq('id','00000000-0000-0000-0000-000000000000');
       }
@@ -1196,7 +1339,7 @@ const PROJECT_STATUSES = ['ideas','planned','in-progress','done'];
 const CAMPAIGN_CHANNELS = ['Direct Mail','Cold Call','SMS','PPC','Facebook','Email','Referral','Other'];
 
 const state = {
-  users:[], props:[], tasks:[], projects:[], kpis:[], kpiMeta:[],
+  users:[], props:[], tasks:[], projects:[], kpis:[], kpiMeta:[], kpiEntries:[],
   callLogs:[], campaignLogs:[],
   activeUserId:'', activeView:'dashboard',
   // Which property has its funding-tier editor open on the Properties list.
@@ -1232,12 +1375,62 @@ const escape = s => (s||'').toString().replace(/[&<>"']/g, c=>({'&':'&amp;','<':
    lets the browser's back button work. On boot the hash wins if present —
    someone following a #tasks link means it — otherwise the stored view does.
 --------------------------------------------------------------------------- */
-const VALID_VIEWS = ['dashboard','properties','tasks','projects','activity','calendar','team','settings'];
+// 'projects' is kept here so old #projects links, and a stored view from
+// before the merge, still resolve — normalizeView() then folds it into the
+// Tasks & Projects tab with the Projects section already selected.
+// 'kpis' is an alias for the KPIs & Tracking tab (view key 'activity'), so
+// #kpis links work; normalizeView() folds it in with the KPIs half selected.
+const VALID_VIEWS = ['dashboard','properties','tasks','projects','activity','kpis','calendar','team','settings'];
 const VIEW_KEY = 'ulc_activeView';
 const viewFromHash = () => {
   const v = decodeURIComponent(location.hash.replace(/^#/,''));
   return VALID_VIEWS.includes(v) ? v : null;
 };
+
+/* ---- Tasks & Projects sub-tab -------------------------------------------
+   The two boards live under one nav item now. Which half you were last
+   looking at is remembered, so switching tabs and coming back doesn't
+   dump you on the wrong board.                                            */
+const TP_TABS = ['tasks','projects'];
+
+/* ---- KPIs & Tracking sub-tab --------------------------------------------
+   Same idea for the renamed Activity Log tab: two halves under one nav item.
+   Opens on KPIs, then remembers whichever half you last looked at.        */
+const KT_TABS = ['kpis','activity'];
+function getKtTab(){
+  if(state.ktTab === undefined){
+    const stored = localStorage.getItem('ulc_ktTab');
+    state.ktTab = KT_TABS.includes(stored) ? stored : 'kpis';
+  }
+  return state.ktTab;
+}
+function setKtTab(tab, silent){
+  if(!KT_TABS.includes(tab)) return;
+  state.ktTab = tab;
+  localStorage.setItem('ulc_ktTab', tab);
+  if(!silent) app.render();
+}
+function getTpTab(){
+  if(state.tpTab === undefined){
+    const stored = localStorage.getItem('ulc_tpTab');
+    state.tpTab = TP_TABS.includes(stored) ? stored : 'tasks';
+  }
+  return state.tpTab;
+}
+function setTpTab(tab, silent){
+  state.tpTab = TP_TABS.includes(tab) ? tab : 'tasks';
+  try{ localStorage.setItem('ulc_tpTab', state.tpTab); }catch(e){}
+  if(!silent) app.render();
+}
+function normalizeView(v){
+  if(v === 'projects'){ setTpTab('projects', true); return 'tasks'; }
+  // The Calendar tab was folded into the Dashboard, which now carries the same
+  // week view. Old #calendar links and any stored view land on the Dashboard
+  // rather than a blank screen.
+  if(v === 'calendar') return 'dashboard';
+  if(v === 'kpis'){ setKtTab('kpis', true); return 'activity'; }
+  return v;
+}
 function rememberView(v){
   try{ localStorage.setItem(VIEW_KEY, v); }catch(e){ /* private mode — not worth failing over */ }
 }
@@ -1246,7 +1439,7 @@ function startingView(){
   try{ stored = localStorage.getItem(VIEW_KEY); }catch(e){}
   // A view removed in a later version, or junk in the hash, must not leave the
   // app rendering a blank main pane — fall back to the dashboard.
-  return viewFromHash() || (VALID_VIEWS.includes(stored) ? stored : 'dashboard');
+  return normalizeView(viewFromHash() || (VALID_VIEWS.includes(stored) ? stored : 'dashboard'));
 }
 
 function userColor(id){
@@ -1635,6 +1828,7 @@ async function loadAll(){
   state.projects = data.projects;
   state.kpis = data.kpis || [];
   state.kpiMeta = data.kpiMeta || [];
+  state.kpiEntries = migrateKpiEntryKeys(data.kpiEntries || []);
   state.callLogs = data.callLogs || [];
   state.campaignLogs = data.campaignLogs || [];
   state.activeUserId = data.activeUserId;
@@ -1740,7 +1934,8 @@ const app = {
     });
     // Back/forward between tabs, and pasting a #view link, both land here.
     window.addEventListener('hashchange', ()=>{
-      const v = viewFromHash();
+      const raw = viewFromHash();
+      const v = raw ? normalizeView(raw) : null;
       if(v && v !== state.activeView){
         state.activeView = v;
         state.filters = {};
@@ -1754,6 +1949,7 @@ const app = {
   // never drift out of sync with what's actually on screen.
   go(view){
     if(!VALID_VIEWS.includes(view)) view = 'dashboard';
+    view = normalizeView(view);
     state.activeView = view;
     state.filters = {};
     rememberView(view);
@@ -1779,10 +1975,14 @@ const app = {
   },
 
   render(){
-    // Sidebar counts
-    $('#count-props').textContent = state.props.length;
-    $('#count-tasks').textContent = state.tasks.filter(t=>t.status!=='done').length;
-    $('#count-projs').textContent = state.projects.filter(p=>p.status!=='done').length;
+    // Nav counts. Tasks & Projects is one tab now, so its badge is the sum of
+    // both open lists. Guarded because the Projects badge no longer exists.
+    const openTaskCount = state.tasks.filter(t=>t.status!=='done').length;
+    const openProjCount = state.projects.filter(p=>p.status!=='done').length;
+    const setCount = (sel, n) => { const el = $(sel); if(el) el.textContent = n; };
+    setCount('#count-props', state.props.length);
+    setCount('#count-tasks', openTaskCount + openProjCount);
+    setCount('#count-projs', openProjCount);
 
     document.querySelectorAll('.nav-item[data-view]').forEach(el=>{
       el.classList.toggle('active', el.dataset.view === state.activeView);
@@ -1805,10 +2005,10 @@ const app = {
     const renderers = {
       dashboard: renderDashboard,
       properties: renderProperties,
-      tasks: renderTasks,
-      projects: renderProjects,
-      activity: renderActivity,
-      calendar: renderCalendarPage,
+      tasks: renderTasksProjects,
+      projects: renderTasksProjects,
+      activity: renderKpiTracking,
+      kpis: renderKpiTracking,
       team: renderTeam,
       settings: renderSettings,
     };
@@ -1841,20 +2041,17 @@ function renderDashboard(){
   const overdue = overdueTasks.length;
   const todayStr = today();
   const dueTodayTasks = openTasks.filter(t=>t.dueDate===todayStr);
-  const agendaTasks = [...overdueTasks, ...dueTodayTasks];
-  const projsToday = state.projects.filter(p=>p.status!=='done'&&p.dueDate===todayStr);
   const dayLabel = new Date().toLocaleDateString('en-US',{weekday:'long', month:'long', day:'numeric'});
 
-  // Task filter defaults to the signed-in user (like before), but can be
-  // changed to any teammate or "Everyone" via the dropdown below.
-  const taskFilterId = state.filters.dashTaskAssign !== undefined
-    ? state.filters.dashTaskAssign
-    : (state.activeUserId || '');
-  const visibleTasks = taskFilterId
-    ? openTasks.filter(t=>(t.assignees||[]).includes(taskFilterId))
-    : openTasks;
-  const sortedTasks = visibleTasks.slice().sort((a,b)=>(a.dueDate||'').localeCompare(b.dueDate||''));
-  const filterName = taskFilterId ? userName(taskFilterId) : 'the team';
+  // Today's agenda can be scoped to one person. Defaults to "Everyone" so
+  // nothing silently disappears; the choice sticks across tab changes and
+  // reloads (state.filters is wiped on every tab change, so it lives here).
+  const agendaUserId = getAgendaUserId();
+  const agendaMine = item => !agendaUserId || (item.assignees||[]).includes(agendaUserId);
+  const agendaLabel = agendaUserId ? userName(agendaUserId) : 'the whole team';
+  const agendaTasks = [...overdueTasks, ...dueTodayTasks].filter(agendaMine);
+  const projsToday = state.projects.filter(p=>p.status!=='done'&&p.dueDate===todayStr).filter(agendaMine);
+  const agendaCount = agendaTasks.length + projsToday.length;
 
   const activeProj = state.projects.filter(p=>p.status==='in-progress').length;
   const equityProduced = state.props.reduce((s,p)=>s+(equityOf(p)||0),0);
@@ -1916,7 +2113,12 @@ function renderDashboard(){
       <div>
         <div class="page-eyebrow" style="margin-bottom:2px">Today's agenda</div>
         <div class="card-title">${dayLabel}</div>
+        <div class="card-sub">${agendaCount} item${agendaCount!==1?'s':''} · showing ${escape(agendaLabel)}</div>
       </div>
+      <select class="filter-select" style="min-width:170px" onchange="setAgendaUser(this.value)">
+        <option value="">Everyone</option>
+        ${state.users.map(u=>`<option value="${u.id}" ${u.id===agendaUserId?'selected':''}>${escape(u.name)}</option>`).join('')}
+      </select>
     </div>
     <div class="item-list">
       ${agendaTasks.map(t=>{
@@ -1951,27 +2153,7 @@ function renderDashboard(){
     </div>
   </div>
 
-  <div class="card" style="margin-bottom:24px">
-    <div class="card-header">
-      <div>
-        <div class="card-title">Team tasks</div>
-        <div class="card-sub">${sortedTasks.length} open · showing ${filterName}</div>
-      </div>
-      <div style="display:flex;align-items:center;gap:8px">
-        <select class="filter-select" data-filter="dashTaskAssign" style="min-width:160px">
-          <option value="">Everyone</option>
-          ${state.users.map(u=>`<option value="${u.id}" ${u.id===taskFilterId?'selected':''}>${escape(u.name)}</option>`).join('')}
-        </select>
-        <button class="btn btn-sm" data-action="new-task"><i class="ti ti-plus"></i> New</button>
-      </div>
-    </div>
-    <div class="item-list">
-      ${sortedTasks.map(t=>renderTaskRow(t,false)).join('')
-        || `<div class="empty" style="padding:24px"><i class="ti ti-checks"></i><h3>All caught up</h3><p>No open tasks for ${escape(filterName)}.</p></div>`}
-    </div>
-  </div>
-
-  ${renderMonthCalendar()}
+  ${renderWeekCalendarCard()}
 
   <div class="grid grid-3" style="margin-top:24px">
     ${renderTeamPerformanceCard(monthFilter, monthLabel)}
@@ -1982,7 +2164,7 @@ function renderDashboard(){
           <div class="card-title">Active projects</div>
           <div class="card-sub">${activeProj} in progress</div>
         </div>
-        <button class="btn btn-sm" onclick="app.go('projects')">View all <i class="ti ti-arrow-right"></i></button>
+        <button class="btn btn-sm" onclick="setTpTab('projects',true);app.go('tasks')">View all <i class="ti ti-arrow-right"></i></button>
       </div>
       <div class="item-list">
         ${state.projects.filter(p=>p.status==='in-progress').slice(0,5).map(p=>`
@@ -2004,147 +2186,1149 @@ function renderDashboard(){
 }
 
 /* =========================================================
-   KPIs — one row per metric, each with its own manually
-   entered 7-day and 30-day totals, each independently
-   editable and each stamped with its own update date.
+   ACQUISITIONS PERFORMANCE — KPIs and expectations
+   ---------------------------------------------------------
+   Two layers:
+
+   1. INPUTS (KPI_METRICS) — the raw counts you actually log,
+      one number per input per day. Totals like "hours spent
+      preparing offers" are logged as totals for that day, not
+      as an average.
+
+   2. KPI_DEFS — what the dashboard displays. Each one is
+      derived from inputs over a trailing window:
+        sum   → just adds an input up
+        ratio → num ÷ den, optionally ×100 for a percentage
+        avg   → a total ÷ a count (e.g. hours ÷ offers)
+
+   Deriving rather than logging averages directly is what keeps
+   the window math honest: a 7-day average sums the parts across
+   all 7 days and divides once, so a slow day with one lead
+   doesn't outweigh a fast day with twelve.
    ========================================================= */
+
+// --- Layer 1: the raw numbers you log each day ---------------------------
+// `unit` drives the input step and how totals are phrased. 'count' is a whole
+// number; 'hrs' is a cumulative time total for that day, in hours.
 const KPI_METRICS = [
-  {key:'smsSent', label:'SMS Sent', icon:'ti-message-2'},
-  {key:'leadsProduced', label:'Leads Produced', icon:'ti-user-plus'},
-  {key:'hotLeadsProduced', label:'Hot Leads Produced', icon:'ti-flame'},
-  {key:'contractsSent', label:'Contracts Sent', icon:'ti-file-text'},
-  {key:'contractsClosed', label:'Contracts Closed', icon:'ti-file-check'}
+  // Lead Generation
+  {key:'smsSent',            label:'SMS sent',                        icon:'ti-message-2',    unit:'count', group:'leadGen'},
+  {key:'leadsProduced',      label:'Leads produced',                  icon:'ti-user-plus',    unit:'count', group:'leadGen'},
+  {key:'hotLeadsProduced',   label:'Hot leads produced',              icon:'ti-flame',        unit:'count', group:'leadGen'},
+  {key:'scLeadsProcessed',   label:'Smarter Contact leads processed', icon:'ti-inbox',        unit:'count', group:'leadGen'},
+  {key:'scProcessHrs',       label:'Hours processing those leads',    icon:'ti-clock',        unit:'hrs',   group:'leadGen'},
+  {key:'offersPrepared',     label:'Offers prepared',                 icon:'ti-file-dollar',  unit:'count', group:'leadGen'},
+  {key:'offerPrepHrs',       label:'Hours preparing offers',          icon:'ti-clock',        unit:'hrs',   group:'leadGen'},
+
+  // Lead Conversion / management
+  {key:'leadsContacted',     label:'Leads contacted',                 icon:'ti-phone-call',   unit:'count', group:'leadConv'},
+  {key:'firstContactHrs',    label:'Hours to first contact',          icon:'ti-clock',        unit:'hrs',   group:'leadConv'},
+  {key:'leadsOfferedOn',     label:'Leads offered on',                icon:'ti-businessplan', unit:'count', group:'leadConv'},
+  {key:'contractsSent',      label:'Contracts sent',                  icon:'ti-file-text',    unit:'count', group:'leadConv'},
+  {key:'contractSentHrs',    label:'Hours to contract sent',          icon:'ti-clock',        unit:'hrs',   group:'leadConv'},
+  {key:'contractsClosed',    label:'Leads closed',                    icon:'ti-file-check',   unit:'count', group:'leadConv'},
+  {key:'touchPoints',        label:'Touch points logged',             icon:'ti-hand-click',   unit:'count', group:'leadConv'},
+  {key:'dealsProduced',      label:'Deals produced',                  icon:'ti-diamond',      unit:'count', group:'leadConv'},
+
+  // Due Diligence + Funding
+  {key:'ddStage2Done',       label:'Stage II DD completed',           icon:'ti-file-search',  unit:'count', group:'dueDil'},
+  {key:'ddStage2Hrs',        label:'Hours completing Stage II',       icon:'ti-clock',        unit:'hrs',   group:'dueDil'},
+  {key:'emdSubmitted',       label:'EMDs submitted',                  icon:'ti-cash',         unit:'count', group:'dueDil'},
+  {key:'emdHrs',             label:'Hours to submit those EMDs',      icon:'ti-clock',        unit:'hrs',   group:'dueDil'},
+  {key:'contractsExecuted',  label:'Contracts executed',              icon:'ti-writing-sign', unit:'count', group:'dueDil'},
+  {key:'contractsCancelled', label:'Contracts cancelled',             icon:'ti-file-x',       unit:'count', group:'dueDil'},
+
+  // Disposition
+  {key:'buyerLeadsResponded',label:'Buyer leads responded to',        icon:'ti-message-reply',unit:'count', group:'disposition'},
+  {key:'buyerRespHrs',       label:'Hours responding to buyers',      icon:'ti-clock',        unit:'hrs',   group:'disposition'},
+  {key:'outboundBuyerRuns',  label:'Outbound buyer-lead runs',        icon:'ti-address-book', unit:'count', group:'disposition'},
+  {key:'outboundBuyerHrs',   label:'Hours on those runs',             icon:'ti-clock',        unit:'hrs',   group:'disposition'},
+  {key:'propsHit8HotBuyers', label:'Properties reaching 8 hot buyers',icon:'ti-users',        unit:'count', group:'disposition'},
+  {key:'hotBuyerHrs',        label:'Hours to reach 8 hot buyers',     icon:'ti-clock',        unit:'hrs',   group:'disposition'},
+  {key:'propsListed',        label:'Properties listed',               icon:'ti-home-plus',    unit:'count', group:'disposition'},
+  {key:'zillowSaves',        label:'Zillow saves',                    icon:'ti-heart',        unit:'count', group:'disposition'},
+  {key:'fbHits',             label:'Facebook Marketplace hits',       icon:'ti-brand-facebook',unit:'count',group:'disposition'}
 ];
-function getKpiRow(metricKey){
-  return state.kpis.find(k => k.metricKey === metricKey)
-    || {metricKey, trailing7Value:0, trailing30Value:0};
+const KPI_INPUT_BY_KEY = Object.fromEntries(KPI_METRICS.map(m=>[m.key,m]));
+
+// --- Layer 2: the KPIs the dashboard shows -------------------------------
+// `win` is the headline trailing window in days. `dir:'down'` means lower is
+// better (all the "time to…" metrics), which flips the on-track test.
+const KPI_DEFS = [
+  // ---- Lead Generation: sending campaigns + processing leads ----
+  {key:'smsSent7',       section:'leadGen', label:'SMS sent',                  win:7,  unit:'count', dir:'up',
+   calc:{type:'sum', of:'smsSent'}, pace:'smsMonthlyGoal'},
+  {key:'smsSent30',      section:'leadGen', label:'SMS sent',                  win:30, unit:'count', dir:'up',
+   calc:{type:'sum', of:'smsSent'}},
+  {key:'leadsProduced7', section:'leadGen', label:'Leads produced',            win:7,  unit:'count', dir:'up',
+   calc:{type:'sum', of:'leadsProduced'}},
+  {key:'hotLeads7',      section:'leadGen', label:'Hot leads produced',        win:7,  unit:'count', dir:'up',
+   calc:{type:'sum', of:'hotLeadsProduced'}},
+  {key:'scProcessAvg',   section:'leadGen', label:'Avg time to process a lead',win:7,  unit:'hrs',   dir:'down',
+   calc:{type:'avg', total:'scProcessHrs', count:'scLeadsProcessed'}},
+  {key:'offerPrepAvg',   section:'leadGen', label:'Avg time to prepare offer', win:7,  unit:'hrs',   dir:'down',
+   calc:{type:'avg', total:'offerPrepHrs', count:'offersPrepared'}},
+
+  // ---- Lead Conversion / management ----
+  {key:'firstContact7',  section:'leadConv',label:'Avg time to first contact', win:7,  unit:'hrs',   dir:'down',
+   calc:{type:'avg', total:'firstContactHrs', count:'leadsContacted'}},
+  {key:'pctContacted7',  section:'leadConv',label:'% of leads contacted',      win:7,  unit:'pct',   dir:'up',
+   calc:{type:'ratio', num:'leadsContacted', den:'leadsProduced'}},
+  {key:'pctOffered7',    section:'leadConv',label:'% of leads offered on',     win:7,  unit:'pct',   dir:'up',
+   calc:{type:'ratio', num:'leadsOfferedOn', den:'leadsProduced'}},
+  {key:'pctContract7',   section:'leadConv',label:'% of leads contract sent',  win:7,  unit:'pct',   dir:'up',
+   calc:{type:'ratio', num:'contractsSent', den:'leadsProduced'}},
+  {key:'pctClosed7',     section:'leadConv',label:'% of leads closed',         win:7,  unit:'pct',   dir:'up',
+   calc:{type:'ratio', num:'contractsClosed', den:'leadsProduced'}},
+  {key:'touchPerLead7',  section:'leadConv',label:'Avg touch points per lead', win:7,  unit:'num',   dir:'up',
+   calc:{type:'avg', total:'touchPoints', count:'leadsProduced'}},
+  {key:'contractSentAvg',section:'leadConv',label:'Avg time to contract sent', win:7,  unit:'hrs',   dir:'down',
+   calc:{type:'avg', total:'contractSentHrs', count:'contractsSent'}},
+  {key:'dealsProduced7', section:'leadConv',label:'Deals produced',            win:7,  unit:'count', dir:'up',
+   calc:{type:'sum', of:'dealsProduced'}},
+
+  // ---- Due Diligence + Funding ----
+  {key:'ddStage2Avg',    section:'dueDil',  label:'Avg time to complete Stage II DD', win:7, unit:'hrs', dir:'down',
+   calc:{type:'avg', total:'ddStage2Hrs', count:'ddStage2Done'}},
+  {key:'emdAvg',         section:'dueDil',  label:'Avg time to submit EMD',    win:7,  unit:'hrs',   dir:'down',
+   calc:{type:'avg', total:'emdHrs', count:'emdSubmitted'}},
+  {key:'pctCancelled30', section:'dueDil',  label:'% of contracts cancelled',  win:30, unit:'pct',   dir:'down',
+   calc:{type:'ratio', num:'contractsCancelled', den:'contractsExecuted'}},
+
+  // ---- Disposition: buyer servicing + marketing/pricing effectiveness ----
+  {key:'buyerResp30',    section:'disposition', label:'Avg time to respond to buyer leads', win:30, unit:'hrs', dir:'down',
+   calc:{type:'avg', total:'buyerRespHrs', count:'buyerLeadsResponded'}},
+  {key:'buyerResp7',     section:'disposition', label:'Avg time to respond to buyer leads', win:7, unit:'hrs', dir:'down',
+   calc:{type:'avg', total:'buyerRespHrs', count:'buyerLeadsResponded'}},
+  {key:'outboundAvg',    section:'disposition', label:'Avg time to produce + call all outbound buyer leads', win:7, unit:'hrs', dir:'down',
+   calc:{type:'avg', total:'outboundBuyerHrs', count:'outboundBuyerRuns'}},
+  {key:'hotBuyerAvg',    section:'disposition', label:'Avg time to produce 8 hot buyer leads / property', win:30, unit:'hrs', dir:'down',
+   calc:{type:'avg', total:'hotBuyerHrs', count:'propsHit8HotBuyers'}},
+  {key:'savesPerProp',   section:'disposition', label:'Avg Zillow saves per property', win:30, unit:'num', dir:'up',
+   calc:{type:'avg', total:'zillowSaves', count:'propsListed'}},
+  {key:'fbPerProp',      section:'disposition', label:'Avg Facebook Marketplace hits per property', win:30, unit:'num', dir:'up',
+   calc:{type:'avg', total:'fbHits', count:'propsListed'}}
+];
+/* ---- KPI sections -------------------------------------------------------
+   The four stages a deal moves through. Sections are fixed; which metrics
+   sit in each is a per-device choice stored in localStorage, so the pipeline
+   can be arranged from the UI without touching this file. Every section
+   starts empty — metrics live under "Unassigned" until they're placed.     */
+const KPI_SECTIONS = [
+  {key:'leadGen',    label:'Lead Generation', icon:'ti-seeding'},
+  {key:'leadConv',   label:'Lead Conversion', icon:'ti-arrows-right'},
+  {key:'dueDil',     label:'Due Diligence',   icon:'ti-file-search'},
+  {key:'disposition',label:'Disposition',     icon:'ti-tag'}
+];
+
+/* ---- Which sections are live right now ---------------------------------
+   Due Diligence and Disposition are fully defined above but switched off
+   while the team focuses on the top of the funnel. Nothing is deleted: add
+   'dueDil' and 'disposition' back to this array and their KPIs, inputs,
+   tiles, grid rows and calendar options all reappear, with any data logged
+   in the meantime still intact.                                           */
+const KPI_ACTIVE_SECTIONS = ['leadGen','leadConv'];
+const isKpiSectionActive = key => KPI_ACTIVE_SECTIONS.includes(key);
+
+// Everything the UI iterates over reads these, not the raw constants.
+const activeKpiSections = () => KPI_SECTIONS.filter(s => isKpiSectionActive(s.key));
+const activeKpiDefs     = () => KPI_DEFS.filter(d => isKpiSectionActive(d.section));
+const activeKpiInputs   = () => KPI_METRICS.filter(m => isKpiSectionActive(m.group));
+
+const kpiDefsInSection = sectionKey => KPI_DEFS.filter(d => d.section === sectionKey);
+const kpiInputsInSection = sectionKey => KPI_METRICS.filter(m => m.group === sectionKey);
+
+/* ---- Expectations (targets) ---------------------------------------------
+   Every KPI can carry a goal. Blank means "no expectation set yet" — nothing
+   is invented, and a KPI without a goal simply shows its value. `dir` on the
+   definition decides which side of the goal counts as on track.
+   'smsMonthlyGoal' is a special entry: a monthly SMS number that the 7-day
+   KPI is paced against rather than compared to directly.                   */
+// Two KPIs were re-windowed from 1 day to 7 and 30; any goal set against the
+// old key is carried over so the expectation isn't silently lost.
+const KPI_TARGET_RENAMES = {firstContact1:'firstContact7', buyerResp1:'buyerResp30'};
+function getKpiTargets(){
+  if(state.kpiTargets === undefined){
+    let t = {};
+    try{ t = JSON.parse(localStorage.getItem('ulc_kpiTargets') || '{}') || {}; }catch(e){ t = {}; }
+    Object.entries(KPI_TARGET_RENAMES).forEach(([oldK, newK]) => {
+      if(t[oldK] !== undefined && t[newK] === undefined) t[newK] = t[oldK];
+      delete t[oldK];
+    });
+    state.kpiTargets = t;
+  }
+  return state.kpiTargets;
 }
+function getKpiTarget(key){
+  const v = getKpiTargets()[key];
+  return (v === undefined || v === null || v === '') ? null : Number(v);
+}
+function setKpiTarget(key, value){
+  const t = {...getKpiTargets()};
+  if(value === '' || value === null || isNaN(Number(value))) delete t[key];
+  else t[key] = Number(value);
+  state.kpiTargets = t;
+  try{ localStorage.setItem('ulc_kpiTargets', JSON.stringify(t)); }catch(e){}
+  app.render();
+}
+
+/* ---- Deriving a KPI over a window ---------------------------------------
+   All three shapes sum their component inputs across the whole window first,
+   then divide once. Returns null — not zero — when there's nothing to divide
+   by, so "no data yet" stays visibly different from "genuinely zero".      */
+function kpiValueOver(def, from, to){
+  const c = def.calc;
+  if(c.type === 'sum') return kpiSum(c.of, from, to);
+  if(c.type === 'ratio'){
+    const den = kpiSum(c.den, from, to);
+    if(!den) return null;
+    return (kpiSum(c.num, from, to) / den) * 100;
+  }
+  if(c.type === 'avg'){
+    const n = kpiSum(c.count, from, to);
+    if(!n) return null;
+    return kpiSum(c.total, from, to) / n;
+  }
+  return null;
+}
+// The same window, shifted back one full period — used for the trend delta.
+function kpiValuePrev(def, days, anchor){
+  const end = anchor ? asLocalDate(anchor) : new Date();
+  end.setDate(end.getDate() - days);
+  const start = new Date(end);
+  start.setDate(start.getDate() - (days - 1));
+  return kpiValueOver(def, isoLocal(start), isoLocal(end));
+}
+function kpiValue(def, days, anchor){
+  const w = kpiWindow(days || def.win, anchor);
+  return kpiValueOver(def, w.from, w.to);
+}
+// Does this KPI have any component data at all in the window?
+function kpiHasData(def, days, anchor){
+  const w = kpiWindow(days || def.win, anchor);
+  return kpiComponentKeys(def).some(k =>
+    state.kpiEntries.some(e => e.metricKey === k && e.date >= w.from && e.date <= w.to));
+}
+const kpiComponentKeys = def => def.calc.type === 'sum' ? [def.calc.of]
+  : def.calc.type === 'ratio' ? [def.calc.num, def.calc.den]
+  : [def.calc.total, def.calc.count];
+// Which raw inputs feed a KPI — what the log modal opens to.
+function kpiInputsFor(def){
+  const c = def.calc;
+  const keys = c.type === 'sum' ? [c.of] : c.type === 'ratio' ? [c.num, c.den] : [c.total, c.count];
+  return keys.map(k => KPI_INPUT_BY_KEY[k]).filter(Boolean);
+}
+
+// --- Formatting ----------------------------------------------------------
+/* Every duration is measured in hours now — minutes and days were a needless
+   third and fourth unit to hold in your head. These inputs used to be named
+   for those units, so entries logged under the old keys are remapped on load.
+   Note the *numbers* are left exactly as they were: anything you logged as
+   minutes or days before the change now reads as hours and wants re-entering. */
+const KPI_KEY_RENAMES = {
+  scProcessMin:'scProcessHrs', offerPrepMin:'offerPrepHrs',
+  ddStage2Days:'ddStage2Hrs',  emdDays:'emdHrs', hotBuyerDays:'hotBuyerHrs'
+};
+function migrateKpiEntryKeys(entries){
+  return (entries||[]).map(e =>
+    KPI_KEY_RENAMES[e.metricKey] ? {...e, metricKey: KPI_KEY_RENAMES[e.metricKey]} : e);
+}
+
+const KPI_UNIT_SUFFIX = {count:'', num:'', pct:'%', hrs:' hrs'};
+function kpiFormat(value, unit){
+  if(value === null || value === undefined || isNaN(value)) return '—';
+  const dp = (unit === 'count') ? 0 : (Math.abs(value) >= 100 ? 0 : 1);
+  const n = Number(value).toFixed(dp).replace(/\.0$/,'');
+  return n + (KPI_UNIT_SUFFIX[unit] || '');
+}
+const kpiWindowLabel = days => days === 1 ? '1-day' : `${days}-day`;
+// On track = at or better than the goal, in whichever direction the KPI wants.
+function kpiOnTrack(def, value, target){
+  if(value === null || target === null) return null;
+  return def.dir === 'down' ? value <= target : value >= target;
+}
+
 function getKpiLastUpdated(){
   return (state.kpiMeta[0] || {}).updatedAt || '';
 }
+// The one entry for a metric on a given day, if it's been logged.
+function getKpiEntry(metricKey, dateStr){
+  return state.kpiEntries.find(e => e.metricKey === metricKey && e.date === dateStr) || null;
+}
+// Every entry for a metric, newest first.
+function kpiEntriesFor(metricKey){
+  return state.kpiEntries.filter(e => e.metricKey === metricKey)
+    .slice().sort((a,b)=>(b.date||'').localeCompare(a.date||''));
+}
+// Inclusive on both ends. from/to are 'YYYY-MM-DD' strings, which compare
+// correctly as plain strings — no Date parsing or timezone shifts needed.
+function kpiSum(metricKey, from, to){
+  return state.kpiEntries.reduce((sum, e) =>
+    (e.metricKey === metricKey && e.date >= from && e.date <= to)
+      ? sum + (Number(e.value) || 0)
+      : sum, 0);
+}
+function kpiDaysLogged(from, to){
+  const days = new Set();
+  state.kpiEntries.forEach(e => { if(e.date >= from && e.date <= to) days.add(e.date); });
+  return days.size;
+}
+// A trailing window: 7 days means the anchor day plus the 6 before it. The
+// anchor defaults to today, but the KPI tab passes an arbitrary past day so
+// every average and percentage can be recomputed as of that date.
+function kpiWindow(days, anchor){
+  const end = anchor ? asLocalDate(anchor) : new Date();
+  const start = new Date(end);
+  start.setDate(start.getDate() - (days - 1));
+  return {from: isoLocal(start), to: isoLocal(end)};
+}
+
+/* ---- The "as of" day ----------------------------------------------------
+   The KPI tab reports as of one selected day rather than a from/to range:
+   pick a date and every trailing window (1, 7, 30 day) ends on it, so the
+   averages and percentages are exactly what they were on that day. Stored
+   per-device; defaults to today and is clamped so a future day can't be
+   selected (there'd be no data past today anyway).                        */
+function getKpiAsOf(){
+  if(state.kpiAsOf === undefined){
+    const stored = localStorage.getItem('ulc_kpiAsOf');
+    state.kpiAsOf = (stored && stored <= today()) ? stored : today();
+  }
+  if(state.kpiAsOf > today()) state.kpiAsOf = today();
+  return state.kpiAsOf;
+}
+function setKpiAsOf(dateStr){
+  if(!dateStr) return;
+  state.kpiAsOf = dateStr > today() ? today() : dateStr;
+  try{ localStorage.setItem('ulc_kpiAsOf', state.kpiAsOf); }catch(e){}
+  app.render();
+}
+function shiftKpiAsOf(days){
+  const d = asLocalDate(getKpiAsOf());
+  d.setDate(d.getDate() + days);
+  setKpiAsOf(isoLocal(d));
+}
+
+// Custom range for the extra column. Survives re-renders and reloads, but is
+// deliberately separate from state.filters, which is cleared on tab change.
+function getKpiRange(){
+  if(state.kpiRange === undefined){
+    try{ state.kpiRange = JSON.parse(localStorage.getItem('ulc_kpiRange') || 'null') || {from:'', to:''}; }
+    catch(e){ state.kpiRange = {from:'', to:''}; }
+  }
+  return state.kpiRange;
+}
+function setKpiRange(part, value){
+  const r = {...getKpiRange(), [part]: value};
+  // An inverted range would silently sum to zero; nudge the other end along
+  // instead of leaving it looking like there's no data.
+  if(r.from && r.to && r.from > r.to){
+    if(part === 'from') r.to = r.from; else r.from = r.to;
+  }
+  state.kpiRange = r;
+  try{ localStorage.setItem('ulc_kpiRange', JSON.stringify(r)); }catch(e){}
+  app.render();
+}
+function clearKpiRange(){
+  state.kpiRange = {from:'', to:''};
+  try{ localStorage.removeItem('ulc_kpiRange'); }catch(e){}
+  app.render();
+}
+
+// The three (or four) time windows every KPI table is measured over. Pulled out
+// so the dashboard card and the sectioned tracking view can't drift apart.
+function kpiColumns(){
+  const range = getKpiRange();
+  const hasRange = !!(range.from && range.to);
+  return {
+    w7: kpiWindow(7),
+    w30: kpiWindow(30),
+    range, hasRange,
+    cols: hasRange ? 4 : 3,
+    rangeDays: hasRange
+      ? Math.round((asLocalDate(range.to) - asLocalDate(range.from)) / 86400000) + 1
+      : 0
+  };
+}
+// The shared custom-range picker.
+function kpiRangeBar(c){
+  return `<div class="kpi-range">
+    <span class="kpi-range-label"><i class="ti ti-calendar-stats"></i> Custom range</span>
+    <input type="date" class="form-input kpi-range-input" value="${c.range.from||''}" max="${today()}"
+           onchange="setKpiRange('from', this.value)" aria-label="Custom range start">
+    <span class="kpi-range-dash">→</span>
+    <input type="date" class="form-input kpi-range-input" value="${c.range.to||''}" max="${today()}"
+           onchange="setKpiRange('to', this.value)" aria-label="Custom range end">
+    ${c.hasRange
+      ? `<button class="btn btn-sm" onclick="clearKpiRange()"><i class="ti ti-x"></i> Clear</button>
+         <span class="kpi-range-note">${c.rangeDays} day${c.rangeDays!==1?'s':''} · ${kpiDaysLogged(c.range.from, c.range.to)} logged</span>`
+      : `<span class="kpi-range-note">Pick both dates to add a column</span>`}
+  </div>`;
+}
+// The plain input table — raw daily numbers, 7-day and 30-day totals. Used by
+// the dashboard card and the "raw inputs" section of the tracking view.
+function kpiTable(metrics, c){
+  const cell = (metricKey, from, to) => `<div class="kpi-cell" onclick="openKpiLogForm('${metricKey}')">
+    <div class="kpi-val">${kpiSum(metricKey, from, to)}<span class="kpi-edit-ic">${ICON_EDIT}</span></div>
+  </div>`;
+  return `<div class="kpi-grid" style="--kpi-cols:${c.cols}">
+    <div class="kpi-row kpi-head">
+      <div>Metric</div><div>7-day</div><div>30-day</div>${c.hasRange?`<div>Range</div>`:''}
+    </div>
+    ${metrics.map(m => `<div class="kpi-row">
+        <div class="kpi-label"><i class="ti ${m.icon}"></i> ${m.label}</div>
+        ${cell(m.key, c.w7.from, c.w7.to)}
+        ${cell(m.key, c.w30.from, c.w30.to)}
+        ${c.hasRange ? cell(m.key, c.range.from, c.range.to) : ''}
+      </div>`).join('')}
+  </div>`;
+}
+
+/* The Dashboard's KPI card deliberately stays the short headline list it has
+   always been — five volume metrics, always as of today. The full 23-KPI
+   breakdown lives in the KPIs & Tracking tab; putting it here too made the
+   Dashboard unreadable. Labels are pinned locally so renaming an input for
+   the tab (e.g. "Contracts sent to leads") doesn't reword this card.       */
+const DASHBOARD_KPIS = [
+  {key:'smsSent',          label:'SMS Sent',            icon:'ti-message-2'},
+  {key:'leadsProduced',    label:'Leads Produced',      icon:'ti-user-plus'},
+  {key:'hotLeadsProduced', label:'Hot Leads Produced',  icon:'ti-flame'},
+  {key:'contractsSent',    label:'Contracts Sent',      icon:'ti-file-text'},
+  {key:'contractsClosed',  label:'Contracts Closed',    icon:'ti-file-check'}
+];
+
 function renderKpiSection(){
   const lastUpdated = getKpiLastUpdated();
+  const c = kpiColumns();
+
+  const loggedToday = DASHBOARD_KPIS.filter(m => getKpiEntry(m.key, today())).length;
+  const sub = lastUpdated
+    ? `Updated ${fmtLong(lastUpdated.split('T')[0])} · ${loggedToday}/${DASHBOARD_KPIS.length} logged today`
+    : 'Nothing logged yet — tap a metric to enter a day\'s number';
+
   return `<div class="card" style="margin-bottom:24px">
     <div class="card-header">
       <div>
         <div class="card-title">KPIs</div>
-        <div class="card-sub">${lastUpdated?('Updated '+fmtLong(lastUpdated.split('T')[0])):'Not logged yet'} · tap any number to update it</div>
+        <div class="card-sub">${sub}</div>
+      </div>
+      <div style="display:flex;gap:6px">
+        <button class="btn btn-sm" onclick="app.go('activity');setKtTab('kpis')">Full breakdown <i class="ti ti-arrow-right"></i></button>
+        <button class="btn btn-sm btn-primary" onclick="openKpiLogForm()"><i class="ti ti-plus"></i> Log a day</button>
       </div>
     </div>
-    <div class="kpi-grid">
-      <div class="kpi-row kpi-head"><div>Metric</div><div>7-day</div><div>30-day</div></div>
-      ${KPI_METRICS.map(m => {
-        const row = getKpiRow(m.key);
-        return `<div class="kpi-row">
-          <div class="kpi-label"><i class="ti ${m.icon}"></i> ${m.label}</div>
-          <div class="kpi-cell" onclick="openKpiEditForm('${m.key}','7')">
-            <div class="kpi-val">${row.trailing7Value||0}<span class="kpi-edit-ic">${ICON_EDIT}</span></div>
-          </div>
-          <div class="kpi-cell" onclick="openKpiEditForm('${m.key}','30')">
-            <div class="kpi-val">${row.trailing30Value||0}<span class="kpi-edit-ic">${ICON_EDIT}</span></div>
-          </div>
-        </div>`;
-      }).join('')}
+    ${kpiRangeBar(c)}
+    ${kpiTable(DASHBOARD_KPIS, c)}
+  </div>`;
+}
+
+/* =========================================================
+   FIRM PERFORMANCE DASHBOARD
+   One tile per KPI, grouped into the four pipeline stages.
+   Everything is computed as of a single selected day: pick a
+   date and each tile's trailing window ends on it, so averages
+   and percentages read exactly as they did that day.
+   ========================================================= */
+
+// SMS is paced rather than compared: the monthly goal implies a 7-day pace,
+// and the 7-day rate as of the selected day implies where the month lands.
+function kpiSmsPacing(anchor){
+  const monthly = getKpiTarget('smsMonthlyGoal');
+  const w7 = kpiWindow(7, anchor), w30 = kpiWindow(30, anchor);
+  const sent7 = kpiSum('smsSent', w7.from, w7.to);
+  return {
+    monthly,
+    sent7,
+    sent30: kpiSum('smsSent', w30.from, w30.to),
+    weeklyTarget: monthly ? (monthly / 30) * 7 : null,
+    projected30: sent7 ? Math.round((sent7 / 7) * 30) : 0
+  };
+}
+
+function renderKpiTile(def, anchor){
+  const value = kpiValue(def, null, anchor);
+  const prev = kpiValuePrev(def, def.win, anchor);
+  const hasData = kpiHasData(def, null, anchor);
+  const target = getKpiTarget(def.key);
+  const onTrack = kpiOnTrack(def, value, target);
+
+  // Percent change against the previous equivalent window. For a 'down' KPI a
+  // fall is an improvement, so the colour is keyed to better/worse, not sign.
+  let delta = '';
+  if(hasData && value !== null && prev !== null && prev !== 0){
+    const pct = ((value - prev) / Math.abs(prev)) * 100;
+    if(Math.abs(pct) >= 0.5){
+      const better = def.dir === 'down' ? pct < 0 : pct > 0;
+      delta = `<span class="kpi-tile-delta ${better?'up':'down'}" title="vs previous ${kpiWindowLabel(def.win)}">
+        ${pct>0?'+':''}${pct.toFixed(0)}%</span>`;
+    }else{
+      delta = `<span class="kpi-tile-delta flat" title="vs previous ${kpiWindowLabel(def.win)}">flat</span>`;
+    }
+  }
+
+  // Goal row: a progress bar toward the goal, or an invitation to set one.
+  let goalRow;
+  if(target !== null && value !== null){
+    // For a 'down' KPI, "full" means at or under the goal.
+    const ratio = def.dir === 'down'
+      ? (value <= target ? 1 : Math.max(0, target / value))
+      : Math.min(1, value / (target || 1));
+    goalRow = `<div class="kpi-bar"><div class="kpi-bar-fill" style="width:${Math.round(ratio*100)}%;background:${onTrack?'var(--success-ink)':'var(--danger)'}"></div></div>
+      <div class="kpi-tile-goal">
+        <span>Goal ${def.dir==='down'?'≤':'≥'} <b>${kpiFormat(target, def.unit)}</b></span>
+        <button class="kpi-goal-set" onclick="event.stopPropagation();openKpiGoalForm('${def.key}')">Edit</button>
+      </div>`;
+  }else{
+    goalRow = `<div class="kpi-tile-goal">
+        <span>No expectation set</span>
+        <button class="kpi-goal-set" onclick="event.stopPropagation();openKpiGoalForm('${def.key}')">Set goal</button>
+      </div>`;
+  }
+
+  const cls = !hasData ? 'no-data' : onTrack === true ? 'is-good' : onTrack === false ? 'is-bad' : '';
+  const pacing = def.pace === 'smsMonthlyGoal' ? renderSmsPacingNote(anchor) : '';
+
+  return `<div class="kpi-tile ${cls}" onclick="openKpiLogForm(null,'${anchor}','${def.key}')" title="Log the numbers behind this KPI">
+    <div class="kpi-tile-head">
+      <div class="kpi-tile-name">${escape(def.label)}</div>
+      <div class="kpi-tile-win">${kpiWindowLabel(def.win)}</div>
+    </div>
+    <div class="kpi-tile-val">${hasData ? kpiFormat(value, def.unit) : '—'}${delta}</div>
+    ${hasData ? '' : `<div class="kpi-note" style="color:var(--danger)">No entries in this window</div>`}
+    ${pacing}
+    ${goalRow}
+  </div>`;
+}
+
+function renderSmsPacingNote(anchor){
+  const p = kpiSmsPacing(anchor);
+  if(!p.monthly) return `<div class="kpi-note">Set a monthly goal to pace this.</div>`;
+  const pace = p.sent7 >= p.weeklyTarget;
+  return `<div class="kpi-note">
+    Weekly pace needed <b>${Math.round(p.weeklyTarget)}</b> ·
+    <span style="color:${pace?'var(--success-ink)':'var(--danger)'};font-weight:600">${pace?'on pace':'behind pace'}</span><br>
+    30-day projection <b>${p.projected30}</b> of <b>${p.monthly}</b>
+  </div>`;
+}
+
+// The KPIs half of the KPIs & Tracking tab. Everything here is reported as of
+// one selected day rather than a from/to range.
+function renderKpiTrackingView(){
+  const asOf = getKpiAsOf();
+  const isToday = asOf === today();
+  const inputs = activeKpiInputs(), defs = activeKpiDefs();
+  const loggedOnDay = inputs.filter(m => getKpiEntry(m.key, asOf)).length;
+
+  // Scorecard. "Met" needs both a goal and data; "no data" counts KPIs with no
+  // component entries anywhere in their window as of this day.
+  const judged  = defs.filter(d => getKpiTarget(d.key) !== null && kpiHasData(d, null, asOf));
+  const metCount = judged.filter(d => kpiOnTrack(d, kpiValue(d, null, asOf), getKpiTarget(d.key))).length;
+  const noData  = defs.filter(d => !kpiHasData(d, null, asOf));
+
+  const section = s => {
+    const defs = kpiDefsInSection(s.key);
+    const sJudged = defs.filter(d => getKpiTarget(d.key) !== null && kpiHasData(d, null, asOf));
+    const sOk = sJudged.filter(d => kpiOnTrack(d, kpiValue(d, null, asOf), getKpiTarget(d.key))).length;
+    const sNoData = defs.filter(d => !kpiHasData(d, null, asOf)).length;
+    return `<div class="card" style="margin-bottom:16px">
+      <div class="card-header">
+        <div>
+          <div class="card-title"><i class="ti ${s.icon}" style="font-size:16px;margin-right:6px;color:var(--accent)"></i>${s.label}</div>
+          <div class="card-sub">${defs.length} KPI${defs.length!==1?'s':''}${sNoData?` · ${sNoData} without data`:''}</div>
+        </div>
+        ${sJudged.length
+          ? `<span class="kpi-pill ${sOk===sJudged.length?'good':'bad'}">
+               <i class="ti ${sOk===sJudged.length?'ti-check':'ti-alert-triangle'}"></i> ${sOk}/${sJudged.length} met
+             </span>`
+          : `<span class="kpi-pill none">No goals set</span>`}
+      </div>
+      <div class="kpi-tiles">${defs.map(d => renderKpiTile(d, asOf)).join('')}</div>
+    </div>`;
+  };
+
+  return `
+  <div class="card" style="margin-bottom:16px">
+    <div class="card-header" style="flex-wrap:wrap;gap:10px">
+      <div>
+        <div class="card-title">Firm performance</div>
+        <div class="card-sub">As of ${fmtLong(asOf)}${isToday?' (today)':''} · ${loggedOnDay}/${inputs.length} inputs logged that day</div>
+      </div>
+    </div>
+
+    <div class="kpi-range">
+      <span class="kpi-range-label"><i class="ti ti-calendar-stats"></i> Reporting day</span>
+      <button class="icon-btn" onclick="shiftKpiAsOf(-1)" title="Previous day"><i class="ti ti-chevron-left"></i></button>
+      <input type="date" class="form-input kpi-range-input" value="${asOf}" max="${today()}"
+             onchange="setKpiAsOf(this.value)" aria-label="Reporting day">
+      <button class="icon-btn" onclick="shiftKpiAsOf(1)" title="Next day" ${isToday?'disabled style="opacity:.35;pointer-events:none"':''}><i class="ti ti-chevron-right"></i></button>
+      ${isToday
+        ? `<span class="kpi-range-note">Every window ends today</span>`
+        : `<button class="btn btn-sm" onclick="setKpiAsOf('${today()}')"><i class="ti ti-calendar-event"></i> Today</button>
+           <span class="kpi-range-note">Every 1 / 7 / 30-day window ends on this day</span>`}
+    </div>
+
+    <div class="kpi-score">
+      <div>
+        <div class="kpi-score-big" style="color:${judged.length && metCount===judged.length ? 'var(--success-ink)' : ''}">${judged.length ? `${metCount}/${judged.length}` : '—'}</div>
+        <div style="font-size:11px;color:var(--ink-3);margin-top:3px">KPIs met</div>
+      </div>
+      <div style="height:36px;width:1px;background:var(--border)"></div>
+      <div>
+        <div class="kpi-score-big" style="color:${noData.length ? 'var(--danger)' : ''}">${noData.length}</div>
+        <div style="font-size:11px;color:var(--ink-3);margin-top:3px">KPIs with no data entries</div>
+      </div>
+    </div>
+    ${noData.length ? `<div class="kpi-note" style="padding:2px 2px 4px">
+      Missing: ${noData.slice(0,6).map(d=>escape(d.label)).join(' · ')}${noData.length>6?` · +${noData.length-6} more`:''}
+    </div>` : ''}
+  </div>
+
+  ${activeKpiSections().map(section).join('')}
+
+  ${renderKpiChart()}
+  ${renderKpiDayLog()}`;
+}
+
+/* =========================================================
+   RAW DAILY INPUTS — one day at a time
+   The log is stored one value per input per day, so this edits
+   at exactly that grain: pick a day, fill in the numbers, save
+   once. The calendar above picks the day and shows at a glance
+   which days already have entries, so backfilling a missed day
+   is a click rather than a hunt.
+   ========================================================= */
+
+// The day being logged / inspected. Defaults to today, never runs ahead of it,
+// and is remembered per-device.
+function getKpiLogDay(){
+  if(state.kpiLogDay === undefined){
+    const stored = localStorage.getItem('ulc_kpiLogDay');
+    state.kpiLogDay = (stored && stored <= today()) ? stored : today();
+  }
+  if(state.kpiLogDay > today()) state.kpiLogDay = today();
+  return state.kpiLogDay;
+}
+function setKpiLogDay(dateStr){
+  if(!dateStr) return;
+  state.kpiLogDay = dateStr > today() ? today() : dateStr;
+  try{ localStorage.setItem('ulc_kpiLogDay', state.kpiLogDay); }catch(e){}
+  app.render();
+}
+function shiftKpiLogDay(days){
+  const d = asLocalDate(getKpiLogDay());
+  d.setDate(d.getDate() + days);
+  setKpiLogDay(isoLocal(d));
+}
+
+
+/* =========================================================
+   KPI TRENDS CHART
+   Plot any KPI (or any raw input) over any range, with an
+   optional second series to compare against.
+
+   A derived KPI is plotted as its *rolling* value: at each day
+   on the x-axis the line shows what that KPI read as of that
+   day, using its own trailing window. That's the honest way to
+   chart a 7-day average — plotting one day's raw ratio would be
+   noise. Raw inputs are plotted as the day's own number.
+
+   Days with nothing to compute break the line rather than
+   drawing a zero, so a gap in the data looks like a gap.
+   ========================================================= */
+const KPI_CHART_RANGES = {7:'Last 7 days', 14:'Last 14 days', 30:'Last 30 days', 60:'Last 60 days', 90:'Last 90 days', 180:'Last 180 days'};
+const KPI_CHART_COLOR_A = 'var(--accent)';
+const KPI_CHART_COLOR_B = 'var(--info-ink)';
+
+function getKpiChart(){
+  if(state.kpiChart === undefined){
+    let c = null;
+    try{ c = JSON.parse(localStorage.getItem('ulc_kpiChart') || 'null'); }catch(e){}
+    state.kpiChart = c && c.a ? c : {a:'kpi:smsSent7', b:'', range:30};
+  }
+  return state.kpiChart;
+}
+function setKpiChart(part, value){
+  state.kpiChart = {...getKpiChart(), [part]: part==='range' ? parseInt(value,10)||30 : value};
+  try{ localStorage.setItem('ulc_kpiChart', JSON.stringify(state.kpiChart)); }catch(e){}
+  app.render();
+}
+
+// A selection is either "kpi:<defKey>" (rolling) or "in:<inputKey>" (daily).
+function kpiChartSeriesMeta(sel){
+  if(!sel) return null;
+  const [kind, key] = sel.split(':');
+  if(kind === 'kpi'){
+    const def = activeKpiDefs().find(d => d.key === key);
+    if(!def) return null;
+    return {kind, def, label: def.label, unit: def.unit, sub: `${kpiWindowLabel(def.win)} rolling`};
+  }
+  const inp = activeKpiInputs().find(m => m.key === key);
+  if(!inp) return null;
+  return {kind, input: inp, label: inp.label, unit: inp.unit, sub: 'logged that day'};
+}
+// One point per day in the range. `value` is null where there's nothing to show.
+function buildKpiChartSeries(meta, days){
+  const end = new Date(), out = [];
+  for(let i = days - 1; i >= 0; i--){
+    const d = new Date(end);
+    d.setDate(d.getDate() - i);
+    const date = isoLocal(d);
+    let value = null;
+    if(meta.kind === 'kpi'){
+      value = kpiHasData(meta.def, null, date) ? kpiValue(meta.def, null, date) : null;
+    }else{
+      const e = getKpiEntry(meta.input.key, date);
+      value = e ? Number(e.value) : null;
+    }
+    out.push({date, value});
+  }
+  return out;
+}
+
+function renderKpiChart(){
+  const cfg = getKpiChart();
+  const days = cfg.range;
+  const metaA = kpiChartSeriesMeta(cfg.a) || kpiChartSeriesMeta('kpi:' + activeKpiDefs()[0].key);
+  const metaB = cfg.b ? kpiChartSeriesMeta(cfg.b) : null;
+  const seriesA = buildKpiChartSeries(metaA, days);
+  const seriesB = metaB ? buildKpiChartSeries(metaB, days) : null;
+
+  const vals = [...seriesA, ...(seriesB||[])].map(p=>p.value).filter(v => v !== null);
+  const maxVal = Math.max(1, ...vals);
+  const anyData = vals.length > 0;
+
+  const W = 680, H = 240, padL = 34, padR = 12, padT = 14, padB = 26;
+  const plotW = W - padL - padR, plotH = H - padT - padB;
+  const n = seriesA.length;
+  const xFor = i => padL + (n<=1 ? 0 : (i/(n-1))*plotW);
+  const yFor = v => padT + plotH - (v/maxVal)*plotH;
+
+  // Build one path per unbroken run of data, so gaps stay gaps.
+  const pathsFor = series => {
+    const runs = [];
+    let cur = [];
+    series.forEach((p,i)=>{
+      if(p.value === null){ if(cur.length) runs.push(cur); cur = []; }
+      else cur.push({i, v:p.value});
+    });
+    if(cur.length) runs.push(cur);
+    return runs;
+  };
+  const drawSeries = (series, color, dashed) => {
+    const runs = pathsFor(series);
+    return runs.map(run => {
+      // A lone point has no line to draw, so mark it with a dot instead.
+      if(run.length === 1){
+        return `<circle cx="${xFor(run[0].i).toFixed(1)}" cy="${yFor(run[0].v).toFixed(1)}" r="3" fill="${color}"/>`;
+      }
+      const dPath = run.map((pt,k)=>`${k===0?'M':'L'}${xFor(pt.i).toFixed(1)},${yFor(pt.v).toFixed(1)}`).join(' ');
+      return `<path d="${dPath}" fill="none" stroke="${color}" stroke-width="2.25"
+        stroke-linejoin="round" stroke-linecap="round" ${dashed?'stroke-dasharray="5,3"':''}/>`;
+    }).join('');
+  };
+
+  const gridLines = [0,0.25,0.5,0.75,1].map(f=>{
+    const y = padT + plotH - f*plotH;
+    const v = maxVal*f;
+    return `<line x1="${padL}" y1="${y.toFixed(1)}" x2="${W-padR}" y2="${y.toFixed(1)}" stroke="var(--border)" stroke-width="1"/>
+      <text x="${padL-6}" y="${(y+3).toFixed(1)}" font-size="9" fill="var(--ink-3)" text-anchor="end">${v>=10?Math.round(v):v.toFixed(1).replace(/\.0$/,'')}</text>`;
+  }).join('');
+
+  const labelCount = Math.min(6, n);
+  const xLabels = [];
+  for(let k=0;k<labelCount;k++){
+    const idx = n<=1 ? 0 : Math.round(k*(n-1)/((labelCount-1)||1));
+    const d = asLocalDate(seriesA[idx].date);
+    xLabels.push(`<text x="${xFor(idx).toFixed(1)}" y="${H-8}" font-size="9" fill="var(--ink-3)" text-anchor="middle">${d.toLocaleDateString('en-US',{month:'short',day:'numeric'})}</text>`);
+  }
+
+  // Goal line, when the primary series is a KPI with an expectation set.
+  let goalLine = '';
+  if(metaA.kind === 'kpi'){
+    const t = getKpiTarget(metaA.def.key);
+    if(t !== null && t <= maxVal){
+      const y = yFor(t).toFixed(1);
+      goalLine = `<line x1="${padL}" y1="${y}" x2="${W-padR}" y2="${y}" stroke="var(--danger)" stroke-width="1.25" stroke-dasharray="4,4"/>
+        <text x="${W-padR}" y="${(Number(y)-4).toFixed(1)}" font-size="9" fill="var(--danger)" text-anchor="end">goal ${kpiFormat(t, metaA.unit)}</text>`;
+    }
+  }
+
+  // Legend summary: latest reading, plus the range total for raw counts.
+  const summarise = (meta, series) => {
+    const pts = series.filter(p=>p.value!==null);
+    if(!pts.length) return 'no data';
+    const latest = pts[pts.length-1];
+    const bits = [`latest ${kpiFormat(latest.value, meta.unit)}`];
+    if(meta.kind === 'in' && meta.unit === 'count'){
+      bits.push(`${pts.reduce((s,p)=>s+p.value,0)} total`);
+    }
+    bits.push(`${pts.length}/${series.length} days`);
+    return bits.join(' · ');
+  };
+
+  const optionsFor = selected => `
+    <optgroup label="KPIs (rolling)">
+      ${activeKpiDefs().map(d=>`<option value="kpi:${d.key}" ${selected===`kpi:${d.key}`?'selected':''}>${escape(d.label)} (${kpiWindowLabel(d.win)})</option>`).join('')}
+    </optgroup>
+    <optgroup label="Raw inputs (daily)">
+      ${activeKpiInputs().map(m=>`<option value="in:${m.key}" ${selected===`in:${m.key}`?'selected':''}>${escape(m.label)}</option>`).join('')}
+    </optgroup>`;
+
+  const mixedUnits = metaB && metaB.unit !== metaA.unit;
+
+  return `<div class="card" style="margin-bottom:16px">
+    <div class="card-header" style="flex-wrap:wrap;gap:10px">
+      <div>
+        <div class="card-title">KPI trends</div>
+        <div class="card-sub">Pick up to two to compare over the range</div>
+      </div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">
+        <select class="filter-select" style="min-width:120px" onchange="setKpiChart('range', this.value)">
+          ${Object.entries(KPI_CHART_RANGES).map(([k,v])=>`<option value="${k}" ${String(days)===k?'selected':''}>${v}</option>`).join('')}
+        </select>
+        <select class="filter-select" style="min-width:200px" onchange="setKpiChart('a', this.value)">
+          ${optionsFor(cfg.a)}
+        </select>
+        <select class="filter-select" style="min-width:200px" onchange="setKpiChart('b', this.value)">
+          <option value="" ${cfg.b?'':'selected'}>Compare to…</option>
+          ${optionsFor(cfg.b)}
+        </select>
+      </div>
+    </div>
+
+    <div style="display:flex;gap:18px;margin-bottom:10px;font-size:12px;flex-wrap:wrap">
+      <span style="display:flex;align-items:center;gap:6px">
+        <span style="width:14px;height:3px;border-radius:2px;background:${KPI_CHART_COLOR_A};display:inline-block"></span>
+        <b>${escape(metaA.label)}</b> <span style="color:var(--ink-3)">${metaA.sub} · ${summarise(metaA, seriesA)}</span>
+      </span>
+      ${metaB?`<span style="display:flex;align-items:center;gap:6px">
+        <span style="width:14px;height:0;border-top:3px dashed ${KPI_CHART_COLOR_B};display:inline-block"></span>
+        <b>${escape(metaB.label)}</b> <span style="color:var(--ink-3)">${metaB.sub} · ${summarise(metaB, seriesB)}</span>
+      </span>`:''}
+    </div>
+    ${mixedUnits?`<div class="kpi-note" style="margin-bottom:8px">
+      Different units (${(KPI_UNIT_SUFFIX[metaA.unit]||'count').trim()||'count'} vs ${(KPI_UNIT_SUFFIX[metaB.unit]||'count').trim()||'count'}) — both share one axis, so compare the shapes rather than the heights.
+    </div>`:''}
+
+    ${anyData ? `<svg viewBox="0 0 ${W} ${H}" style="width:100%;height:auto;overflow:visible" role="img" aria-label="${escape(metaA.label)} over the last ${days} days">
+      ${gridLines}
+      ${goalLine}
+      ${drawSeries(seriesA, KPI_CHART_COLOR_A, false)}
+      ${seriesB ? drawSeries(seriesB, KPI_CHART_COLOR_B, true) : ''}
+      ${xLabels.join('')}
+    </svg>`
+    : `<div class="empty" style="padding:30px">
+         <i class="ti ti-chart-line"></i>
+         <h3>Nothing to plot yet</h3>
+         <p>No entries for ${escape(metaA.label)} in the last ${days} days. Fill in the form below and it'll appear here.</p>
+       </div>`}
+  </div>`;
+}
+
+/* The day's entry form. Every live input for one date, in one place, so a full
+   day is one pass and one save rather than a dialog per number. A blank field
+   means "not logged" and is left alone; clearing a field that already had a
+   value deletes that entry, which is how you undo a mistyped day.          */
+function renderKpiDayLog(){
+  const day = getKpiLogDay();
+  const isToday = day === today();
+  const inputs = activeKpiInputs();
+  const filled = inputs.filter(m => getKpiEntry(m.key, day)).length;
+  const dow = asLocalDate(day).toLocaleDateString('en-US',{weekday:'long'});
+
+  // One line per input: label, field, unit. Nothing else.
+  const rowFor = m => {
+    const e = getKpiEntry(m.key, day);
+    return `<label class="kpi-day-row ${e?'filled':''}" for="kd-${m.key}">
+      <i class="ti ${m.icon}"></i>
+      <span class="kpi-day-name">${escape(m.label)}</span>
+      <input class="form-input kpi-day-input" id="kd-${m.key}" data-kpi-day-input="${m.key}"
+             type="number" min="0" step="${kpiStepFor(m.unit)}"
+             value="${e ? e.value : ''}" placeholder="—"
+             aria-label="${escape(m.label)}">
+      <span class="kpi-day-unit">${m.unit === 'hrs' ? 'hrs' : ''}</span>
+    </label>`;
+  };
+
+  return `<div class="card" style="margin-bottom:16px">
+    <div class="card-header" style="flex-wrap:wrap;gap:10px">
+      <div>
+        <div class="card-title">Raw daily inputs</div>
+        <div class="card-sub">${dow}, ${fmtLong(day)}${isToday?' (today)':''} · ${filled}/${inputs.length} filled in</div>
+      </div>
+      <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
+        <button class="icon-btn" onclick="shiftKpiLogDay(-1)" title="Previous day"><i class="ti ti-chevron-left"></i></button>
+        <input type="date" class="form-input kpi-range-input" value="${day}" max="${today()}"
+               onchange="setKpiLogDay(this.value)" aria-label="Day to log">
+        <button class="icon-btn" onclick="shiftKpiLogDay(1)" title="Next day" ${isToday?'disabled style="opacity:.35;pointer-events:none"':''}><i class="ti ti-chevron-right"></i></button>
+        ${isToday ? '' : `<button class="btn btn-sm" onclick="setKpiLogDay('${today()}')"><i class="ti ti-calendar-event"></i> Today</button>`}
+      </div>
+    </div>
+
+    ${activeKpiSections().map(s => {
+      const secInputs = kpiInputsInSection(s.key);
+      if(!secInputs.length) return '';
+      return `<div class="kpi-log-group">
+        <div class="kpi-log-group-title">${escape(s.label)}</div>
+        <div class="kpi-day-grid">${secInputs.map(rowFor).join('')}</div>
+      </div>`;
+    }).join('')}
+
+    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;border-top:1px solid var(--border);padding-top:12px">
+      <button class="btn btn-primary" onclick="saveKpiDayLog()"><i class="ti ti-device-floppy"></i> Save ${escape(fmtLong(day))}</button>
+      <span class="kpi-range-note">Blank = not logged. Enter 0 for a genuine zero; clear a field to delete that entry.</span>
     </div>
   </div>`;
 }
-function openKpiEditForm(metricKey, period){
-  const m = KPI_METRICS.find(x => x.key === metricKey);
-  const row = getKpiRow(metricKey);
-  const valField = period === '7' ? 'trailing7Value' : 'trailing30Value';
-  showModal(`<div class="modal" style="max-width:360px">
+
+async function saveKpiDayLog(){
+  const day = getKpiLogDay();
+  const fields = [...document.querySelectorAll('[data-kpi-day-input]')];
+  let written = 0, removed = 0;
+
+  for(const f of fields){
+    const key = f.dataset.kpiDayInput;
+    const raw = f.value.trim();
+    const existing = getKpiEntry(key, day);
+    if(raw === ''){
+      // Cleared a field that had a value — treat that as deleting the entry.
+      if(existing){
+        state.kpiEntries = state.kpiEntries.filter(e => e.id !== existing.id);
+        await deleteOne('kpiEntries', existing.id);
+        removed++;
+      }
+      continue;
+    }
+    const value = Number(raw) || 0;
+    if(existing && Number(existing.value) === value) continue;
+    await writeKpiEntry(key, day, value);
+    written++;
+  }
+
+  if(!written && !removed){ toast('No changes to save'); return; }
+  await stampKpiUpdate();
+  const parts = [];
+  if(written) parts.push(`${written} value${written!==1?'s':''} saved`);
+  if(removed) parts.push(`${removed} cleared`);
+  toast(parts.join(' · '));
+  app.render();
+}
+
+// Setting or clearing one KPI's expectation.
+function openKpiGoalForm(defKey){
+  const def = KPI_DEFS.find(d => d.key === defKey);
+  if(!def) return;
+  const current = getKpiTarget(defKey);
+  const unitWord = {count:'', num:'', pct:'percent', hrs:'hours'}[def.unit] || '';
+
+  showModal(`<div class="modal" style="max-width:400px">
     <div class="modal-header">
-      <h2 class="modal-title">${escape(m.label)}</h2>
+      <h2 class="modal-title">Set expectation</h2>
       <button class="icon-btn" onclick="closeModal()"><i class="ti ti-x"></i></button>
     </div>
-    <div class="page-eyebrow" style="margin-bottom:14px">Trailing ${period}-day total</div>
-    <div class="form-group"><label class="form-label">Value</label><input class="form-input" id="fk-value" type="number" min="0" value="${row[valField]||0}" autofocus></div>
+    <div class="form-group">
+      <label class="form-label">${escape(def.label)} · ${kpiWindowLabel(def.win)}</label>
+      <input class="form-input" id="fkg-value" type="number" step="any" min="0"
+             value="${current !== null ? current : ''}" placeholder="No goal set" autofocus>
+      <div class="form-hint">
+        ${def.dir === 'down'
+          ? `Lower is better — on track means at or below this number${unitWord?` (in ${unitWord})`:''}.`
+          : `Higher is better — on track means at or above this number${unitWord?` (in ${unitWord})`:''}.`}
+      </div>
+    </div>
     <div class="modal-actions">
+      ${current !== null ? `<button class="btn" onclick="setKpiTarget('${defKey}','');closeModal()">Clear goal</button>` : ''}
       <button class="btn" onclick="closeModal()">Cancel</button>
-      <button class="btn btn-primary" onclick="saveKpiEdit('${metricKey}','${period}')">Save</button>
+      <button class="btn btn-primary" onclick="saveKpiGoal('${defKey}')">Save</button>
     </div>
   </div>`);
 }
-async function saveKpiEdit(metricKey, period){
-  const value = Number($('#fk-value').value) || 0;
-  const existing = state.kpis.find(k => k.metricKey === metricKey);
-  const data = existing
-    ? {...existing}
-    : {id:uid(), metricKey, trailing7Value:0, trailing30Value:0};
-  if(period === '7'){ data.trailing7Value = value; }
-  else { data.trailing30Value = value; }
-  if(existing){ const i = state.kpis.findIndex(k => k.id === existing.id); state.kpis[i] = data; }
-  else state.kpis.push(data);
-  await saveOne('kpis', data);
+function saveKpiGoal(defKey){
+  setKpiTarget(defKey, $('#fkg-value').value);
+  closeModal();
+  toast('Expectation saved');
+}
 
-  // Single global "last updated" stamp for the whole KPI section.
+/* One modal, two modes.
+   - Single input: opened from a figure in the raw-inputs table. One number,
+     with that input's recent history underneath.
+   - KPI mode (defKey): opened from a tile. Shows every input that feeds that
+     KPI side by side, because they're only meaningful logged together — a
+     count of offers without the hours spent on them yields no average.
+   Time totals accept decimals; counts stay whole.                          */
+const kpiStepFor = unit => unit === 'count' ? '1' : 'any';
+
+function openKpiLogForm(metricKey, dateStr, defKey){
+  const date = dateStr || today();
+  const def = defKey ? KPI_DEFS.find(d => d.key === defKey) : null;
+
+  if(def) return openKpiComboForm(def, date);
+
+  const key = activeKpiInputs().some(m=>m.key===metricKey) ? metricKey : activeKpiInputs()[0].key;
+  const m = KPI_INPUT_BY_KEY[key];
+  const existing = getKpiEntry(key, date);
+  const history = kpiEntriesFor(key).slice(0, 10);
+
+  showModal(`<div class="modal" style="max-width:440px">
+    <div class="modal-header">
+      <h2 class="modal-title">Log daily input</h2>
+      <button class="icon-btn" onclick="closeModal()"><i class="ti ti-x"></i></button>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Input</label>
+        <select class="form-select" id="fk-metric" onchange="reopenKpiLogForm()">
+          ${activeKpiSections().map(s=>`<optgroup label="${escape(s.label)}">
+            ${kpiInputsInSection(s.key).map(x=>`<option value="${x.key}" ${x.key===key?'selected':''}>${escape(x.label)}</option>`).join('')}
+          </optgroup>`).join('')}
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Date</label>
+        <input class="form-input" id="fk-date" type="date" value="${date}" max="${today()}" onchange="reopenKpiLogForm()">
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">${escape(m.label)} on this day</label>
+      <input class="form-input" id="fk-value" type="number" min="0" step="${kpiStepFor(m.unit)}" value="${existing ? existing.value : ''}" placeholder="0" autofocus>
+      <div class="form-hint">${existing
+        ? 'Already logged — saving overwrites this day\'s number.'
+        : m.unit === 'count'
+          ? 'Just this day\'s count. Trailing windows add the days up for you.'
+          : `This day's total ${KPI_UNIT_SUFFIX[m.unit].trim()} across all of them — not an average.`}</div>
+    </div>
+    ${history.length ? `
+      <div class="page-eyebrow" style="margin:16px 0 6px">Recent entries</div>
+      <div class="kpi-history">
+        ${history.map(e=>`<div class="kpi-history-row ${e.date===date?'current':''}">
+          <span class="kpi-history-date" onclick="openKpiLogForm('${key}','${e.date}')">${fmtLong(e.date)}</span>
+          <span class="kpi-history-val">${e.value}</span>
+          <button class="icon-btn" title="Delete this entry" onclick="deleteKpiEntry('${e.id}')">${ICON_DELETE}</button>
+        </div>`).join('')}
+      </div>` : ''}
+    <div class="modal-actions">
+      <button class="btn" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="saveKpiEntry()">Save</button>
+    </div>
+  </div>`);
+}
+
+// Logging every input behind one KPI, for one day.
+function openKpiComboForm(def, date){
+  const inputs = kpiInputsFor(def);
+  showModal(`<div class="modal" style="max-width:460px">
+    <div class="modal-header">
+      <h2 class="modal-title">${escape(def.label)}</h2>
+      <button class="icon-btn" onclick="closeModal()"><i class="ti ti-x"></i></button>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Date</label>
+      <input class="form-input" id="fkc-date" type="date" value="${date}" max="${today()}"
+             onchange="openKpiComboForm(KPI_DEFS.find(d=>d.key==='${def.key}'), this.value)">
+    </div>
+    <div class="kpi-log-group">
+      <div class="kpi-log-group-title">Numbers behind this KPI</div>
+      ${inputs.map(inp=>{
+        const ex = getKpiEntry(inp.key, date);
+        return `<div class="form-group">
+          <label class="form-label">${escape(inp.label)}</label>
+          <input class="form-input" data-kpi-input="${inp.key}" type="number" min="0"
+                 step="${kpiStepFor(inp.unit)}" value="${ex ? ex.value : ''}" placeholder="0">
+        </div>`;
+      }).join('')}
+      <div class="form-hint">
+        ${def.calc.type === 'sum'
+          ? 'Trailing windows add these days up for you.'
+          : 'The window sums both across every day first, then divides once — so the average stays weighted correctly.'}
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="saveKpiCombo('${def.key}')">Save</button>
+    </div>
+  </div>`);
+}
+async function saveKpiCombo(defKey){
+  const def = KPI_DEFS.find(d => d.key === defKey);
+  const date = $('#fkc-date').value;
+  if(!date){ toast('Pick a date first','err'); return; }
+  const fields = [...document.querySelectorAll('[data-kpi-input]')];
+  // A blank field means "not logged", which is different from logging a zero —
+  // so blanks are skipped rather than written as 0.
+  const toSave = fields.filter(f => f.value !== '');
+  if(!toSave.length){ toast('Nothing entered','err'); return; }
+  for(const f of toSave){
+    await writeKpiEntry(f.dataset.kpiInput, date, Number(f.value) || 0);
+  }
+  await stampKpiUpdate();
+  closeModal();
+  toast(`Logged ${toSave.length} value${toSave.length!==1?'s':''}`);
+  app.render();
+}
+// Shared upsert for one input on one day.
+async function writeKpiEntry(metricKey, date, value){
+  const existing = getKpiEntry(metricKey, date);
+  const data = existing ? {...existing, value} : {id:uid(), metricKey, date, value};
+  if(existing){
+    state.kpiEntries[state.kpiEntries.findIndex(e => e.id === existing.id)] = data;
+  }else{
+    state.kpiEntries.push(data);
+  }
+  await saveOne('kpiEntries', data);
+}
+
+// Switching metric or date has to rebuild the modal so the existing value and
+// history match what's now selected.
+function reopenKpiLogForm(){
+  const key = $('#fk-metric').value;
+  const date = $('#fk-date').value || today();
+  openKpiLogForm(key, date);
+}
+async function saveKpiEntry(){
+  const metricKey = $('#fk-metric').value;
+  const date = $('#fk-date').value;
+  if(!date){ toast('Pick a date first','err'); return; }
+  const value = Number($('#fk-value').value) || 0;
+
+  const existing = getKpiEntry(metricKey, date);
+  const data = existing
+    ? {...existing, value}
+    : {id:uid(), metricKey, date, value};
+  if(existing){
+    const i = state.kpiEntries.findIndex(e => e.id === existing.id);
+    state.kpiEntries[i] = data;
+  }else{
+    state.kpiEntries.push(data);
+  }
+  await saveOne('kpiEntries', data);
+  await stampKpiUpdate();
+
+  closeModal();
+  toast('KPI logged');
+  app.render();
+}
+async function deleteKpiEntry(id){
+  const e = state.kpiEntries.find(x => x.id === id);
+  if(!e) return;
+  if(!confirm(`Delete the ${fmtLong(e.date)} entry?`)) return;
+  state.kpiEntries = state.kpiEntries.filter(x => x.id !== id);
+  await deleteOne('kpiEntries', id);
+  await stampKpiUpdate();
+  closeModal();
+  toast('Entry deleted');
+  app.render();
+}
+// Single global "last updated" stamp for the whole KPI section.
+async function stampKpiUpdate(){
   const metaExisting = state.kpiMeta[0];
   const metaRow = { id: metaExisting ? metaExisting.id : uid(), updatedAt: new Date().toISOString() };
   state.kpiMeta = [metaRow];
   await saveOne('kpiMeta', metaRow);
-
-  closeModal();
-  toast('KPI updated');
-  app.render();
 }
 
-function renderMonthCalendar(){
-  const offset = state.calendarOffset || 0;
-  const base = new Date();
-  base.setDate(1);
-  base.setMonth(base.getMonth()+offset);
-  const year = base.getFullYear();
-  const month = base.getMonth();
-  const startWeekday = new Date(year, month, 1).getDay();
-  const daysInMonth = new Date(year, month+1, 0).getDate();
-  const monthLabel = base.toLocaleDateString('en-US', {month:'long', year:'numeric'});
-
-  const byDate = {};
-  state.tasks.forEach(t=>{
-    if(!t.dueDate) return;
-    (byDate[t.dueDate] = byDate[t.dueDate] || []).push({...t, _kind:'task'});
-  });
-  state.projects.forEach(p=>{
-    if(!p.dueDate) return;
-    (byDate[p.dueDate] = byDate[p.dueDate] || []).push({...p, _kind:'project'});
-  });
-
-  const todayStr = today();
-  let cells = '';
-  for(let i=0;i<startWeekday;i++) cells += `<div class="cal-cell cal-empty"></div>`;
-  for(let d=1; d<=daysInMonth; d++){
-    const dateStr = `${year}-${String(month+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
-    const dayItems = (byDate[dateStr]||[]).slice().sort((a,b)=>(a.status==='done')-(b.status==='done'));
-    const isToday = dateStr === todayStr;
-    cells += `<div class="cal-cell ${isToday?'cal-today':''}" onclick="openDayModal('${dateStr}')" title="View all for this day">
-      <div class="cal-daynum">${d}</div>
-      ${dayItems.slice(0,2).map(item=>{
-        const isProject = item._kind==='project';
-        const done = item.status==='done';
-        const cls = isProject ? 'cal-task cal-task-project' : `cal-task pri-${item.priority}`;
-        const clickFn = isProject ? `openProjectForm('${item.id}')` : `openTaskForm('${item.id}')`;
-        return `<div class="${cls}" title="${escape(item.title)}${isProject?' (project)':''}" onclick="event.stopPropagation();${clickFn}" style="${done?'text-decoration:line-through;opacity:.55':''}">${isProject?'◆ ':''}${escape(item.title)}</div>`;
-      }).join('')}
-      ${dayItems.length>2?`<div class="cal-more">+${dayItems.length-2} more</div>`:''}
-    </div>`;
-  }
-
-  return `<div class="card" style="margin-bottom:24px">
-    <div class="card-header">
-      <div>
-        <div class="card-title">Calendar</div>
-        <div class="card-sub">${monthLabel} · click any day for its full slate</div>
-      </div>
-      <div style="display:flex;gap:4px">
-        <button class="icon-btn" onclick="shiftCalendar(-1)" title="Previous month"><i class="ti ti-chevron-left"></i></button>
-        <button class="icon-btn" onclick="shiftCalendar(0)" title="Jump to today"><i class="ti ti-calendar-event"></i></button>
-        <button class="icon-btn" onclick="shiftCalendar(1)" title="Next month"><i class="ti ti-chevron-right"></i></button>
-      </div>
-    </div>
-    <div class="cal-weekdays"><div>Sun</div><div>Mon</div><div>Tue</div><div>Wed</div><div>Thu</div><div>Fri</div><div>Sat</div></div>
-    <div class="cal-grid">${cells}</div>
-  </div>`;
-}
+// The Dashboard uses renderWeekCalendarCard() now; the old month-grid dashboard
+// calendar was removed. shiftCalendar() stays because the Team performance and
+// On-time delivery cards still page by month with it.
 function shiftCalendar(delta){
   state.calendarOffset = delta===0 ? 0 : (state.calendarOffset||0)+delta;
   app.render();
@@ -2171,6 +3355,19 @@ function setWeekCalendarOffset(v){
 function shiftWeekCalendar(delta){
   setWeekCalendarOffset(delta===0 ? 0 : getWeekCalendarOffset()+delta);
 }
+// Jump the week view to whatever week contains `dateStr` (YYYY-MM-DD), so you
+// can reach a date months out without clicking Next a dozen times. Both dates
+// are snapped to their Sunday first, then the gap is measured in whole weeks —
+// that keeps the math immune to daylight-saving shifts in between.
+function jumpToWeekOf(dateStr){
+  if(!dateStr) return;
+  const target = new Date(dateStr+'T00:00:00');
+  if(isNaN(target)) return;
+  target.setHours(0,0,0,0);
+  target.setDate(target.getDate() - target.getDay());
+  const current = getWeekStart(0);
+  setWeekCalendarOffset(Math.round((target - current) / (7*24*60*60*1000)));
+}
 // Sunday that starts the week `offsetWeeks` away from the current week.
 function getWeekStart(offsetWeeks){
   const d = new Date();
@@ -2178,7 +3375,52 @@ function getWeekStart(offsetWeeks){
   d.setDate(d.getDate() - d.getDay() + offsetWeeks*7);
   return d;
 }
-function renderCalendarPage(){
+// Who the Calendar tab is scoped to. Defaults to whoever this device is
+// signed in as, so opening Calendar shows your own week rather than the
+// whole team's. '' means "Everyone". Kept out of state.filters because that
+// object is wiped on every tab change, and this choice should stick.
+function getCalendarUserId(){
+  if(state.calendarUserId === undefined){
+    const stored = localStorage.getItem('ulc_calUser');
+    state.calendarUserId = stored !== null ? stored : (state.activeUserId || '');
+  }
+  // A teammate who's since been deleted would otherwise leave the calendar
+  // permanently empty with no obvious cause.
+  if(state.calendarUserId && !state.users.some(u=>u.id===state.calendarUserId)){
+    state.calendarUserId = '';
+  }
+  return state.calendarUserId;
+}
+function setCalendarUser(id){
+  state.calendarUserId = id;
+  localStorage.setItem('ulc_calUser', id);
+  app.render();
+}
+
+// Who the Dashboard's "Today's agenda" is scoped to. Defaults to '' (Everyone)
+// so the agenda never quietly hides a teammate's overdue work; the choice is
+// remembered per-device. Same deleted-teammate guard as the calendar filter.
+function getAgendaUserId(){
+  if(state.agendaUserId === undefined){
+    state.agendaUserId = localStorage.getItem('ulc_agendaUser') || '';
+  }
+  if(state.agendaUserId && !state.users.some(u=>u.id===state.agendaUserId)){
+    state.agendaUserId = '';
+  }
+  return state.agendaUserId;
+}
+function setAgendaUser(id){
+  state.agendaUserId = id;
+  localStorage.setItem('ulc_agendaUser', id);
+  app.render();
+}
+
+// The week grid, as one self-contained card on the Dashboard. This is the only
+// calendar in the app now — the separate Calendar tab was removed — so it
+// carries the full navigation: prev/next week, a jump back to this week, a date
+// picker to leap to any arbitrary week, and the person filter. The week it's
+// showing and who it's scoped to are both remembered per-device.
+function renderWeekCalendarCard(){
   const offset = getWeekCalendarOffset();
   const weekStart = getWeekStart(offset);
   const days = [];
@@ -2186,28 +3428,45 @@ function renderCalendarPage(){
   const weekEnd = days[6];
   const todayStr = today();
 
+  const calUserId = getCalendarUserId();
+  const mine = item => !calUserId || (item.assignees||[]).includes(calUserId);
+  const calUserLabel = calUserId ? userName(calUserId) : 'the whole team';
+
   const rangeLabel = weekStart.getMonth()===weekEnd.getMonth()
     ? `${weekStart.toLocaleDateString('en-US',{month:'long'})} ${weekStart.getDate()}–${weekEnd.getDate()}, ${weekEnd.getFullYear()}`
     : `${weekStart.toLocaleDateString('en-US',{month:'short',day:'numeric'})} – ${weekEnd.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})}`;
 
   const byDate = {};
-  state.tasks.forEach(t=>{ if(!t.dueDate) return; (byDate[t.dueDate]=byDate[t.dueDate]||[]).push({...t,_kind:'task'}); });
-  state.projects.forEach(p=>{ if(!p.dueDate) return; (byDate[p.dueDate]=byDate[p.dueDate]||[]).push({...p,_kind:'project'}); });
+  state.tasks.forEach(t=>{ if(!t.dueDate || !mine(t)) return; (byDate[t.dueDate]=byDate[t.dueDate]||[]).push({...t,_kind:'task'}); });
+  state.projects.forEach(p=>{ if(!p.dueDate || !mine(p)) return; (byDate[p.dueDate]=byDate[p.dueDate]||[]).push({...p,_kind:'project'}); });
 
   const totalItems = days.reduce((s,d)=>s+((byDate[isoLocal(d)]||[]).length),0);
   const isThisWeek = offset===0;
 
-  return pageHeader('Schedule', 'Calendar',
-    'Every task and project this team has on the books, day by day.',
-    `<button class="btn btn-sm" onclick="shiftWeekCalendar(-1)" title="Previous week">${ICON_CHEVRON_LEFT} Prev</button>
-     <button class="btn btn-sm ${isThisWeek?'btn-primary':''}" onclick="shiftWeekCalendar(0)"><i class="ti ti-calendar-event"></i> Today</button>
-     <button class="btn btn-sm" onclick="shiftWeekCalendar(1)" title="Next week">Next ${ICON_CHEVRON_RIGHT}</button>`
-  ) + `
+  const relLabel = offset===0 ? 'This week'
+    : offset===1 ? 'Next week'
+    : offset===-1 ? 'Last week'
+    : offset>0 ? `${offset} weeks ahead`
+    : `${Math.abs(offset)} weeks back`;
+
+  return `
   <div class="card" style="margin-bottom:16px">
-    <div class="card-header">
+    <div class="card-header" style="flex-wrap:wrap;gap:10px">
       <div>
+        <div class="page-eyebrow" style="margin-bottom:2px">Calendar · ${relLabel}</div>
         <div class="card-title">${rangeLabel}</div>
-        <div class="card-sub">${totalItems} item${totalItems!==1?'s':''} scheduled this week</div>
+        <div class="card-sub">${totalItems} item${totalItems!==1?'s':''} this week · showing ${escape(calUserLabel)}</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+        <button class="btn btn-sm" onclick="shiftWeekCalendar(-1)" title="Previous week">${ICON_CHEVRON_LEFT} Prev</button>
+        <button class="btn btn-sm ${isThisWeek?'btn-primary':''}" onclick="shiftWeekCalendar(0)" title="Jump to this week"><i class="ti ti-calendar-event"></i> Today</button>
+        <button class="btn btn-sm" onclick="shiftWeekCalendar(1)" title="Next week">Next ${ICON_CHEVRON_RIGHT}</button>
+        <input type="date" class="filter-select" style="min-width:150px" value="${isoLocal(weekStart)}"
+               title="Jump to the week containing this date" onchange="jumpToWeekOf(this.value)">
+        <select class="filter-select" style="min-width:170px" onchange="setCalendarUser(this.value)">
+          <option value="">Everyone</option>
+          ${state.users.map(u=>`<option value="${u.id}" ${u.id===calUserId?'selected':''}>${escape(u.name)}</option>`).join('')}
+        </select>
       </div>
     </div>
     <div class="week-grid">
@@ -2246,6 +3505,9 @@ function renderCalendarPage(){
     </div>
   </div>`;
 }
+
+// (The standalone Calendar page was removed — renderWeekCalendarCard() on the
+// Dashboard is the calendar now. normalizeView() redirects any #calendar link.)
 
 function renderTeamPerformanceCard(mf, monthLabel){
   const rows = state.users.map(u=>({u, stats:userTaskStats(u.id, mf)}))
@@ -2658,7 +3920,37 @@ function renderProperties(){
     </div>`;
 }
 
-function renderTasks(){
+/* =========================================================
+   TASKS & PROJECTS — one tab, two boards. The segmented
+   control swaps between the task list and the projects
+   kanban; each keeps the toolbar and layout it always had.
+   ========================================================= */
+function renderTasksProjects(){
+  const tab = getTpTab();
+  const openTasks = state.tasks.filter(t=>t.status!=='done').length;
+  const openProjs = state.projects.filter(p=>p.status!=='done').length;
+  const isTasks = tab === 'tasks';
+
+  const action = isTasks
+    ? `<button class="btn btn-primary" data-action="new-task"><i class="ti ti-plus"></i> Add task</button>`
+    : `<button class="btn btn-primary" data-action="new-project"><i class="ti ti-plus"></i> New project</button>`;
+
+  return pageHeader('Work', 'Tasks & Projects',
+    isTasks ? 'What\'s in flight across the team.'
+            : 'Drag cards between stages as work moves forward.',
+    action) + `
+    <div class="seg-control" role="tablist">
+      <button class="seg-btn ${isTasks?'active':''}" role="tab" aria-selected="${isTasks}" onclick="setTpTab('tasks')">
+        <i class="ti ti-checkbox"></i> Tasks <span class="seg-count">${openTasks}</span>
+      </button>
+      <button class="seg-btn ${!isTasks?'active':''}" role="tab" aria-selected="${!isTasks}" onclick="setTpTab('projects')">
+        <i class="ti ti-bulb"></i> Projects <span class="seg-count">${openProjs}</span>
+      </button>
+    </div>
+    ${isTasks ? renderTasksSection() : renderProjectsSection()}`;
+}
+
+function renderTasksSection(){
   const q = (state.filters.taskSearch||'').toLowerCase();
   const pri = state.filters.taskPri||'';
   const assign = state.filters.taskAssign||'';
@@ -2680,8 +3972,7 @@ function renderTasks(){
   const done = filter(state.tasks.filter(t=>t.status==='done'))
     .sort((a,b)=>(b.completedAt||'').localeCompare(a.completedAt||''));
 
-  return pageHeader('Work', 'Tasks', 'What\'s in flight across the team.',
-    `<button class="btn btn-primary" data-action="new-task"><i class="ti ti-plus"></i> Add task</button>`) + `
+  return `
     <div class="toolbar">
       <div class="search-wrap">
         <i class="ti ti-search"></i>
@@ -2710,7 +4001,7 @@ function renderTasks(){
     `:''}`;
 }
 
-function renderProjects(){
+function renderProjectsSection(){
   const q = (state.filters.projSearch||'').toLowerCase();
   const cat = state.filters.projCat||'';
   const filtered = state.projects.filter(p=>{
@@ -2719,8 +4010,7 @@ function renderProjects(){
     return true;
   });
 
-  return pageHeader('Roadmap', 'Projects & improvements', 'Drag cards between stages as work moves forward.',
-    `<button class="btn btn-primary" data-action="new-project"><i class="ti ti-plus"></i> New project</button>`) + `
+  return `
     <div class="toolbar">
       <div class="search-wrap">
         <i class="ti ti-search"></i>
@@ -2935,7 +4225,36 @@ function getActivityRange(){
   const label = range === 'custom' ? `${fmtLong(start)} – ${fmtLong(end)}` : ACTIVITY_RANGES[range].label;
   return {range, start, end, label};
 }
-function renderActivity(){
+/* =========================================================
+   KPIs & TRACKING — one tab, two views. The segmented control
+   swaps between the pipeline KPI sections and the daily
+   activity log; each keeps the controls it always had.
+   ========================================================= */
+function renderKpiTracking(){
+  const tab = getKtTab();
+  const isKpis = tab === 'kpis';
+  const loggedToday = activeKpiInputs().filter(m => getKpiEntry(m.key, today())).length;
+  const activityEntries = state.callLogs.length + state.campaignLogs.length;
+
+  // No action button up here — the day's numbers are entered directly in the
+  // Raw daily inputs form further down, which has its own date picker.
+  return pageHeader('Measurement', 'KPIs & Tracking',
+    isKpis ? 'Pipeline numbers by stage, summed from your daily entries.'
+           : 'Daily call logging and campaign logging, at a glance.',
+    ''
+  ) + `
+  <div class="seg-control" role="tablist">
+    <button class="seg-btn ${isKpis?'active':''}" role="tab" aria-selected="${isKpis}" onclick="setKtTab('kpis')">
+      <i class="ti ti-chart-histogram"></i> KPIs <span class="seg-count">${loggedToday}/${activeKpiInputs().length}</span>
+    </button>
+    <button class="seg-btn ${!isKpis?'active':''}" role="tab" aria-selected="${!isKpis}" onclick="setKtTab('activity')">
+      <i class="ti ti-clipboard-list"></i> Activity Log <span class="seg-count">${activityEntries}</span>
+    </button>
+  </div>
+  ${isKpis ? renderKpiTrackingView() : renderActivityView()}`;
+}
+
+function renderActivityView(){
   const {range, start, end, label} = getActivityRange();
   const inRange = dateStr => !!dateStr && dateStr >= start && dateStr <= end;
   const rangeCallLogs = state.callLogs.filter(c=>inRange(c.date));
@@ -2952,7 +4271,7 @@ function renderActivity(){
   const countySet = new Set();
   rangeCampaigns.forEach(c=>(c.countiesHit||'').split(',').map(x=>x.trim()).filter(Boolean).forEach(x=>countySet.add(x)));
 
-  return pageHeader('Team activity', 'Activity Log', 'Daily call logging and campaign logging, at a glance.', '') + `
+  return `
   <div class="toolbar" style="margin-bottom:16px">
     <select class="filter-select" data-filter="activityRange">
       ${Object.entries(ACTIVITY_RANGES).map(([k,v])=>`<option value="${k}" ${k===range?'selected':''}>${v.label}</option>`).join('')}
@@ -3272,7 +4591,7 @@ function renderSettings(){
     <p>
       ${on
         ? `Connected to <strong style="color:var(--accent)">Supabase</strong>. All changes sync in real time and are shared across devices and users.`
-        : `Using <strong>localStorage</strong> — data lives in this browser only. Add a <code>config.js</code> and run <code>schema.sql</code> in Supabase to enable multi-device sync.`}
+        : `<strong>Local build.</strong> Using <strong>localStorage</strong> — data lives in this browser only and is never sent to the shared team database. Supabase sync is disabled in this copy by design; use the main app for synced data.`}
     </p>
     ${on ? `
       <div style="background:var(--accent-soft);border-radius:var(--r-md);padding:12px 14px;font-size:12.5px;color:var(--accent);display:flex;align-items:center;gap:8px">
@@ -4048,6 +5367,7 @@ function exportData(){
     version: 1,
     users: state.users, props: state.props,
     tasks: state.tasks, projects: state.projects,
+    kpis: state.kpis, kpiEntries: state.kpiEntries,
     callLogs: state.callLogs, campaignLogs: state.campaignLogs
   };
   const blob = new Blob([JSON.stringify(payload,null,2)], {type:'application/json'});
@@ -4075,11 +5395,14 @@ function importData(){
         if(data.props) state.props = data.props;
         if(data.tasks) state.tasks = data.tasks;
         if(data.projects) state.projects = data.projects;
+        if(data.kpis) state.kpis = data.kpis;
+        if(data.kpiEntries) state.kpiEntries = data.kpiEntries;
         if(data.callLogs) state.callLogs = data.callLogs;
         if(data.campaignLogs) state.campaignLogs = data.campaignLogs;
         await StorageAdapter.saveBulk({
           users:state.users, props:state.props,
           tasks:state.tasks, projects:state.projects,
+          kpis:state.kpis, kpiEntries:state.kpiEntries,
           callLogs:state.callLogs, campaignLogs:state.campaignLogs
         });
         toast('Data imported');
