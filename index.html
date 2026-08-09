@@ -1089,9 +1089,13 @@ input,select,textarea{font:inherit;color:inherit}
         <span id="backend-label">Local</span>
         <span id="sync-status"><i class="ti ti-refresh"></i></span>
       </div>
-      <select class="who-select" id="active-user-select" onchange="app.switchUser(this.value)">
-        <option value="">Choose user…</option>
-      </select>
+      <div class="who-select" id="active-user-box" style="display:flex;align-items:center;gap:8px;cursor:default">
+        <span id="active-user-name">—</span>
+        <button type="button" id="signout-btn" title="Sign out"
+          style="background:none;border:none;padding:2px 4px;cursor:pointer;color:inherit;opacity:.65;font-size:15px;line-height:1">
+          <i class="ti ti-logout"></i>
+        </button>
+      </div>
     </div>
   </header>
 
@@ -1281,6 +1285,23 @@ const StorageAdapter = {
       this.supabase = window.supabase.createClient(cfg.supabaseUrl, cfg.supabaseKey);
     }catch(e){
       this.failure = {code:'bad-url', detail:'Could not create the Supabase client: '+(e.message||e)};
+      return {ok:false, backend:'local', failure:this.failure};
+    }
+
+    // Auth check goes BEFORE the table probes on purpose. Once the RLS
+    // policies are locked to the authenticated role, an unauthenticated
+    // probe fails on every table — which would render the big red
+    // "can't reach your database" screen when the real answer is just
+    // "you're signed out". Checking the session first means a signed-out
+    // visitor gets the login form instead of a scary error.
+    try{
+      const {data:{session}} = await this.supabase.auth.getSession();
+      this.session = session || null;
+    }catch(e){
+      this.session = null;
+    }
+    if(!this.session){
+      this.failure = {code:'no-session', detail:'No active sign-in on this device.'};
       return {ok:false, backend:'local', failure:this.failure};
     }
 
@@ -2220,6 +2241,8 @@ async function retryConnection(btn){
   if(btn){ btn.disabled = true; btn.innerHTML = '<i class="ti ti-loader-2"></i> Checking…'; }
   const conn = await StorageAdapter.init();
   if(conn.ok){ location.reload(); return; }
+  // Same distinction as at boot: signed out isn't a connection problem.
+  if(conn.failure && conn.failure.code === 'no-session'){ renderAuthGate(); return; }
   renderConnectionError(conn.failure);
 }
 
@@ -2251,12 +2274,145 @@ function downloadLegacyLocalData(){
 /* =========================================================
    APP CONTROLLER
    ========================================================= */
+/* =========================================================
+   AUTH GATE
+   A full-screen overlay shown instead of the app when nobody is
+   signed in, or when a signed-in account hasn't been matched to a
+   team member yet. Both paths finish with location.reload() rather
+   than trying to hand-patch state — booting cleanly with a session
+   in place is far harder to get subtly wrong.
+   ========================================================= */
+function mountGate(html){
+  let el = document.getElementById('auth-gate');
+  if(!el){ el = document.createElement('div'); el.id = 'auth-gate'; document.body.appendChild(el); }
+  el.style.cssText = 'position:fixed;inset:0;z-index:9999;background:var(--bg,#f7f6f3);'
+                   + 'display:flex;align-items:center;justify-content:center;padding:24px;overflow:auto';
+  el.innerHTML = html;
+  return el;
+}
+
+function gateShell(inner){
+  return `<div style="width:100%;max-width:390px">
+    <div style="text-align:center;margin-bottom:22px">
+      <img src="logo.svg" alt="" style="height:42px" onerror="this.style.display='none'">
+      <div style="font-weight:700;font-size:19px;margin-top:10px">Utopian CRM</div>
+    </div>
+    ${inner}
+  </div>`;
+}
+
+function gateError(msg){
+  if(!msg) return '';
+  return `<div style="background:var(--danger-soft,#fdecec);color:var(--danger,#b3261e);border-radius:8px;
+    padding:10px 12px;font-size:13px;line-height:1.4">${escape(msg)}</div>`;
+}
+
+function renderAuthGate(errMsg){
+  mountGate(gateShell(`
+    <form id="auth-form" class="card" style="padding:22px;display:flex;flex-direction:column;gap:14px">
+      <div>
+        <div style="font-weight:600;font-size:15px">Sign in</div>
+        <div style="font-size:12.5px;color:var(--ink-2);margin-top:3px">Use the account set up for you in Supabase.</div>
+      </div>
+      ${gateError(errMsg)}
+      <label style="display:block">
+        <span style="font-size:12.5px;font-weight:600;color:var(--ink-2)">Email</span>
+        <input id="auth-email" type="email" autocomplete="username" required
+          style="width:100%;margin-top:5px;padding:9px 11px;border:1px solid var(--line,#ddd);border-radius:8px;font-size:14px;background:var(--card,#fff);color:inherit">
+      </label>
+      <label style="display:block">
+        <span style="font-size:12.5px;font-weight:600;color:var(--ink-2)">Password</span>
+        <input id="auth-password" type="password" autocomplete="current-password" required
+          style="width:100%;margin-top:5px;padding:9px 11px;border:1px solid var(--line,#ddd);border-radius:8px;font-size:14px;background:var(--card,#fff);color:inherit">
+      </label>
+      <button type="submit" class="btn btn-primary" id="auth-submit" style="justify-content:center">Sign in</button>
+      <div style="font-size:12px;color:var(--ink-2);text-align:center;line-height:1.5">
+        Forgot your password? Ask an admin to reset it in Supabase.
+      </div>
+    </form>`));
+
+  const form = document.getElementById('auth-form');
+  form.addEventListener('submit', async (e)=>{
+    e.preventDefault();
+    const btn = document.getElementById('auth-submit');
+    const email = document.getElementById('auth-email').value.trim();
+    const password = document.getElementById('auth-password').value;
+    btn.disabled = true; btn.textContent = 'Signing in…';
+    try{
+      const {error} = await StorageAdapter.supabase.auth.signInWithPassword({email, password});
+      if(error){ renderAuthGate(error.message || 'Could not sign in.'); return; }
+      location.reload();
+    }catch(err){
+      renderAuthGate('Could not reach the sign-in service: ' + (err.message || err));
+    }
+  });
+  const first = document.getElementById('auth-email');
+  if(first) first.focus();
+}
+
+// Shown once per person: a fresh login account has no idea which
+// existing team member it belongs to, so let them say so. Picking the
+// right name here is what carries over their task history and colour.
+function renderClaimGate(errMsg){
+  const email = (StorageAdapter.session && StorageAdapter.session.user && StorageAdapter.session.user.email) || '';
+  const unclaimed = (state.users || []).filter(u => !u.auth_user_id);
+  const body = unclaimed.length
+    ? `<div style="display:flex;flex-direction:column;gap:8px">
+        ${unclaimed.map(u=>`<button type="button" class="btn" data-claim="${u.id}"
+          style="justify-content:flex-start;padding:11px 13px">${escape(u.name)}${u.role?` <span style="color:var(--ink-2);font-weight:400">· ${escape(u.role)}</span>`:''}</button>`).join('')}
+      </div>`
+    : `<div style="font-size:13px;color:var(--ink-2);line-height:1.5">
+        Every team member already has an account linked. If you should have your own,
+        ask an admin to add you on the Team page first, then reload.
+      </div>`;
+
+  mountGate(gateShell(`
+    <div class="card" style="padding:22px;display:flex;flex-direction:column;gap:14px">
+      <div>
+        <div style="font-weight:600;font-size:15px">Which one are you?</div>
+        <div style="font-size:12.5px;color:var(--ink-2);margin-top:3px">
+          Signed in as ${escape(email)}. Pick your name once and we'll remember it.
+        </div>
+      </div>
+      ${gateError(errMsg)}
+      ${body}
+      <button type="button" class="btn" id="claim-signout" style="justify-content:center;font-size:13px">Sign out</button>
+    </div>`));
+
+  document.querySelectorAll('[data-claim]').forEach(btn=>{
+    btn.addEventListener('click', async ()=>{
+      document.querySelectorAll('[data-claim]').forEach(b=>b.disabled = true);
+      const uid = StorageAdapter.session.user.id;
+      try{
+        const {error} = await StorageAdapter.supabase.from('users')
+          .update({auth_user_id: uid}).eq('id', btn.dataset.claim);
+        if(error){
+          // The most likely cause by far is PART 1 of auth-migration.sql
+          // not having been run yet, so name that possibility directly.
+          renderClaimGate(/auth_user_id/.test(error.message||'')
+            ? 'The auth_user_id column is missing — run PART 1 of auth-migration.sql, then reload.'
+            : (error.message || 'Could not link your account.'));
+          return;
+        }
+        location.reload();
+      }catch(err){
+        renderClaimGate(err.message || String(err));
+      }
+    });
+  });
+  const so = document.getElementById('claim-signout');
+  if(so) so.addEventListener('click', ()=>app.signOut());
+}
+
 const app = {
   async init(){
     const conn = await StorageAdapter.init();
     // Supabase is the only backend now. Rather than quietly running on local
     // data nobody else can see, stop here and say exactly what's wrong.
     if(!conn.ok){
+      // Signed out is a normal state, not a failure — show the login form
+      // rather than the database-unreachable screen.
+      if(conn.failure && conn.failure.code === 'no-session'){ renderAuthGate(); return; }
       renderConnectionError(conn.failure);
       return;
     }
@@ -2265,6 +2421,17 @@ const app = {
     StorageAdapter.legacyLocalKeys.forEach(k => { try{ localStorage.removeItem(k); }catch(e){} });
 
     await loadAll();
+
+    // Identity now comes from the session, not from a dropdown on this
+    // device. Everything downstream still reads state.activeUserId, so
+    // only the source changes — the ~15 places that consume it are
+    // untouched.
+    const authId = StorageAdapter.session.user.id;
+    const me = (state.users || []).find(u => u.auth_user_id === authId);
+    if(!me){ renderClaimGate(); return; }
+    state.activeUserId = me.id;
+    StorageAdapter.saveActiveUser(me.id);
+
     // Preferences live per user in Supabase, so they have to be fetched
     // before the first render decides which tab to open.
     await Prefs.load(state.activeUserId);
@@ -2333,10 +2500,26 @@ const app = {
     this.render();
   },
 
+  // Was a "who's using this device?" picker. Identity comes from the
+  // session now, so this just reports who you are and offers the way out.
   buildUserSelect(){
-    const sel = $('#active-user-select');
-    sel.innerHTML = `<option value="">Choose user…</option>` +
-      state.users.map(u => `<option value="${u.id}" ${u.id===state.activeUserId?'selected':''}>${escape(u.name)}</option>`).join('');
+    const me = state.users.find(u => u.id === state.activeUserId);
+    const label = document.getElementById('active-user-name');
+    if(label) label.textContent = me ? me.name : '—';
+    const btn = document.getElementById('signout-btn');
+    if(btn && !btn.dataset.bound){
+      btn.dataset.bound = '1';
+      btn.addEventListener('click', ()=>this.signOut());
+    }
+  },
+
+  async signOut(){
+    // Flush pending preference writes first, or whatever they just
+    // changed dies with the session.
+    try{ await Prefs.flush(); }catch(e){}
+    try{ await StorageAdapter.supabase.auth.signOut(); }catch(e){}
+    try{ StorageAdapter.saveActiveUser(''); }catch(e){}
+    location.reload();
   },
 
   async switchUser(id){
@@ -2457,21 +2640,6 @@ function renderDashboard(){
     'Here\'s what the team needs to get done today.',
     `<button class="btn btn-primary" data-action="new-task"><i class="ti ti-plus"></i> Create Task</button>`
   ) + `
-  <div class="card" style="margin-bottom:20px;background:var(--accent-soft);border-color:var(--accent)">
-    <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap">
-      <div style="width:38px;height:38px;border-radius:10px;background:var(--accent);color:var(--accent-ink);display:flex;align-items:center;justify-content:center;flex-shrink:0">
-        <i class="ti ti-user-circle" style="font-size:20px"></i>
-      </div>
-      <div style="flex:1;min-width:220px">
-        <div style="font-weight:600;font-size:14px;color:var(--accent)">Who's using this device?</div>
-        <div style="font-size:12px;color:var(--ink-2);margin-top:2px">Sets whose tasks show up here and who this browser sends notifications for.</div>
-      </div>
-      <select class="form-select" id="dash-user-select" style="max-width:220px" onchange="app.switchUser(this.value)">
-        <option value="">Choose user…</option>
-        ${state.users.map(u=>`<option value="${u.id}" ${u.id===state.activeUserId?'selected':''}>${escape(u.name)}</option>`).join('')}
-      </select>
-    </div>
-  </div>
   <div style="display:flex;gap:12px;margin-bottom:20px;flex-wrap:wrap">
     <div class="stat-card" style="flex:1;min-width:200px;max-width:260px">
       <div class="stat-label"><i class="ti ti-checkbox" style="font-size:14px"></i> Open tasks</div>
