@@ -15,9 +15,10 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/[email protected]/dist/tabler-icons.min.css">
-<!-- LOCAL BUILD: Supabase SDK and config.js loading are intentionally removed.
-     This copy always runs on localStorage and never touches the shared team database. -->
-<script>window.CRM_CONFIG = null; window.CRM_FORCE_LOCAL = true;</script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"
+        onerror="window.__supabaseCdnError='jsdelivr'"></script>
+<script>window.CRM_CONFIG = null; window.__configError = null;</script>
+<script src="config.js" onerror="window.__configError='config.js could not be loaded (404 or blocked)'"></script>
 <style>
 :root{
   --bg: #F8F5EF;
@@ -264,6 +265,63 @@ input,select,textarea{font:inherit;color:inherit}
 .stat-card:hover{box-shadow:var(--shadow-md);transform:translateY(-1px)}
 
 /* ============ KPI SECTION ============ */
+/* Connection-failure screen — replaces the whole app when Supabase is down */
+.conn-wrap{
+  min-height:100vh;display:flex;align-items:center;justify-content:center;
+  padding:24px;background:var(--bg);
+}
+.conn-card{
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:var(--r-lg);box-shadow:var(--shadow-sm);
+  padding:30px;max-width:600px;width:100%;
+}
+.conn-icon{
+  width:44px;height:44px;border-radius:12px;margin-bottom:16px;
+  background:#F9E4DE;color:#B8422E;
+  display:flex;align-items:center;justify-content:center;
+}
+.conn-icon i{font-size:23px}
+.conn-title{font-family:var(--serif);font-size:25px;font-weight:500;letter-spacing:-.02em;margin:0 0 8px}
+.conn-detail{font-size:14px;color:var(--ink-2);line-height:1.55;margin:0 0 10px}
+.conn-note{font-size:12.5px;color:var(--ink-3);line-height:1.5;margin:0}
+.conn-facts{
+  display:flex;gap:8px;flex-wrap:wrap;margin:18px 0;
+}
+.conn-facts div{
+  flex:1;min-width:130px;padding:9px 11px;
+  background:var(--surface-2);border-radius:var(--r-sm);
+}
+.conn-facts span{
+  display:block;font-size:10px;font-weight:600;color:var(--ink-3);
+  text-transform:uppercase;letter-spacing:.07em;margin-bottom:3px;
+}
+.conn-facts b{font-size:13px;font-weight:600;word-break:break-all}
+.conn-tables{
+  border:1px solid var(--border);border-radius:var(--r-sm);
+  margin-bottom:14px;max-height:210px;overflow-y:auto;
+}
+.conn-tables-head{
+  padding:7px 11px;background:var(--surface-2);
+  font-size:10.5px;font-weight:600;color:var(--ink-3);
+  text-transform:uppercase;letter-spacing:.06em;
+  border-bottom:1px solid var(--border);
+}
+.conn-table-row{
+  display:flex;gap:10px;align-items:baseline;
+  padding:7px 11px;font-size:12px;border-bottom:1px solid var(--border);
+}
+.conn-table-row:last-child{border-bottom:none}
+.conn-table-row code{font-weight:600;flex-shrink:0}
+.conn-table-row span{color:var(--ink-3);word-break:break-word}
+.conn-raw{
+  font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:11.5px;
+  color:var(--ink-2);background:var(--surface-2);
+  padding:9px 11px;border-radius:var(--r-sm);margin-bottom:14px;
+  word-break:break-word;
+}
+.conn-fixes{margin:0 0 20px;padding-left:20px;font-size:13px;color:var(--ink-2);line-height:1.7}
+.conn-actions{display:flex;gap:8px;flex-wrap:wrap}
+
 /* Segmented control — Tasks / Projects switch on the merged tab */
 .seg-control{
   display:inline-flex;gap:2px;padding:3px;margin-bottom:18px;
@@ -1050,22 +1108,57 @@ input,select,textarea{font:inherit;color:inherit}
    DATA LAYER — dual backend (localStorage + Supabase)
    Backend is chosen automatically at boot based on CRM_CONFIG.
    ========================================================= */
+/* ---- supabase-js loader -------------------------------------------------
+   The head tag is the fast path; these are the retries. Kept outside the
+   adapter so the boot screen's Retry button can re-run it too.            */
+const SUPABASE_CDNS = [
+  'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js',
+  'https://unpkg.com/@supabase/supabase-js@2/dist/umd/supabase.js'
+];
+function loadScript(src){
+  return new Promise((resolve, reject) => {
+    const s = document.createElement('script');
+    s.src = src;
+    s.onload = () => resolve();
+    s.onerror = () => reject(new Error('blocked or unreachable: '+src));
+    document.head.appendChild(s);
+  });
+}
+async function ensureSupabaseLib(){
+  if(window.supabase) return true;
+  for(const url of SUPABASE_CDNS){
+    try{
+      await loadScript(url);
+      if(window.supabase) return true;
+    }catch(e){ /* try the next host */ }
+  }
+  return false;
+}
+
 const StorageAdapter = {
   backend: 'local',      // 'local' | 'supabase'
   supabase: null,
   syncing: false,
 
+  // Team data no longer has a local mirror — Supabase is the only copy.
+  // `active` is the one exception: it identifies which teammate this browser
+  // is, which is what everything else is looked up by.
   localKeys: {
-    users:'ulc_users', props:'ulc_props',
-    tasks:'ulc_tasks', projects:'ulc_projects', kpis:'ulc_kpis',
-    kpiMeta:'ulc_kpiMeta', kpiEntries:'ulc_kpiEntries',
-    callLogs:'ulc_callLogs', campaignLogs:'ulc_campaignLogs',
     active:'ulc_activeUser'
   },
+  // Keys written by older builds that kept a full local mirror. Cleared once
+  // on a successful connect so stale team data can't linger on the device.
+  legacyLocalKeys: [
+    'ulc_users','ulc_props','ulc_tasks','ulc_projects','ulc_kpis',
+    'ulc_kpiMeta','ulc_kpiEntries','ulc_callLogs','ulc_campaignLogs',
+    'ulc_tpTab','ulc_ktTab','ulc_activeView','ulc_calUser','ulc_agendaUser',
+    'ulc_weekCalOffset','ulc_activityCalOffset','ulc_kpiRange','ulc_kpiAsOf',
+    'ulc_kpiLogDay','ulc_kpiChart','ulc_kpiTargets'
+  ],
   tables: {
     users:'users', props:'properties',
     tasks:'tasks', projects:'projects', kpis:'kpi_metrics', kpiMeta:'kpi_meta',
-    kpiEntries:'kpi_entries',
+    kpiEntries:'kpi_entries', kpiTargets:'kpi_targets',
     callLogs:'call_logs', campaignLogs:'campaign_logs'
   },
 
@@ -1147,35 +1240,107 @@ const StorageAdapter = {
       notes:c.notes||''})
   },
 
+  // Set when a connection attempt fails, so the boot screen can say exactly
+  // what went wrong instead of the app quietly dropping to local data.
+  failure: null,
+
+  // Every table the app reads or writes. All of them are probed at boot so a
+  // half-run schema.sql names the missing tables rather than failing later on
+  // whichever screen happens to touch one first.
+  requiredTables: [
+    'users','properties','tasks','projects',
+    'kpi_metrics','kpi_meta','kpi_entries','kpi_targets',
+    'call_logs','campaign_logs','user_prefs'
+  ],
+
   async init(){
-    // LOCAL BUILD: hard guard — never connect to Supabase from this copy.
-    if(window.CRM_FORCE_LOCAL){
-      console.log('%c⚡ Local build — localStorage backend (Supabase disabled)','color:#857F76');
-      return {ok:true, backend:'local'};
-    }
+    this.failure = null;
+    this.backend = 'local';
+
     const cfg = window.CRM_CONFIG;
-    if(cfg?.supabaseUrl && cfg?.supabaseKey && window.supabase){
-      try{
-        this.supabase = window.supabase.createClient(cfg.supabaseUrl, cfg.supabaseKey);
-        const { error } = await this.supabase.from('users').select('id').limit(1);
-        if(!error){
-          this.backend = 'supabase';
-          console.log('%c✓ Connected to Supabase','color:#2E5D3A;font-weight:600');
-          return {ok:true, backend:'supabase'};
-        }
-        console.warn('Supabase configured but query failed:', error.message);
-        console.warn('Check your schema — did you run schema.sql?');
-      }catch(e){
-        console.warn('Supabase init error:', e);
-      }
+    if(window.__configError){
+      this.failure = {code:'no-config', detail:window.__configError};
+      return {ok:false, backend:'local', failure:this.failure};
     }
-    console.log('%c⚡ Using localStorage backend','color:#857F76');
-    return {ok:true, backend:'local'};
+    if(!cfg || !cfg.supabaseUrl || !cfg.supabaseKey){
+      this.failure = {code:'no-config',
+        detail:'config.js loaded but supabaseUrl / supabaseKey are missing or empty.'};
+      return {ok:false, backend:'local', failure:this.failure};
+    }
+
+    // The library ships from a CDN, so an ad blocker, a corporate proxy or a
+    // CDN outage can take it out on its own. Try a second host before giving up.
+    if(!await ensureSupabaseLib()){
+      this.failure = {code:'no-lib',
+        detail:'The supabase-js library did not load from jsdelivr or unpkg. '
+             + 'Usually an ad blocker, a network policy, or being fully offline.'};
+      return {ok:false, backend:'local', failure:this.failure};
+    }
+
+    try{
+      this.supabase = window.supabase.createClient(cfg.supabaseUrl, cfg.supabaseKey);
+    }catch(e){
+      this.failure = {code:'bad-url', detail:'Could not create the Supabase client: '+(e.message||e)};
+      return {ok:false, backend:'local', failure:this.failure};
+    }
+
+    // head:true keeps this to a count query — no rows come back, so probing
+    // ten tables at boot costs almost nothing.
+    const probes = await Promise.all(this.requiredTables.map(async tbl => {
+      try{
+        // '*' rather than 'id' — user_prefs is keyed by user_id and has no id
+        // column. head:true means no rows come back either way.
+        const {error} = await this.supabase.from(tbl).select('*',{count:'exact',head:true});
+        return {tbl, error};
+      }catch(e){
+        return {tbl, error:{message:e.message||String(e), __thrown:true}};
+      }
+    }));
+
+    const failed = probes.filter(p => p.error);
+    if(!failed.length){
+      this.backend = 'supabase';
+      console.log('%c✓ Connected to Supabase','color:#2E5D3A;font-weight:600');
+      return {ok:true, backend:'supabase'};
+    }
+
+    // Classify by the most severe thing we saw. A bad key or an unreachable
+    // host fails every probe identically, so that's checked before the
+    // "some tables are missing" case.
+    const first = failed[0].error;
+    const msg = (first.message||'').toLowerCase();
+    const allFailed = failed.length === probes.length;
+
+    if(allFailed && (first.__thrown || msg.includes('fetch') || msg.includes('network'))){
+      this.failure = {code:'unreachable',
+        detail:'Could not reach '+cfg.supabaseUrl+'. The project may be paused, '
+             + 'the URL may be wrong, or this device is offline.',
+        raw:first.message};
+    }else if(allFailed && (first.code==='PGRST301' || msg.includes('jwt') || msg.includes('api key') || msg.includes('unauthorized'))){
+      this.failure = {code:'bad-key',
+        detail:'Supabase rejected the anon key in config.js. It may have been rotated or truncated.',
+        raw:first.message};
+    }else{
+      this.failure = {code:'schema',
+        detail:'Connected, but these tables are missing or unreadable. '
+             + 'Run the current schema.sql in the Supabase SQL editor.',
+        tables: failed.map(f => ({name:f.tbl, message:f.error.message||'unknown error'}))};
+    }
+    return {ok:false, backend:'local', failure:this.failure};
+  },
+
+  // Supabase is the only source of truth now. Nothing reaches here unless
+  // init() succeeded, so an unguarded call is a bug worth surfacing.
+  assertConnected(){
+    if(this.backend !== 'supabase'){
+      throw new Error('Not connected to Supabase — refusing to read or write local copies of team data.');
+    }
   },
 
   async loadAll(){
-    if(this.backend === 'supabase'){
-      const [u, p, t, pr, k, km, ke, cl, cal] = await Promise.all([
+    this.assertConnected();
+    {
+      const [u, p, t, pr, k, km, ke, kt, cl, cal] = await Promise.all([
         this.supabase.from('users').select('*').order('created_at'),
         this.supabase.from('properties').select('*').order('created_at',{ascending:false}),
         this.supabase.from('tasks').select('*').order('created_at',{ascending:false}),
@@ -1183,11 +1348,13 @@ const StorageAdapter = {
         this.supabase.from('kpi_metrics').select('*').order('metric_key'),
         this.supabase.from('kpi_meta').select('*').order('updated_at',{ascending:false}).limit(1),
         this.supabase.from('kpi_entries').select('*').order('log_date',{ascending:false}),
+        this.supabase.from('kpi_targets').select('*').order('kpi_key'),
         this.supabase.from('call_logs').select('*').order('log_date',{ascending:false}),
         this.supabase.from('campaign_logs').select('*').order('log_date',{ascending:false}),
       ]);
       if(k.error) console.warn('kpi_metrics table not found yet — run the updated schema.sql to enable KPIs.', k.error.message);
       if(ke.error) console.warn('kpi_entries table not found yet — run the updated schema.sql to enable daily KPI logging.', ke.error.message);
+      if(kt.error) console.warn('kpi_targets table not found yet — run the updated schema.sql to enable shared KPI goals.', kt.error.message);
       if(cl.error) console.warn('call_logs table not found yet — run the updated schema.sql to enable the Activity Log.', cl.error.message);
       if(cal.error) console.warn('campaign_logs table not found yet — run the updated schema.sql to enable the Activity Log.', cal.error.message);
       return {
@@ -1198,38 +1365,31 @@ const StorageAdapter = {
         kpis: (k.data||[]).map(this.fromDb.kpis),
         kpiMeta: (km.data||[]).map(this.fromDb.kpiMeta),
         kpiEntries: (ke.data||[]).map(this.fromDb.kpiEntries),
+        // Goals come back as a flat {kpiKey: number} map — that's the shape the
+        // KPI screens want, and there's never more than a few dozen rows.
+        kpiTargets: (kt.data||[]).reduce((acc,r) => {
+          if(r.target_value !== null && r.target_value !== undefined){
+            acc[r.kpi_key] = Number(r.target_value);
+          }
+          return acc;
+        }, {}),
         callLogs: (cl.data||[]).map(this.fromDb.callLogs),
         campaignLogs: (cal.data||[]).map(this.fromDb.campaignLogs),
+        // Which teammate this browser is signed in as stays on the device —
+        // it's the key used to look everything else up, so it can't itself
+        // live behind that lookup.
         activeUserId: localStorage.getItem(this.localKeys.active) || ''
       };
     }
-    return {
-      users: JSON.parse(localStorage.getItem(this.localKeys.users) || '[]'),
-      props: JSON.parse(localStorage.getItem(this.localKeys.props) || '[]'),
-      tasks: JSON.parse(localStorage.getItem(this.localKeys.tasks) || '[]'),
-      projects: JSON.parse(localStorage.getItem(this.localKeys.projects) || '[]'),
-      kpis: JSON.parse(localStorage.getItem(this.localKeys.kpis) || '[]'),
-      kpiMeta: JSON.parse(localStorage.getItem(this.localKeys.kpiMeta) || '[]'),
-      kpiEntries: JSON.parse(localStorage.getItem(this.localKeys.kpiEntries) || '[]'),
-      callLogs: JSON.parse(localStorage.getItem(this.localKeys.callLogs) || '[]'),
-      campaignLogs: JSON.parse(localStorage.getItem(this.localKeys.campaignLogs) || '[]'),
-      activeUserId: localStorage.getItem(this.localKeys.active) || ''
-    };
   },
 
   async saveEntity(collection, entity){
     this.setSyncing(true);
     try{
-      if(this.backend === 'supabase'){
-        const row = this.toDb[collection](entity);
-        const {error} = await this.supabase.from(this.tables[collection]).upsert(row);
-        if(error) throw error;
-      }else{
-        const arr = JSON.parse(localStorage.getItem(this.localKeys[collection]) || '[]');
-        const idx = arr.findIndex(x => x.id === entity.id);
-        if(idx >= 0) arr[idx] = entity; else arr.unshift(entity);
-        localStorage.setItem(this.localKeys[collection], JSON.stringify(arr));
-      }
+      this.assertConnected();
+      const row = this.toDb[collection](entity);
+      const {error} = await this.supabase.from(this.tables[collection]).upsert(row);
+      if(error) throw error;
     }catch(e){
       console.error(`Save ${collection} failed:`, e);
       toast('Save failed: '+ (e.message||'unknown error'),'err');
@@ -1241,16 +1401,61 @@ const StorageAdapter = {
   async deleteEntity(collection, id){
     this.setSyncing(true);
     try{
-      if(this.backend === 'supabase'){
-        const {error} = await this.supabase.from(this.tables[collection]).delete().eq('id', id);
-        if(error) throw error;
-      }else{
-        const arr = JSON.parse(localStorage.getItem(this.localKeys[collection]) || '[]');
-        localStorage.setItem(this.localKeys[collection], JSON.stringify(arr.filter(x => x.id !== id)));
-      }
+      this.assertConnected();
+      const {error} = await this.supabase.from(this.tables[collection]).delete().eq('id', id);
+      if(error) throw error;
     }catch(e){
       console.error(`Delete ${collection} failed:`, e);
       toast('Delete failed: '+(e.message||'unknown error'),'err');
+    }finally{
+      this.setSyncing(false);
+    }
+  },
+
+  // ---- KPI goals (kpi_targets) ----
+  // Goals are firm-wide, not per-person: one row per KPI key, upserted on the
+  // unique index so two people editing the same goal converge instead of
+  // stacking duplicate rows.
+  async saveKpiTarget(key, value){
+    this.setSyncing(true);
+    try{
+      this.assertConnected();
+      if(value === null){
+        const {error} = await this.supabase.from('kpi_targets').delete().eq('kpi_key', key);
+        if(error) throw error;
+      }else{
+        const {error} = await this.supabase.from('kpi_targets')
+          .upsert({kpi_key:key, target_value:value, updated_at:new Date().toISOString()},
+                  {onConflict:'kpi_key'});
+        if(error) throw error;
+      }
+    }catch(e){
+      console.error('Save KPI goal failed:', e);
+      toast('Goal not saved: '+(e.message||'unknown error'),'err');
+    }finally{
+      this.setSyncing(false);
+    }
+  },
+
+  // Replace the whole goal set in one round trip — used by Import, which is
+  // an overwrite, so anything not in the incoming map is dropped.
+  async saveKpiTargets(map){
+    this.setSyncing(true);
+    try{
+      this.assertConnected();
+      const keys = Object.keys(map || {});
+      const del = await this.supabase.from('kpi_targets').delete().neq('kpi_key','');
+      if(del.error) throw del.error;
+      if(keys.length){
+        const rows = keys.map(k => ({kpi_key:k, target_value:Number(map[k]),
+                                     updated_at:new Date().toISOString()}));
+        const {error} = await this.supabase.from('kpi_targets')
+          .upsert(rows, {onConflict:'kpi_key'});
+        if(error) throw error;
+      }
+    }catch(e){
+      console.error('Bulk goal save failed:', e);
+      toast('Goals not imported: '+(e.message||'unknown error'),'err');
     }finally{
       this.setSyncing(false);
     }
@@ -1261,26 +1466,35 @@ const StorageAdapter = {
     else localStorage.removeItem(this.localKeys.active);
   },
 
+  // ---- per-user preferences (user_prefs.prefs jsonb) ----
+  async loadPrefs(userId){
+    this.assertConnected();
+    if(!userId) return {};
+    const {data, error} = await this.supabase
+      .from('user_prefs').select('prefs').eq('user_id', userId).maybeSingle();
+    if(error){ console.warn('Could not load preferences:', error.message); return {}; }
+    return (data && data.prefs) || {};
+  },
+  async savePrefs(userId, prefs){
+    this.assertConnected();
+    if(!userId) return;
+    const {error} = await this.supabase.from('user_prefs')
+      .upsert({user_id:userId, prefs, updated_at:new Date().toISOString()});
+    if(error) console.warn('Could not save preferences:', error.message);
+  },
+
   // Bulk save — used by seed, import
   async saveBulk(data){
     this.setSyncing(true);
     try{
-      if(this.backend === 'supabase'){
-        // Order matters: users first (foreign key references)
-        const order = ['users','props','tasks','projects','kpis','kpiMeta','kpiEntries','callLogs','campaignLogs'];
-        for(const col of order){
-          if(data[col]?.length){
-            const rows = data[col].map(this.toDb[col]);
-            const {error} = await this.supabase.from(this.tables[col]).upsert(rows);
-            if(error) throw error;
-          }
-        }
-      }else{
-        for(const col of Object.keys(this.localKeys)){
-          if(col === 'active') continue;
-          if(data[col] !== undefined){
-            localStorage.setItem(this.localKeys[col], JSON.stringify(data[col]||[]));
-          }
+      this.assertConnected();
+      // Order matters: users first (foreign key references)
+      const order = ['users','props','tasks','projects','kpis','kpiMeta','kpiEntries','callLogs','campaignLogs'];
+      for(const col of order){
+        if(data[col]?.length){
+          const rows = data[col].map(this.toDb[col]);
+          const {error} = await this.supabase.from(this.tables[col]).upsert(rows);
+          if(error) throw error;
         }
       }
     }catch(e){
@@ -1292,13 +1506,14 @@ const StorageAdapter = {
   },
 
   async wipeAll(){
-    if(this.backend === 'supabase'){
-      // Delete in reverse dep order
-      const order = ['tasks','projects','props','users','kpis','kpiMeta','kpiEntries','callLogs','campaignLogs'];
-      for(const col of order){
-        await this.supabase.from(this.tables[col]).delete().neq('id','00000000-0000-0000-0000-000000000000');
-      }
+    this.assertConnected();
+    // Delete in reverse dep order
+    const order = ['tasks','projects','props','users','kpis','kpiMeta','kpiEntries','callLogs','campaignLogs'];
+    for(const col of order){
+      await this.supabase.from(this.tables[col]).delete().neq('id','00000000-0000-0000-0000-000000000000');
     }
+    await this.supabase.from('kpi_targets').delete().neq('kpi_key','');
+    await this.supabase.from('user_prefs').delete().neq('user_id','00000000-0000-0000-0000-000000000000');
     Object.values(this.localKeys).forEach(k => localStorage.removeItem(k));
   },
 
@@ -1309,6 +1524,49 @@ const StorageAdapter = {
   }
 };
 
+/* =========================================================
+   PREFERENCES — which tab you're on, which week the calendar
+   is showing, your KPI date range and so on. Stored per user
+   in Supabase (user_prefs.prefs), so they follow you from
+   laptop to phone instead of being stranded on one browser.
+
+   Reads are synchronous against an in-memory copy loaded at
+   boot; writes update that copy immediately and push to
+   Supabase on a short debounce, so clicking through tabs
+   doesn't fire a request per click.
+   ========================================================= */
+const Prefs = {
+  data: {},
+  userId: '',
+  _timer: null,
+
+  async load(userId){
+    this.userId = userId || '';
+    this.data = this.userId ? await StorageAdapter.loadPrefs(this.userId) : {};
+    return this.data;
+  },
+  get(key, fallback){
+    return this.data[key] !== undefined ? this.data[key] : fallback;
+  },
+  set(key, value){
+    if(this.data[key] === value) return;
+    this.data[key] = value;
+    this.flushSoon();
+  },
+  flushSoon(){
+    // No user picked yet means there's no row to write to — the choice still
+    // applies to this session, it just isn't persisted until they identify.
+    if(!this.userId) return;
+    clearTimeout(this._timer);
+    this._timer = setTimeout(() => this.flush(), 600);
+  },
+  async flush(){
+    if(!this.userId) return;
+    clearTimeout(this._timer);
+    try{ await StorageAdapter.savePrefs(this.userId, this.data); }
+    catch(e){ console.warn('Preference save failed:', e.message||e); }
+  }
+};
 /* =========================================================
    STATE & CONSTANTS
    ========================================================= */
@@ -1381,7 +1639,7 @@ const escape = s => (s||'').toString().replace(/[&<>"']/g, c=>({'&':'&amp;','<':
 // 'kpis' is an alias for the KPIs & Tracking tab (view key 'activity'), so
 // #kpis links work; normalizeView() folds it in with the KPIs half selected.
 const VALID_VIEWS = ['dashboard','properties','tasks','projects','activity','kpis','calendar','team','settings'];
-const VIEW_KEY = 'ulc_activeView';
+const VIEW_KEY = 'activeView';
 const viewFromHash = () => {
   const v = decodeURIComponent(location.hash.replace(/^#/,''));
   return VALID_VIEWS.includes(v) ? v : null;
@@ -1399,7 +1657,7 @@ const TP_TABS = ['tasks','projects'];
 const KT_TABS = ['kpis','activity'];
 function getKtTab(){
   if(state.ktTab === undefined){
-    const stored = localStorage.getItem('ulc_ktTab');
+    const stored = Prefs.get('ktTab');
     state.ktTab = KT_TABS.includes(stored) ? stored : 'kpis';
   }
   return state.ktTab;
@@ -1407,19 +1665,19 @@ function getKtTab(){
 function setKtTab(tab, silent){
   if(!KT_TABS.includes(tab)) return;
   state.ktTab = tab;
-  localStorage.setItem('ulc_ktTab', tab);
+  Prefs.set('ktTab', tab);
   if(!silent) app.render();
 }
 function getTpTab(){
   if(state.tpTab === undefined){
-    const stored = localStorage.getItem('ulc_tpTab');
+    const stored = Prefs.get('tpTab');
     state.tpTab = TP_TABS.includes(stored) ? stored : 'tasks';
   }
   return state.tpTab;
 }
 function setTpTab(tab, silent){
   state.tpTab = TP_TABS.includes(tab) ? tab : 'tasks';
-  try{ localStorage.setItem('ulc_tpTab', state.tpTab); }catch(e){}
+  Prefs.set('tpTab', state.tpTab);
   if(!silent) app.render();
 }
 function normalizeView(v){
@@ -1432,11 +1690,10 @@ function normalizeView(v){
   return v;
 }
 function rememberView(v){
-  try{ localStorage.setItem(VIEW_KEY, v); }catch(e){ /* private mode — not worth failing over */ }
+  Prefs.set(VIEW_KEY, v);
 }
 function startingView(){
-  let stored = null;
-  try{ stored = localStorage.getItem(VIEW_KEY); }catch(e){}
+  const stored = Prefs.get(VIEW_KEY, null);
   // A view removed in a later version, or junk in the hash, must not leave the
   // app rendering a blank main pane — fall back to the dashboard.
   return normalizeView(viewFromHash() || (VALID_VIEWS.includes(stored) ? stored : 'dashboard'));
@@ -1829,6 +2086,7 @@ async function loadAll(){
   state.kpis = data.kpis || [];
   state.kpiMeta = data.kpiMeta || [];
   state.kpiEntries = migrateKpiEntryKeys(data.kpiEntries || []);
+  state.kpiTargets = migrateKpiTargetKeys(data.kpiTargets || {});
   state.callLogs = data.callLogs || [];
   state.campaignLogs = data.campaignLogs || [];
   state.activeUserId = data.activeUserId;
@@ -1890,12 +2148,126 @@ async function seed(){
 }
 
 /* =========================================================
+   CONNECTION FAILURE — the app is Supabase-only, so rather
+   than falling back to local data the team can't see, it
+   stops and reports precisely which step failed.
+   ========================================================= */
+const CONNECTION_TITLES = {
+  'no-config':   'config.js isn\'t supplying credentials',
+  'no-lib':      'The Supabase library didn\'t load',
+  'bad-url':     'The Supabase project URL looks wrong',
+  'bad-key':     'Supabase rejected the API key',
+  'unreachable': 'Can\'t reach the Supabase project',
+  'schema':      'Connected, but the schema is incomplete'
+};
+const CONNECTION_FIXES = {
+  'no-config':   ['Copy config.example.js to config.js.',
+                  'Fill in the Project URL and the anon/public key from Supabase → Project Settings → API.'],
+  'no-lib':      ['Check whether an ad blocker or network policy is blocking cdn.jsdelivr.net and unpkg.com.',
+                  'If you\'re offline, reconnect and retry.'],
+  'bad-url':     ['Confirm supabaseUrl in config.js looks like https://yourproject.supabase.co.'],
+  'bad-key':     ['Re-copy the anon/public key from Supabase → Project Settings → API into config.js.',
+                  'Make sure the whole key was pasted — they\'re long and easy to truncate.'],
+  'unreachable': ['Check whether the Supabase project is paused (free projects pause after inactivity).',
+                  'Confirm supabaseUrl in config.js matches the project.',
+                  'Check this device\'s internet connection.'],
+  'schema':      ['Open Supabase → SQL Editor → New query.',
+                  'Paste all of schema.sql and run it. It\'s safe to re-run — it only adds what\'s missing.']
+};
+
+function renderConnectionError(failure){
+  const f = failure || {code:'unreachable', detail:'Unknown connection failure.'};
+  const title = CONNECTION_TITLES[f.code] || 'Can\'t connect to Supabase';
+  const fixes = CONNECTION_FIXES[f.code] || [];
+  const cfg = window.CRM_CONFIG || {};
+  // Only ever show the project ref, never the key itself.
+  const projectRef = (cfg.supabaseUrl||'').replace(/^https?:\/\//,'').split('.')[0] || '—';
+
+  document.body.innerHTML = `
+  <div class="conn-wrap">
+    <div class="conn-card">
+      <div class="conn-icon"><i class="ti ti-plug-connected-x"></i></div>
+      <h1 class="conn-title">${escape(title)}</h1>
+      <p class="conn-detail">${escape(f.detail||'')}</p>
+      <p class="conn-note">The app won't run on local data, because anything entered here wouldn't reach the rest of the team.</p>
+
+      <div class="conn-facts">
+        <div><span>config.js loaded</span><b>${window.__configError ? 'no' : 'yes'}</b></div>
+        <div><span>Project</span><b>${escape(projectRef)}</b></div>
+        <div><span>Library loaded</span><b>${window.supabase ? 'yes' : 'no'}</b></div>
+      </div>
+
+      ${f.tables && f.tables.length ? `
+        <div class="conn-tables">
+          <div class="conn-tables-head">Tables that failed (${f.tables.length} of ${StorageAdapter.requiredTables.length})</div>
+          ${f.tables.map(t=>`<div class="conn-table-row"><code>${escape(t.name)}</code><span>${escape(t.message)}</span></div>`).join('')}
+        </div>` : ''}
+
+      ${f.raw ? `<div class="conn-raw">${escape(f.raw)}</div>` : ''}
+
+      ${fixes.length ? `<ol class="conn-fixes">${fixes.map(s=>`<li>${escape(s)}</li>`).join('')}</ol>` : ''}
+
+      <div class="conn-actions">
+        <button class="btn btn-primary" onclick="retryConnection(this)"><i class="ti ti-refresh"></i> Retry connection</button>
+        ${hasLegacyLocalData() ? `<button class="btn" onclick="downloadLegacyLocalData()"><i class="ti ti-download"></i> Download this device's old local data</button>` : ''}
+      </div>
+      ${hasLegacyLocalData() ? `<p class="conn-note" style="margin-top:10px">This browser still holds data from before the switch to Supabase-only. Download it before clearing anything.</p>` : ''}
+    </div>
+  </div>`;
+}
+
+async function retryConnection(btn){
+  if(btn){ btn.disabled = true; btn.innerHTML = '<i class="ti ti-loader-2"></i> Checking…'; }
+  const conn = await StorageAdapter.init();
+  if(conn.ok){ location.reload(); return; }
+  renderConnectionError(conn.failure);
+}
+
+// Old builds mirrored everything locally. If any of that is still sitting in
+// this browser, offer it as a download rather than stranding it.
+function hasLegacyLocalData(){
+  return StorageAdapter.legacyLocalKeys.some(k => {
+    try{ const v = localStorage.getItem(k); return v && v !== '[]' && v !== '{}'; }
+    catch(e){ return false; }
+  });
+}
+function downloadLegacyLocalData(){
+  const payload = {exportedAt:new Date().toISOString(), source:'localStorage (pre-Supabase-only build)'};
+  StorageAdapter.legacyLocalKeys.forEach(k => {
+    try{
+      const v = localStorage.getItem(k);
+      if(v) payload[k] = JSON.parse(v);
+    }catch(e){ payload[k] = localStorage.getItem(k); }
+  });
+  const blob = new Blob([JSON.stringify(payload,null,2)], {type:'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `utopian-crm-local-snapshot-${new Date().toISOString().split('T')[0]}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+/* =========================================================
    APP CONTROLLER
    ========================================================= */
 const app = {
   async init(){
-    await StorageAdapter.init();
+    const conn = await StorageAdapter.init();
+    // Supabase is the only backend now. Rather than quietly running on local
+    // data nobody else can see, stop here and say exactly what's wrong.
+    if(!conn.ok){
+      renderConnectionError(conn.failure);
+      return;
+    }
+    // Old builds mirrored everything into localStorage. Now that we're
+    // connected, clear that copy so it can't be mistaken for live data.
+    StorageAdapter.legacyLocalKeys.forEach(k => { try{ localStorage.removeItem(k); }catch(e){} });
+
     await loadAll();
+    // Preferences live per user in Supabase, so they have to be fetched
+    // before the first render decides which tab to open.
+    await Prefs.load(state.activeUserId);
     // Restore the tab you were last on before the first render, so a reload
     // lands you back where you were instead of bouncing to the dashboard.
     state.activeView = startingView();
@@ -1967,9 +2339,25 @@ const app = {
       state.users.map(u => `<option value="${u.id}" ${u.id===state.activeUserId?'selected':''}>${escape(u.name)}</option>`).join('');
   },
 
-  switchUser(id){
+  async switchUser(id){
+    // Push the outgoing user's pending preference changes before swapping,
+    // or a quick switch would drop whatever they just changed.
+    await Prefs.flush();
     state.activeUserId = id;
     StorageAdapter.saveActiveUser(id);
+    await Prefs.load(id);
+    // Anything derived from prefs has to be re-read for the new user rather
+    // than carrying the previous person's tab and calendar position over.
+    state.tpTab = undefined;
+    state.ktTab = undefined;
+    state.calendarUserId = undefined;
+    state.agendaUserId = undefined;
+    state.weekCalendarOffset = undefined;
+    state.activityCalendarOffset = undefined;
+    state.kpiRange = undefined;
+    state.kpiAsOf = undefined;
+    state.kpiLogDay = undefined;
+    state.kpiChart = undefined;
     this.render();
     checkDueNotifications();
   },
@@ -2347,16 +2735,19 @@ const kpiInputsInSection = sectionKey => KPI_METRICS.filter(m => m.group === sec
 // Two KPIs were re-windowed from 1 day to 7 and 30; any goal set against the
 // old key is carried over so the expectation isn't silently lost.
 const KPI_TARGET_RENAMES = {firstContact1:'firstContact7', buyerResp1:'buyerResp30'};
+// Goals live in Supabase (kpi_targets) and are shared by the whole team, so
+// they're hydrated once at boot by loadAll() rather than read lazily here.
+// This only folds forward goals stored under a since-renamed KPI key.
+function migrateKpiTargetKeys(t){
+  const out = {...(t || {})};
+  Object.entries(KPI_TARGET_RENAMES).forEach(([oldK, newK]) => {
+    if(out[oldK] !== undefined && out[newK] === undefined) out[newK] = out[oldK];
+    delete out[oldK];
+  });
+  return out;
+}
 function getKpiTargets(){
-  if(state.kpiTargets === undefined){
-    let t = {};
-    try{ t = JSON.parse(localStorage.getItem('ulc_kpiTargets') || '{}') || {}; }catch(e){ t = {}; }
-    Object.entries(KPI_TARGET_RENAMES).forEach(([oldK, newK]) => {
-      if(t[oldK] !== undefined && t[newK] === undefined) t[newK] = t[oldK];
-      delete t[oldK];
-    });
-    state.kpiTargets = t;
-  }
+  if(state.kpiTargets === undefined) state.kpiTargets = {};
   return state.kpiTargets;
 }
 function getKpiTarget(key){
@@ -2365,11 +2756,14 @@ function getKpiTarget(key){
 }
 function setKpiTarget(key, value){
   const t = {...getKpiTargets()};
-  if(value === '' || value === null || isNaN(Number(value))) delete t[key];
-  else t[key] = Number(value);
+  const blank = (value === '' || value === null || isNaN(Number(value)));
+  if(blank) delete t[key]; else t[key] = Number(value);
+  // Repaint against the local copy immediately; the write goes out behind it so
+  // typing a goal doesn't wait on a round trip. A failed write toasts and the
+  // next refresh pulls the server's value back.
   state.kpiTargets = t;
-  try{ localStorage.setItem('ulc_kpiTargets', JSON.stringify(t)); }catch(e){}
   app.render();
+  StorageAdapter.saveKpiTarget(key, blank ? null : Number(value));
 }
 
 /* ---- Deriving a KPI over a window ---------------------------------------
@@ -2491,7 +2885,7 @@ function kpiWindow(days, anchor){
    selected (there'd be no data past today anyway).                        */
 function getKpiAsOf(){
   if(state.kpiAsOf === undefined){
-    const stored = localStorage.getItem('ulc_kpiAsOf');
+    const stored = Prefs.get('kpiAsOf', null);
     state.kpiAsOf = (stored && stored <= today()) ? stored : today();
   }
   if(state.kpiAsOf > today()) state.kpiAsOf = today();
@@ -2500,7 +2894,7 @@ function getKpiAsOf(){
 function setKpiAsOf(dateStr){
   if(!dateStr) return;
   state.kpiAsOf = dateStr > today() ? today() : dateStr;
-  try{ localStorage.setItem('ulc_kpiAsOf', state.kpiAsOf); }catch(e){}
+  Prefs.set('kpiAsOf', state.kpiAsOf);
   app.render();
 }
 function shiftKpiAsOf(days){
@@ -2513,8 +2907,7 @@ function shiftKpiAsOf(days){
 // deliberately separate from state.filters, which is cleared on tab change.
 function getKpiRange(){
   if(state.kpiRange === undefined){
-    try{ state.kpiRange = JSON.parse(localStorage.getItem('ulc_kpiRange') || 'null') || {from:'', to:''}; }
-    catch(e){ state.kpiRange = {from:'', to:''}; }
+    state.kpiRange = Prefs.get('kpiRange', null) || {from:'', to:''};
   }
   return state.kpiRange;
 }
@@ -2526,12 +2919,12 @@ function setKpiRange(part, value){
     if(part === 'from') r.to = r.from; else r.from = r.to;
   }
   state.kpiRange = r;
-  try{ localStorage.setItem('ulc_kpiRange', JSON.stringify(r)); }catch(e){}
+  Prefs.set('kpiRange', r);
   app.render();
 }
 function clearKpiRange(){
   state.kpiRange = {from:'', to:''};
-  try{ localStorage.removeItem('ulc_kpiRange'); }catch(e){}
+  Prefs.set('kpiRange', state.kpiRange);
   app.render();
 }
 
@@ -2802,7 +3195,7 @@ function renderKpiTrackingView(){
 // and is remembered per-device.
 function getKpiLogDay(){
   if(state.kpiLogDay === undefined){
-    const stored = localStorage.getItem('ulc_kpiLogDay');
+    const stored = Prefs.get('kpiLogDay', null);
     state.kpiLogDay = (stored && stored <= today()) ? stored : today();
   }
   if(state.kpiLogDay > today()) state.kpiLogDay = today();
@@ -2811,7 +3204,7 @@ function getKpiLogDay(){
 function setKpiLogDay(dateStr){
   if(!dateStr) return;
   state.kpiLogDay = dateStr > today() ? today() : dateStr;
-  try{ localStorage.setItem('ulc_kpiLogDay', state.kpiLogDay); }catch(e){}
+  Prefs.set('kpiLogDay', state.kpiLogDay);
   app.render();
 }
 function shiftKpiLogDay(days){
@@ -2841,15 +3234,14 @@ const KPI_CHART_COLOR_B = 'var(--info-ink)';
 
 function getKpiChart(){
   if(state.kpiChart === undefined){
-    let c = null;
-    try{ c = JSON.parse(localStorage.getItem('ulc_kpiChart') || 'null'); }catch(e){}
+    const c = Prefs.get('kpiChart', null);
     state.kpiChart = c && c.a ? c : {a:'kpi:smsSent7', b:'', range:30};
   }
   return state.kpiChart;
 }
 function setKpiChart(part, value){
   state.kpiChart = {...getKpiChart(), [part]: part==='range' ? parseInt(value,10)||30 : value};
-  try{ localStorage.setItem('ulc_kpiChart', JSON.stringify(state.kpiChart)); }catch(e){}
+  Prefs.set('kpiChart', state.kpiChart);
   app.render();
 }
 
@@ -3342,14 +3734,13 @@ function shiftCalendar(delta){
    ========================================================= */
 function getWeekCalendarOffset(){
   if(state.weekCalendarOffset === undefined){
-    const stored = localStorage.getItem('ulc_weekCalOffset');
-    state.weekCalendarOffset = stored !== null ? (parseInt(stored,10)||0) : 0;
+    state.weekCalendarOffset = parseInt(Prefs.get('weekCalOffset', 0), 10) || 0;
   }
   return state.weekCalendarOffset;
 }
 function setWeekCalendarOffset(v){
   state.weekCalendarOffset = v;
-  localStorage.setItem('ulc_weekCalOffset', String(v));
+  Prefs.set('weekCalOffset', v);
   app.render();
 }
 function shiftWeekCalendar(delta){
@@ -3381,7 +3772,7 @@ function getWeekStart(offsetWeeks){
 // object is wiped on every tab change, and this choice should stick.
 function getCalendarUserId(){
   if(state.calendarUserId === undefined){
-    const stored = localStorage.getItem('ulc_calUser');
+    const stored = Prefs.get('calUser', null);
     state.calendarUserId = stored !== null ? stored : (state.activeUserId || '');
   }
   // A teammate who's since been deleted would otherwise leave the calendar
@@ -3393,7 +3784,7 @@ function getCalendarUserId(){
 }
 function setCalendarUser(id){
   state.calendarUserId = id;
-  localStorage.setItem('ulc_calUser', id);
+  Prefs.set('calUser', id);
   app.render();
 }
 
@@ -3402,7 +3793,7 @@ function setCalendarUser(id){
 // remembered per-device. Same deleted-teammate guard as the calendar filter.
 function getAgendaUserId(){
   if(state.agendaUserId === undefined){
-    state.agendaUserId = localStorage.getItem('ulc_agendaUser') || '';
+    state.agendaUserId = Prefs.get('agendaUser', '') || '';
   }
   if(state.agendaUserId && !state.users.some(u=>u.id===state.agendaUserId)){
     state.agendaUserId = '';
@@ -3411,7 +3802,7 @@ function getAgendaUserId(){
 }
 function setAgendaUser(id){
   state.agendaUserId = id;
-  localStorage.setItem('ulc_agendaUser', id);
+  Prefs.set('agendaUser', id);
   app.render();
 }
 
@@ -4071,8 +4462,7 @@ function campaignEntriesForDay(dateStr){
 // tomorrow) doesn't silently snap you back to the current month.
 function getActivityCalendarOffset(){
   if(state.activityCalendarOffset === undefined){
-    const stored = localStorage.getItem('ulc_activityCalOffset');
-    state.activityCalendarOffset = stored !== null ? parseInt(stored,10)||0 : 0;
+    state.activityCalendarOffset = parseInt(Prefs.get('activityCalOffset', 0), 10) || 0;
   }
   return state.activityCalendarOffset;
 }
@@ -4391,7 +4781,7 @@ function renderActivityCalendar(){
 }
 function setActivityCalendarOffset(offset){
   state.activityCalendarOffset = offset;
-  localStorage.setItem('ulc_activityCalOffset', String(offset));
+  Prefs.set('activityCalOffset', offset);
   app.render();
 }
 function shiftActivityCalendar(delta){
@@ -4591,7 +4981,7 @@ function renderSettings(){
     <p>
       ${on
         ? `Connected to <strong style="color:var(--accent)">Supabase</strong>. All changes sync in real time and are shared across devices and users.`
-        : `<strong>Local build.</strong> Using <strong>localStorage</strong> — data lives in this browser only and is never sent to the shared team database. Supabase sync is disabled in this copy by design; use the main app for synced data.`}
+        : `Using <strong>localStorage</strong> — data lives in this browser only. Add a <code>config.js</code> and run <code>schema.sql</code> in Supabase to enable multi-device sync.`}
     </p>
     ${on ? `
       <div style="background:var(--accent-soft);border-radius:var(--r-md);padding:12px 14px;font-size:12.5px;color:var(--accent);display:flex;align-items:center;gap:8px">
@@ -5368,6 +5758,7 @@ function exportData(){
     users: state.users, props: state.props,
     tasks: state.tasks, projects: state.projects,
     kpis: state.kpis, kpiEntries: state.kpiEntries,
+    kpiTargets: getKpiTargets(),
     callLogs: state.callLogs, campaignLogs: state.campaignLogs
   };
   const blob = new Blob([JSON.stringify(payload,null,2)], {type:'application/json'});
@@ -5397,6 +5788,7 @@ function importData(){
         if(data.projects) state.projects = data.projects;
         if(data.kpis) state.kpis = data.kpis;
         if(data.kpiEntries) state.kpiEntries = data.kpiEntries;
+        if(data.kpiTargets) state.kpiTargets = migrateKpiTargetKeys(data.kpiTargets);
         if(data.callLogs) state.callLogs = data.callLogs;
         if(data.campaignLogs) state.campaignLogs = data.campaignLogs;
         await StorageAdapter.saveBulk({
@@ -5405,6 +5797,7 @@ function importData(){
           kpis:state.kpis, kpiEntries:state.kpiEntries,
           callLogs:state.callLogs, campaignLogs:state.campaignLogs
         });
+        if(data.kpiTargets) await StorageAdapter.saveKpiTargets(state.kpiTargets);
         toast('Data imported');
         app.render();
       }catch(err){
@@ -5420,6 +5813,7 @@ async function resetData(){
   if(!confirm('Really sure? All properties, tasks, projects, and activity logs will be gone.')) return;
   state.users=[]; state.props=[]; state.tasks=[]; state.projects=[];
   state.callLogs=[]; state.campaignLogs=[]; state.activeUserId='';
+  state.kpis=[]; state.kpiEntries=[]; state.kpiTargets={};
   await StorageAdapter.wipeAll();
   await seed();
   toast('Data reset');
