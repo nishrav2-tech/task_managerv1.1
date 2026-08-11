@@ -139,8 +139,8 @@ Ping me when you're ready to add real auth — it's a targeted change to the sto
 
 ## What's inside
 
-- **Dashboard** — a "Create Task" button front and center, pipeline value, KPIs, deal stages, your open task list
-- **Properties** — deals with ask / offer / ARV, auto-computed margin, single assignee
+- **Dashboard** — a "Create Task" button front and center, equity produced, KPIs, today's agenda, your open task list, monthly calendar
+- **Properties** — deals tracked by Property ID (county/state, acres, buy/sell price, closing date), auto-computed margin
 - **Tasks** — multi-assignee, priorities (high/medium/low), statuses (todo/in-progress/done/blocked), due dates, linkable to properties
 - **Projects** — kanban board for business improvements (Marketing, SOPs, Tools, Team, Finance, Other) × 4 statuses (ideas/planned/in-progress/done)
 - **Activity Log** — month calendar (jump to any past month via the dropdowns or prev/next, your position is remembered) of daily call logging (calls made, conversations held, offers made, offers accepted, not interested/dropped) and campaign logging (any number of campaign touches per day, with channel, counties hit, leads generated); an "Activity trends" chart lets you compare up to two metrics (calls made, calls picked up, offers made, rejected leads, campaigns sent, SMS sent) over a selectable time period
