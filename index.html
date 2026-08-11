@@ -2607,6 +2607,15 @@ const KPI_METRICS = [
   {key:'scProcessHrs',       label:'Hours processing those leads',    icon:'ti-clock',        unit:'hrs',   group:'leadGen'},
   {key:'offersPrepared',     label:'Offers prepared',                 icon:'ti-file-dollar',  unit:'count', group:'leadGen'},
   {key:'offerPrepHrs',       label:'Hours preparing offers',          icon:'ti-clock',        unit:'hrs',   group:'leadGen'},
+  // NOTE: leadEntryLagHrs / leadEntryLagCount are NOT listed here on purpose.
+  // KPI_METRICS drives the manual "log a KPI" dropdown and combo-form inputs —
+  // keeping these two out of it means there is no UI path to hand-type into
+  // them. They're written only by the lead-entry-lag Edge Function via an
+  // additive increment_kpi_entry() call (see schema.sql); a manual overwrite
+  // would fight with that. The dashboard tile below still reads and averages
+  // them fine — KPI_DEFS calcs work off metric_key directly, independent of
+  // whether the key has an input definition. Clicking that tile to "log
+  // manually" will just open an empty form, which is intentional.
 
   // Lead Conversion / management
   {key:'leadsContacted',     label:'Leads contacted',                 icon:'ti-phone-call',   unit:'count', group:'leadConv'},
@@ -2654,6 +2663,8 @@ const KPI_DEFS = [
    calc:{type:'sum', of:'hotLeadsProduced'}},
   {key:'scProcessAvg',   section:'leadGen', label:'Avg time to process a lead',win:7,  unit:'hrs',   dir:'down',
    calc:{type:'avg', total:'scProcessHrs', count:'scLeadsProcessed'}},
+  {key:'leadEntryLagAvg',section:'leadGen', label:'Avg lead entry lag (SMS→CRM, auto)',win:7,  unit:'hrs', dir:'down',
+   calc:{type:'avg', total:'leadEntryLagHrs', count:'leadEntryLagCount'}},
   {key:'offerPrepAvg',   section:'leadGen', label:'Avg time to prepare offer', win:7,  unit:'hrs',   dir:'down',
    calc:{type:'avg', total:'offerPrepHrs', count:'offersPrepared'}},
 
